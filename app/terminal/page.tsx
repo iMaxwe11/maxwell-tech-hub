@@ -54,6 +54,22 @@ function list(path: string[]): string[] {
 }
 function isDir(path: string[]) { return getNode(path)?.type === "dir"; }
 function isFile(path: string[]) { return getNode(path)?.type === "file"; }
+"use client";
+// ...your imports...
+
+// Add this helper:
+function neofetch(): string {
+  return [
+    "Maxwell OS  • Theme: Studio/Obsidian/Aurora",
+    "Kernel     • Next.js 15 + React 18",
+    "CPU        • JavaScript Engine",
+    "GPU        • CSS / Canvas",
+    "Memory     • Plenty",
+    "Disk       • Virtual FS (~/projects, ~/contact)",
+  ].join("\n");
+}
+
+// (rest of the file, including export default TerminalPage...)
 
 export default function TerminalPage() {
   const [cwd, setCwd] = useState<string[]>(["home"]);
