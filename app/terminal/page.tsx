@@ -1,21 +1,22 @@
 "use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Node = { type: "dir"|"file"; content?: string; children?: Record<string, Node> };
+type Node = { type: "dir" | "file"; content?: string; children?: Record<string, Node> };
 
 const FS: Record<string, Node> = {
   home: {
     type: "dir",
     children: {
       "readme.txt": { type: "file", content: "Welcome to Maxwell's terminal. Try 'help' to see commands. Explore ~/projects and ~/contact." },
-      "projects": {
+      projects: {
         type: "dir",
         children: {
           "hub.md": { type: "file", content: "# Interactive Hub v2\nSleek Next.js + Tailwind + playful UI." },
-          "obsidian.txt": { type: "file", content: "Obsidian Echoes — a terminal mystery concept." },
+          "obsidian.txt": { type: "file", content: "Obsidian Echoes — a terminal mystery concept." }
         }
       },
-      "contact": {
+      contact: {
         type: "dir",
         children: {
           "email.txt": { type: "file", content: "mnixon112@outlook.com" },
@@ -54,10 +55,17 @@ function list(path: string[]): string[] {
 }
 function isDir(path: string[]) { return getNode(path)?.type === "dir"; }
 function isFile(path: string[]) { return getNode(path)?.type === "file"; }
-"use client";
-// ...your imports...
 
-// Add this helper:
+function banner() {
+  return String.raw`
+  __  __                       __           __  __      __
+ / / / /___  ____ __________ _/ /_____ _   / / / /___ _/ /_____ 
+/ / / / __ \/ __ `/ ___/ __ `/ __/ __ `/  / /_/ / __ `/ __/ __ \
+/ /_/ / /_/ / /_/ / /  / /_/ / /_/ /_/ /  / __  / /_/ / /_/ /_/ /
+\____/ .___/\__,_/_/   \__,_/\__/\__,_/  /_/ /_/\__,_/\__/\____/ 
+    /_/    Maxwell Console v2 — 'help' for commands`;
+}
+
 function neofetch(): string {
   return [
     "Maxwell OS  • Theme: Studio/Obsidian/Aurora",
@@ -68,8 +76,6 @@ function neofetch(): string {
     "Disk       • Virtual FS (~/projects, ~/contact)",
   ].join("\n");
 }
-
-// (rest of the file, including export default TerminalPage...)
 
 export default function TerminalPage() {
   const [cwd, setCwd] = useState<string[]>(["home"]);
@@ -126,8 +132,7 @@ export default function TerminalPage() {
         setCwd(p);
         return "";
       }
-      case "pwd":
-        return "/" + cwd.join("/");
+      case "pwd": return "/" + cwd.join("/");
       case "cat": {
         if (!arg) return "usage: cat <file>";
         const p = pathJoin(cwd, arg);
@@ -157,7 +162,7 @@ export default function TerminalPage() {
     }
   }
 
-  function onSubmit(e:any) {
+  function onSubmit(e: any) {
     e.preventDefault();
     const value = input;
     if (!value.trim()) return;
@@ -190,11 +195,9 @@ export default function TerminalPage() {
       const [b, ...rest] = input.trim().split(" ");
       const partial = rest.join(" ").trim();
       if (!partial) {
-        // autocomplete command
         const match = COMMANDS.find(c => c.startsWith(b));
         if (match) setInput(match + " ");
       } else {
-        // autocomplete path in current dir
         const names = list(cwd);
         const m = names.find(n => n.startsWith(partial));
         if (m) setInput(`${b} ${m}${isDir([...cwd, m])?"/":""}`);
@@ -225,14 +228,4 @@ export default function TerminalPage() {
       </div>
     </main>
   );
-}
-
-function banner() {
-  return String.raw`
-  __  __                       __           __  __      __
- / / / /___  ____ __________ _/ /_____ _   / / / /___ _/ /_____ 
-/ / / / __ \/ __ \`/ ___/ __ \`/ __/ __ \`/  / /_/ / __ \`/ __/ __ \
-/ /_/ / /_/ / /_/ / /  / /_/ / /_/ /_/ /  / __  / /_/ / /_/ /_/ /
-\____/ .___/\__,_/_/   \__,_/\__/\__,_/  /_/ /_/\__,_/\__/\____/ 
-    /_/    Maxwell Console v2 — 'help' for commands`;
 }
