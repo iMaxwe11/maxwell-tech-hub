@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 222 22% 6%;
+  --bg-soft: 222 22% 10%;
+  --accent: 200 100% 60%;
+  --accent-foreground: 210 40% 96%;
+}
+[data-theme="obsidian"] {
+  --bg: 255 30% 6%;
+  --bg-soft: 255 30% 12%;
+  --accent: 283 100% 64%;
+  --accent-foreground: 284 100% 90%;
+}
+[data-theme="aurora"] {
+  --bg: 215 22% 6%;
+  --bg-soft: 215 22% 12%;
+  --accent: 150 100% 50%;
+  --accent-foreground: 150 100% 90%;
+}
+html, body { height: 100%; background: hsl(var(--bg)); color: white; }
+.gradient-ring { position: relative; isolation: isolate; }
+.gradient-ring::after { content: ""; position: absolute; inset: -2px; background: radial-gradient(60% 60% at 50% 50%, rgba(0,200,255,.35), transparent 70%); filter: blur(15px); z-index: -1; border-radius: inherit;}
+.card { @apply rounded-2xl bg-bg-soft/70 border border-white/10 backdrop-blur p-5 shadow-glow; }
+.link { @apply text-accent hover:opacity-80 transition-opacity; }
+button.primary { @apply px-4 py-2 rounded-xl bg-accent text-black font-medium hover:opacity-90 transition; }
