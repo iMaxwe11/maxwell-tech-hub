@@ -1,30 +1,44 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ 
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const syne = Syne({
   subsets: ["latin"],
   variable: "--font-heading",
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Maxwell Nixon | Full-Stack Engineer & Designer",
-  description: "Full-stack architect building premium software experiences. Real-time data visualization, interactive tools, and dark-luxury interfaces.",
-  keywords: ["Maxwell Nixon", "Full Stack Developer", "Software Engineer", "Web Developer", "React", "Next.js", "TypeScript"],
-  authors: [{ name: "Maxwell Nixon" }],
-  creator: "Maxwell Nixon",
+  title: "Maxwell Nixon — Engineer · Designer · Builder",
+  description:
+    "Full-stack architect building at the intersection of code, design, and intelligence systems. Explore tools, experiments, and projects.",
+  metadataBase: new URL("https://www.maxwellnixon.com"),
   openGraph: {
+    title: "Maxwell Nixon — Engineer · Designer · Builder",
+    description:
+      "Full-stack architect building at the intersection of code, design, and intelligence systems.",
+    url: "https://www.maxwellnixon.com",
+    siteName: "Maxwell Nixon",
     type: "website",
-    locale: "en_US",
-    url: "https://maxwellnixon.com",
-    title: "Maxwell Nixon | Full-Stack Engineer & Designer",
-    description: "Full-stack architect crafting premium software experiences",
-    siteName: "Maxwell Tech Hub",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Maxwell Nixon | Full-Stack Engineer",
-    description: "Full-stack architect crafting premium software experiences",
+    title: "Maxwell Nixon — Engineer · Designer · Builder",
+  },
+  icons: {
+    icon: "/favicon.ico",
   },
 };
 
@@ -34,8 +48,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} antialiased`}>
+    <html
+      lang="en"
+      className={`${outfit.variable} ${syne.variable} ${jetbrains.variable}`}
+    >
+      <body className="bg-[#050505] text-[#e8e8e8] font-[family-name:var(--font-body)]">
+        <div className="grain-overlay" aria-hidden="true" />
         {children}
       </body>
     </html>
