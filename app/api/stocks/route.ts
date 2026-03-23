@@ -1,23 +1,26 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META"];
 
 export async function GET() {
+  // Try multiple free sources in order of reliability
   try {
-    // Try Yahoo Finance first
-    const symbols = SYMBOLS.join(",");
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`,
+    // Attempt 1: Yahoo Finance v8 (works from most server environments)
+    const joined = SYMBOLS.join(",");
+    const yRes = await fetch(
+      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${joined}`,
       {
-        headers: { "User-Agent": "Mozilla/5.0" },
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+        },
         cache: "no-store",
+        signal: AbortSignal.timeout(6000),
       }
     );
 
-    if (res.ok) {
-      const json = await res.json();
+    if (yRes.ok) {
+      const json = await yRes.json();
       const quotes = json?.quoteResponse?.result;
       if (Array.isArray(quotes) && quotes.length > 0) {
         const data = quotes.map((q: Record<string, unknown>) => ({
@@ -32,11 +35,15 @@ export async function GET() {
         });
       }
     }
+  } catch (e) {
+    console.error("Yahoo Finance failed:", e);
+  }
 
-    // Fallback: FMP with demo key (limited to AAPL)
+  // Attempt 2: FMP demo (limited to AAPL but proves connectivity)
+  try {
     const fmpRes = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=demo`,
-      { cache: "no-store" }
+      `https://financialmodelingprep.com/api/v3/quote/AAPL?apikey=demo`,
+      { cache: "no-store", signal: AbortSignal.timeout(5000) }
     );
     if (fmpRes.ok) {
       const fmpData = await fmpRes.json();
@@ -46,10 +53,10 @@ export async function GET() {
         });
       }
     }
-
-    return NextResponse.json([], { status: 200 });
-  } catch (error) {
-    console.error("Stock API error:", error);
-    return NextResponse.json([], { status: 200 });
+  } catch (e) {
+    console.error("FMP failed:", e);
   }
+
+  // If all APIs fail, return empty — client will show fallback
+  return NextResponse.json([], { status: 200 });
 }
