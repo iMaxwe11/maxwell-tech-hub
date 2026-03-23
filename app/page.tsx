@@ -7,14 +7,25 @@ import { GrokStarfield } from "@/components/GrokStarfield";
 import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
 
+/* ════════════════════════════════════════════
+   NAVBAR — expanded with section anchors
+   ════════════════════════════════════════════ */
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const navLinks = [
+    { href: "#projects", label: "Projects" },
+    { href: "#experience", label: "Experience" },
+    { href: "/tools", label: "Tools" },
+    { href: "#contact", label: "Contact" },
+  ];
 
   return (
     <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
@@ -39,23 +50,42 @@ function Navbar() {
           </span>
         </Link>
         <div className="hidden md:flex items-center gap-1">
-          <Link href="/tools" className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/70 hover:text-white transition-colors font-mono">
-            Tools
-          </Link>
-          <Link href="/contact" className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/70 hover:text-white transition-colors font-mono">
-            Contact
-          </Link>
+          {navLinks.map((link) => (
+            <a key={link.href} href={link.href}
+              className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/70 hover:text-white transition-colors font-mono">
+              {link.label}
+            </a>
+          ))}
         </div>
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-white/70 hover:text-white p-2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {mobileOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
+          </svg>
+        </button>
       </div>
+      {mobileOpen && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          className="md:hidden bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 px-4 pb-4">
+          {navLinks.map((link) => (
+            <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
+              className="block py-3 text-sm font-medium tracking-wider uppercase text-white/70 hover:text-white transition-colors font-mono border-b border-white/5 last:border-0">
+              {link.label}
+            </a>
+          ))}
+        </motion.div>
+      )}
     </motion.nav>
   );
 }
 
-function AnimatedSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+/* ════════════════════════════════════════════
+   ANIMATED SECTION WRAPPER
+   ════════════════════════════════════════════ */
+function AnimatedSection({ children, className = "", delay = 0, id }: { children: React.ReactNode; className?: string; delay?: number; id?: string }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <motion.section ref={ref} initial={{ opacity: 0, y: 40 }}
+    <motion.section ref={ref} id={id} initial={{ opacity: 0, y: 40 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 1, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}>
@@ -64,6 +94,9 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
   );
 }
 
+/* ════════════════════════════════════════════
+   HERO
+   ════════════════════════════════════════════ */
 function HeroSection() {
   const [time, setTime] = useState("");
   const [rgbMode, setRgbMode] = useState<"off" | "sweep" | "pulse" | "pick">("off");
@@ -82,13 +115,9 @@ function HeroSection() {
   }, []);
 
   const getGradient = () => {
-    if (rgbMode === "pick") {
-      return `linear-gradient(135deg, ${customColor}, ${customColor}cc)`;
-    } else if (rgbMode === "sweep") {
-      return "linear-gradient(90deg, #ff0080 0%, #ff8c00 25%, #40e0d0 50%, #9370db 75%, #ff0080 100%)";
-    } else if (rgbMode === "pulse") {
-      return "linear-gradient(135deg, #ff0080, #40e0d0, #9370db)";
-    }
+    if (rgbMode === "pick") return `linear-gradient(135deg, ${customColor}, ${customColor}cc)`;
+    if (rgbMode === "sweep") return "linear-gradient(90deg, #ff0080 0%, #ff8c00 25%, #40e0d0 50%, #9370db 75%, #ff0080 100%)";
+    if (rgbMode === "pulse") return "linear-gradient(135deg, #ff0080, #40e0d0, #9370db)";
     return "linear-gradient(135deg, #06b6d4, #8b5cf6)";
   };
 
@@ -98,29 +127,21 @@ function HeroSection() {
     return "100% 100%";
   };
 
-  // Animation only when mode is active
   const getTextAnimation = () => {
-    if (rgbMode === "sweep") {
-      return { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] };
-    } else if (rgbMode === "pulse") {
-      return { backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] };
-    }
+    if (rgbMode === "sweep") return { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] };
+    if (rgbMode === "pulse") return { backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] };
     return {};
   };
 
   const getTextTransition = () => {
-    if (rgbMode === "sweep") {
-      return { duration: 3, repeat: Infinity, ease: "linear" };
-    } else if (rgbMode === "pulse") {
-      return { duration: 4, repeat: Infinity, ease: "easeInOut" };
-    }
+    if (rgbMode === "sweep") return { duration: 3, repeat: Infinity, ease: "linear" as const };
+    if (rgbMode === "pulse") return { duration: 4, repeat: Infinity, ease: "easeInOut" as const };
     return {};
   };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="mesh-gradient-hero" />
-      
       <motion.div style={{ opacity: heroOpacity, y: heroY }} className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 w-full">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.7 }} className="mb-8">
@@ -137,108 +158,77 @@ function HeroSection() {
         </motion.div>
 
         <div className="space-y-4">
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }} 
-            animate={{ 
-              opacity: 1, 
-              y: 0,
-              ...(rgbMode === "sweep" || rgbMode === "pulse" ? getTextAnimation() : {})
-            }}
-            transition={{ 
-              opacity: { duration: 1.1, delay: 0.5 },
-              y: { duration: 1.1, delay: 0.5 },
-              ...(rgbMode === "sweep" || rgbMode === "pulse" ? { backgroundPosition: getTextTransition() } : {})
-            }}
+          <motion.h1 initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0, ...(rgbMode === "sweep" || rgbMode === "pulse" ? getTextAnimation() : {}) }}
+            transition={{ opacity: { duration: 1.1, delay: 0.5 }, y: { duration: 1.1, delay: 0.5 },
+              ...(rgbMode === "sweep" || rgbMode === "pulse" ? { backgroundPosition: getTextTransition() } : {}) }}
             className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight w-fit"
-            style={{
-              backgroundImage: getGradient(),
-              backgroundSize: getBackgroundSize(),
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              display: "inline-block",
-              willChange: rgbMode === "sweep" || rgbMode === "pulse" ? "background-position" : "auto",
-            }}>
+            style={{ backgroundImage: getGradient(), backgroundSize: getBackgroundSize(),
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              display: "inline-block", willChange: rgbMode === "sweep" || rgbMode === "pulse" ? "background-position" : "auto" }}>
             Maxwell Nixon
           </motion.h1>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex items-center gap-2 flex-wrap">
-            <button 
-              onClick={() => setRgbMode(rgbMode === "sweep" ? "off" : "sweep")}
-              className={`px-3 py-1 text-[10px] font-bold tracking-wider uppercase border rounded-md transition-all ${
-                rgbMode === "sweep" 
-                  ? "bg-gradient-to-r from-red-500 to-blue-500 border-transparent text-white" 
-                  : "bg-white/5 hover:bg-white/10 border-white/20 hover:border-white/40 text-white/70 hover:text-white"
-              }`}>
-              SWEEP
-            </button>
-            <button 
-              onClick={() => setRgbMode(rgbMode === "pulse" ? "off" : "pulse")}
-              className={`px-3 py-1 text-[10px] font-bold tracking-wider uppercase border rounded-md transition-all ${
-                rgbMode === "pulse" 
-                  ? "bg-gradient-to-r from-purple-500 to-pink-500 border-transparent text-white" 
-                  : "bg-white/5 hover:bg-white/10 border-white/20 hover:border-white/40 text-white/70 hover:text-white"
-              }`}>
-              RGB
-            </button>
-            <div className="relative">
-              <input
-                type="color"
-                value={customColor}
-                onChange={(e) => {
-                  setCustomColor(e.target.value);
-                  setRgbMode("pick");
-                }}
-                className="absolute opacity-0 w-full h-full cursor-pointer"
-              />
-              <button 
+            transition={{ duration: 0.8, delay: 0.6 }} className="flex items-center gap-2 flex-wrap">
+            {(["sweep", "pulse", "pick"] as const).map((mode) => (
+              <button key={mode} onClick={() => setRgbMode(rgbMode === mode ? "off" : mode)}
                 className={`px-3 py-1 text-[10px] font-bold tracking-wider uppercase border rounded-md transition-all ${
-                  rgbMode === "pick" 
-                    ? "border-transparent text-white" 
+                  rgbMode === mode
+                    ? mode === "sweep" ? "bg-gradient-to-r from-red-500 to-blue-500 border-transparent text-white"
+                      : mode === "pulse" ? "bg-gradient-to-r from-purple-500 to-pink-500 border-transparent text-white"
+                      : "border-transparent text-white"
                     : "bg-white/5 hover:bg-white/10 border-white/20 hover:border-white/40 text-white/70 hover:text-white"
                 }`}
-                style={rgbMode === "pick" ? { background: customColor } : {}}>
-                PICK
+                style={rgbMode === "pick" && mode === "pick" ? { background: customColor } : {}}>
+                {mode === "pick" ? (
+                  <span className="relative">
+                    PICK
+                    <input type="color" value={customColor}
+                      onChange={(e) => { setCustomColor(e.target.value); setRgbMode("pick"); }}
+                      className="absolute inset-0 opacity-0 cursor-pointer" />
+                  </span>
+                ) : mode.toUpperCase()}
               </button>
-            </div>
+            ))}
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.1, delay: 0.65 }}
             className="font-bold text-[clamp(1.8rem,6vw,4.5rem)] leading-[0.95] tracking-tight text-white/60">
-            Engineer<span className="gradient-text"> · </span>Designer<span className="gradient-text"> · </span>Builder
+            IT Systems<span className="gradient-text"> · </span>Cloud<span className="gradient-text"> · </span>DevOps
           </motion.div>
         </div>
 
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.85 }}
           className="mt-8 max-w-xl text-white/70 text-base sm:text-lg leading-relaxed">
-          Full-stack architect building at the intersection of code, design, and intelligence systems. Crafting premium software, tools, and experiments.
+          Cloud-savvy IT technician building full-stack automation tools, managing infrastructure, and engineering premium software experiences. Passionate about reliability, privacy, and self-hosted development.
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.0 }} className="mt-10 flex flex-wrap gap-4">
-          <Link href="/tools" className="glow-btn glow-btn-filled">
-            <span>Explore Tools</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </Link>
-          <Link href="/contact" className="glow-btn">
+          <a href="#projects" className="glow-btn glow-btn-filled">
+            <span>View Projects</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/Maxwell_Nixon_Resume.pdf" target="_blank" rel="noopener noreferrer" className="glow-btn">
+            <span>Download Resume</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          </a>
+          <a href="#contact" className="glow-btn">
             <span>Get in Touch</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <path d="m22 6-10 7L2 6"/>
-            </svg>
-          </Link>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>
+          </a>
         </motion.div>
       </motion.div>
     </section>
   );
 }
 
+/* ════════════════════════════════════════════
+   LIVE DATA
+   ════════════════════════════════════════════ */
 function LiveDataSection() {
   return (
     <AnimatedSection className="relative py-24 sm:py-32 px-4 sm:px-6">
@@ -257,6 +247,9 @@ function LiveDataSection() {
   );
 }
 
+/* ════════════════════════════════════════════
+   ABOUT
+   ════════════════════════════════════════════ */
 function AboutSection() {
   return (
     <AnimatedSection className="relative py-24 sm:py-32 px-4 sm:px-6">
@@ -269,65 +262,136 @@ function AboutSection() {
         </div>
         <div className="space-y-6">
           <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl leading-tight text-white">
-            Building bridges between <span className="gradient-text">code, design,</span> and <span className="gradient-text-warm">curiosity.</span>
+            Building bridges between <span className="gradient-text">infrastructure, automation,</span> and <span className="gradient-text-warm">innovation.</span>
           </h2>
           <p className="text-white/70 text-base sm:text-lg leading-relaxed">
-            I'm a full-stack architect and product designer crafting premium software experiences. From intelligence middleware to dark-luxury interfaces — I build things that feel as good as they work.
+            I&apos;m an IT systems technician and DevOps enthusiast managing real-world infrastructure for businesses — from law firms to landscaping operations. I deploy Windows workstations, configure Active Directory, troubleshoot networking, and maintain servers. But I also build full-stack tools, data pipelines, and self-hosted AI experiments.
           </p>
           <p className="text-white/70 leading-relaxed">
-            When I'm not shipping code, you'll find me deep in sim racing setups, tinkering with smart home automation, or extracting custom audio for game mods.
+            When I&apos;m not shipping code or resolving support tickets, you&apos;ll find me deep in sim racing setups, tinkering with smart home automation, modding FiveM game servers, or tuning custom PC hardware for peak performance.
           </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            {["AWS", "Azure", "Docker", "Python", "FastAPI", "Kubernetes", "Active Directory", "GitHub Actions"].map((skill) => (
+              <span key={skill} className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-white/70 font-mono">
+                {skill}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </AnimatedSection>
   );
 }
 
+/* ════════════════════════════════════════════
+   PROJECTS — 6 real projects
+   ════════════════════════════════════════════ */
 function ProjectsSection() {
   const projects = [
     {
-      title: "Developer Tools",
-      description: "Full suite of utilities: JSON formatter, Base64 encoder, regex tester, and more.",
-      href: "/tools",
-      tags: ["Utilities", "Developer"],
-      gradient: "from-cyan-500 to-blue-500",
+      title: "Smart Data Pipeline",
+      description: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.",
+      tags: ["FastAPI", "Python", "Docker", "Streamlit", "CI/CD"],
+      gradient: "from-cyan-500 to-blue-600",
+      icon: "🔄",
+      github: "https://github.com/iMaxwe11/smart-data-pipeline",
+      metrics: "End-to-end ETL with real-time dashboard",
     },
     {
-      title: "Contact Hub",
-      description: "Get in touch via email, GitHub, or explore my socials.",
-      href: "/contact",
-      tags: ["Connect", "Social"],
+      title: "Developer Tools Hub",
+      description: "14 client-side developer utilities — JSON formatter, regex tester, hash generator, color palette, and more. Zero tracking, fully private, built with Next.js and Framer Motion.",
+      tags: ["Next.js", "TypeScript", "Tailwind", "Framer Motion"],
       gradient: "from-purple-500 to-pink-500",
+      icon: "🛠️",
+      link: "/tools",
+      metrics: "14 tools · 100% client-side",
+    },
+    {
+      title: "FiveM Game Server",
+      description: "Launched and managed a public FiveM multiplayer server with custom vehicles, physics mods, real-time logging, and automated mod loaders. Handled remote server management and multiplayer user systems.",
+      tags: ["Lua", "Server Admin", "Modding", "Multiplayer"],
+      gradient: "from-green-500 to-emerald-600",
+      icon: "🎮",
+      metrics: "Custom assets · Live multiplayer",
+    },
+    {
+      title: "Home Lab & AI Automation",
+      description: "Self-hosted containerized LLaMA and Mistral LLMs with GPU acceleration. Prompt tuning, offline inference, and scripting pipelines with a privacy-first mindset.",
+      tags: ["LLaMA", "Mistral", "Docker", "GPU", "Python"],
+      gradient: "from-orange-500 to-red-500",
+      icon: "🧠",
+      metrics: "Self-hosted LLMs · GPU accelerated",
+    },
+    {
+      title: "Media Server Stack",
+      description: "Optimized Plex-based home server with remote access, hardware transcoding, metadata scripting, and automated library management.",
+      tags: ["Plex", "Linux", "Networking", "Automation"],
+      gradient: "from-yellow-500 to-orange-500",
+      icon: "📺",
+      metrics: "Hardware transcoding · Remote access",
+    },
+    {
+      title: "IT Infrastructure @ PCS",
+      description: "Enterprise IT support for law firms and businesses across NJ, PA, and DE. Windows Server deployment, Active Directory, VLANs, PXE imaging, VPN, and ConnectWise ticketing.",
+      tags: ["Windows Server", "AD", "VLANs", "PXE", "ConnectWise"],
+      gradient: "from-blue-500 to-indigo-600",
+      icon: "🏢",
+      metrics: "Multi-site · Enterprise clients",
     },
   ];
 
   return (
-    <AnimatedSection className="relative py-24 sm:py-32 px-4 sm:px-6">
+    <AnimatedSection id="projects" className="relative py-24 sm:py-32 px-4 sm:px-6">
       <div className="max-w-[1200px] mx-auto">
         <div className="mb-16">
           <span className="terminal-prompt font-mono text-sm text-white/70">projects</span>
           <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">What I Build</h2>
+          <p className="mt-4 text-white/60 max-w-2xl">From data pipelines and dev tools to game servers and AI labs — real projects with real impact.</p>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
-          {projects.map((project) => (
-            <Link key={project.href} href={project.href}>
-              <motion.div whileHover={{ y: -4 }} className="glass-card p-8 h-full cursor-pointer group">
+          {projects.map((project, i) => (
+            <motion.div key={project.title} initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.6 }}
+              whileHover={{ y: -4 }}
+              className="glass-card p-8 h-full group relative overflow-hidden">
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${project.gradient} opacity-5 blur-2xl group-hover:opacity-10 transition-opacity`} />
+              <div className="relative">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${project.gradient} mb-6 flex items-center justify-center text-2xl`}>
-                  {project.href === "/tools" ? "🛠️" : "📧"}
+                  {project.icon}
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">
                   {project.title}
                 </h3>
-                <p className="text-white/60 leading-relaxed mb-4">{project.description}</p>
-                <div className="flex gap-2 flex-wrap">
+                <p className="text-white/60 leading-relaxed mb-4 text-sm">{project.description}</p>
+                {project.metrics && (
+                  <p className="text-xs font-mono text-cyan-400/70 mb-4">{project.metrics}</p>
+                )}
+                <div className="flex gap-2 flex-wrap mb-4">
                   {project.tags.map((tag) => (
-                    <span key={tag} className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/70 border border-white/10">
+                    <span key={tag} className="px-2.5 py-1 rounded-md bg-white/5 text-[0.65rem] text-white/60 border border-white/[0.06] font-mono">
                       {tag}
                     </span>
                   ))}
                 </div>
-              </motion.div>
-            </Link>
+                <div className="flex gap-3">
+                  {project.github && (
+                    <a href={project.github} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-mono text-white/50 hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                      GitHub
+                    </a>
+                  )}
+                  {project.link && (
+                    <Link href={project.link}
+                      className="text-xs font-mono text-white/50 hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                      Live Demo
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -335,14 +399,156 @@ function ProjectsSection() {
   );
 }
 
+/* ════════════════════════════════════════════
+   EXPERIENCE TIMELINE
+   ════════════════════════════════════════════ */
+function ExperienceSection() {
+  const experiences = [
+    {
+      title: "Client Services Technician",
+      company: "PCS",
+      location: "Cherry Hill, NJ",
+      period: "2023 – Present",
+      color: "var(--accent-cyan)",
+      bullets: [
+        "Deliver technical support for business clients including law firms and internal infrastructure environments.",
+        "Deploy and maintain Windows workstations, printers, networking equipment, and Active Directory policies.",
+        "Lead onsite visits and courtroom setups; resolve support tickets independently using ConnectWise.",
+        "Ensure uptime, troubleshoot across environments, and contribute to client tech planning.",
+      ],
+    },
+    {
+      title: "IT Systems Manager",
+      company: "AZ Lawn Care & Tree Service",
+      location: "NJ",
+      period: "2023 – Present",
+      color: "var(--accent-purple)",
+      bullets: [
+        "Own and maintain the company's IT infrastructure, including QuickBooks server, office workstations, and file sharing.",
+        "Configure secure local backups, VPN access, and remote user support tools.",
+        "Proactively identify bottlenecks and resolve day-to-day tech issues to ensure smooth operations.",
+      ],
+    },
+    {
+      title: "Help Desk / Field Technician",
+      company: "PCS",
+      location: "Cherry Hill, NJ",
+      period: "Early 2023",
+      color: "var(--accent-gold)",
+      bullets: [
+        "Onsite IT support for multiple clients across NJ, PA, DE, and the Shore region.",
+        "Daily onsite tech for RHD (Resources for Human Development) — incident response and proactive health checks.",
+        "Handled networking, device setups, credential lockouts, VPN, and software updates.",
+      ],
+    },
+    {
+      title: "Office Assistant / IT Admin",
+      company: "AZ Lawn Care",
+      location: "NJ",
+      period: "2018 – 2023",
+      color: "#64748b",
+      bullets: [
+        "Transitioned from labor support to technical admin, managing QuickBooks invoicing and customer database.",
+        "Enabled reliable digital operations during staffing gaps, building trust and operational knowledge.",
+      ],
+    },
+  ];
+
+  const certs = [
+    "Liongard Administrator",
+    "Introduction to Liongard",
+    "Intro to Managed Service Providers",
+    "Troubleshoot Customer Issues Faster",
+  ];
+
+  return (
+    <AnimatedSection id="experience" className="relative py-24 sm:py-32 px-4 sm:px-6">
+      <div className="max-w-[1200px] mx-auto">
+        <div className="mb-16 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+          <div>
+            <span className="terminal-prompt font-mono text-sm text-white/70">experience</span>
+            <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Where I&apos;ve Worked</h2>
+            <p className="mt-4 text-white/60 max-w-xl">From hands-on field tech to systems management — building expertise across IT infrastructure.</p>
+          </div>
+          <a href="/Maxwell_Nixon_Resume.pdf" target="_blank" rel="noopener noreferrer"
+            className="glow-btn text-sm shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <span>Download Full Resume</span>
+          </a>
+        </div>
+
+        <div className="relative">
+          <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-px bg-gradient-to-b from-cyan-400/30 via-purple-400/20 to-transparent" />
+          <div className="space-y-10">
+            {experiences.map((exp, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
+                transition={{ delay: i * 0.15, duration: 0.6 }}
+                className="relative pl-12 sm:pl-20">
+                <div className="absolute left-2.5 sm:left-6.5 top-1 w-3 h-3 rounded-full border-2"
+                  style={{ borderColor: exp.color, background: `${exp.color}33` }} />
+                <div className="glass-card p-6 sm:p-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">{exp.title}</h3>
+                      <p className="text-sm text-white/60">{exp.company} · {exp.location}</p>
+                    </div>
+                    <span className="text-xs font-mono px-3 py-1 rounded-md border border-white/10 text-white/50 whitespace-nowrap w-fit"
+                      style={{ borderColor: `${exp.color}30` }}>
+                      {exp.period}
+                    </span>
+                  </div>
+                  <ul className="space-y-2">
+                    {exp.bullets.map((bullet, j) => (
+                      <li key={j} className="text-sm text-white/60 leading-relaxed flex gap-2">
+                        <span className="text-white/20 mt-0.5 shrink-0">▸</span>
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }} transition={{ delay: 0.3 }}
+          className="mt-16 glass-card p-8">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <span className="text-xl">🛡️</span> Certifications
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {certs.map((cert) => (
+              <div key={cert} className="flex items-center gap-3 py-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60 shrink-0" />
+                <span className="text-sm text-white/70">{cert}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
+/* ════════════════════════════════════════════
+   TECH STACK
+   ════════════════════════════════════════════ */
 function StackSection() {
   const stack = [
     { name: "React & Next.js", icon: "⚛️" },
     { name: "TypeScript", icon: "📘" },
-    { name: "Node.js", icon: "🟢" },
-    { name: "Tailwind CSS", icon: "🎨" },
-    { name: "Framer Motion", icon: "✨" },
     { name: "Python", icon: "🐍" },
+    { name: "Docker", icon: "🐳" },
+    { name: "AWS / Azure", icon: "☁️" },
+    { name: "Tailwind CSS", icon: "🎨" },
+    { name: "FastAPI", icon: "⚡" },
+    { name: "GitHub Actions", icon: "🔄" },
+    { name: "Windows Server", icon: "🖥️" },
+    { name: "Active Directory", icon: "🔐" },
+    { name: "Bash / CLI", icon: "💻" },
+    { name: "Kubernetes", icon: "☸️" },
   ];
 
   return (
@@ -352,15 +558,15 @@ function StackSection() {
           <span className="terminal-prompt font-mono text-sm text-white/70">stack</span>
           <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Tech I Use</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {stack.map((tech, i) => (
             <motion.div key={tech.name} initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass-card p-6 text-center">
-              <div className="text-4xl mb-3">{tech.icon}</div>
-              <div className="text-sm text-white/80 font-medium">{tech.name}</div>
+              whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              transition={{ delay: i * 0.06 }}
+              whileHover={{ y: -4, scale: 1.05 }}
+              className="glass-card p-5 text-center">
+              <div className="text-3xl mb-2">{tech.icon}</div>
+              <div className="text-xs text-white/80 font-medium">{tech.name}</div>
             </motion.div>
           ))}
         </div>
@@ -369,23 +575,146 @@ function StackSection() {
   );
 }
 
+/* ════════════════════════════════════════════
+   CONTACT SECTION
+   ════════════════════════════════════════════ */
+function ContactSection() {
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = () => {
+    const subject = encodeURIComponent(`Portfolio Contact from ${formData.name}`);
+    const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\n${formData.message}`);
+    window.open(`mailto:mnixon112@outlook.com?subject=${subject}&body=${body}`, "_self");
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3000);
+  };
+
+  const socials = [
+    { name: "GitHub", href: "https://github.com/iMaxwe11", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> },
+    { name: "LinkedIn", href: "https://linkedin.com/in/maxwell-nixon-90351627a", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> },
+    { name: "Email", href: "mailto:mnixon112@outlook.com", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg> },
+  ];
+
+  return (
+    <AnimatedSection id="contact" className="relative py-24 sm:py-32 px-4 sm:px-6">
+      <div className="max-w-[1200px] mx-auto">
+        <div className="mb-16">
+          <span className="terminal-prompt font-mono text-sm text-white/70">contact</span>
+          <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Get In Touch</h2>
+          <p className="mt-4 text-white/60 max-w-2xl">Have a project in mind, a question, or just want to connect? Reach out.</p>
+        </div>
+
+        <div className="grid md:grid-cols-[1fr_1.2fr] gap-10">
+          <div className="space-y-8">
+            <div className="glass-card p-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>
+                </div>
+                <div>
+                  <p className="text-xs text-white/40 font-mono uppercase tracking-wider">Email</p>
+                  <a href="mailto:mnixon112@outlook.com" className="text-white/90 hover:text-cyan-400 transition-colors text-sm">mnixon112@outlook.com</a>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                </div>
+                <div>
+                  <p className="text-xs text-white/40 font-mono uppercase tracking-wider">Phone</p>
+                  <a href="tel:609-923-9437" className="text-white/90 hover:text-cyan-400 transition-colors text-sm">609-923-9437</a>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div>
+                  <p className="text-xs text-white/40 font-mono uppercase tracking-wider">Location</p>
+                  <p className="text-white/90 text-sm">Southampton, NJ</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              {socials.map((social) => (
+                <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer"
+                  className="glass-card p-4 text-white/50 hover:text-cyan-400 hover:border-cyan-400/30 transition-all flex items-center gap-2">
+                  {social.icon}
+                  <span className="text-xs font-mono hidden sm:inline">{social.name}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card p-8">
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-white/50 font-mono uppercase tracking-wider mb-2 block">Name</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="tool-input neon-input" placeholder="Your name" />
+              </div>
+              <div>
+                <label className="text-xs text-white/50 font-mono uppercase tracking-wider mb-2 block">Email</label>
+                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="tool-input neon-input" placeholder="your@email.com" />
+              </div>
+              <div>
+                <label className="text-xs text-white/50 font-mono uppercase tracking-wider mb-2 block">Message</label>
+                <textarea value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  className="tool-input neon-input min-h-[140px] resize-none" placeholder="What's on your mind?" />
+              </div>
+              <motion.button whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }}
+                onClick={handleSubmit}
+                disabled={!formData.name || !formData.email || !formData.message}
+                className="w-full py-3 rounded-xl font-mono text-sm font-bold uppercase tracking-wider transition-all
+                  bg-gradient-to-r from-cyan-500 to-purple-600 text-white
+                  disabled:opacity-30 disabled:cursor-not-allowed
+                  hover:shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+                {submitted ? "✓ Opening Email Client..." : "Send Message"}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
+/* ════════════════════════════════════════════
+   FOOTER
+   ════════════════════════════════════════════ */
 function Footer() {
   return (
     <footer className="relative py-16 px-4 sm:px-6 border-t border-white/5">
       <div className="max-w-[1200px] mx-auto">
-        <div className="text-center">
-          <p className="text-white/50 text-sm font-mono">
-            © {new Date().getFullYear()} Maxwell Nixon · Built with Next.js & Framer Motion
-          </p>
-          <p className="text-white/30 text-xs mt-2 font-mono">
-            Southampton, NJ · mnixon112@outlook.com
-          </p>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="text-center sm:text-left">
+            <p className="text-white/50 text-sm font-mono">
+              © {new Date().getFullYear()} Maxwell Nixon
+            </p>
+            <p className="text-white/30 text-xs mt-1 font-mono">
+              Built with Next.js, TypeScript & Framer Motion
+            </p>
+          </div>
+          <div className="flex gap-6">
+            <a href="https://github.com/iMaxwe11" target="_blank" rel="noopener noreferrer"
+              className="text-white/30 hover:text-white/70 transition-colors text-xs font-mono">GitHub</a>
+            <a href="https://linkedin.com/in/maxwell-nixon-90351627a" target="_blank" rel="noopener noreferrer"
+              className="text-white/30 hover:text-white/70 transition-colors text-xs font-mono">LinkedIn</a>
+            <a href="mailto:mnixon112@outlook.com"
+              className="text-white/30 hover:text-white/70 transition-colors text-xs font-mono">Email</a>
+          </div>
         </div>
       </div>
     </footer>
   );
 }
 
+/* ════════════════════════════════════════════
+   PAGE LAYOUT
+   ════════════════════════════════════════════ */
 export default function Home() {
   return (
     <>
@@ -401,7 +730,11 @@ export default function Home() {
         <div className="section-divider" />
         <ProjectsSection />
         <div className="section-divider" />
+        <ExperienceSection />
+        <div className="section-divider" />
         <StackSection />
+        <div className="section-divider" />
+        <ContactSection />
       </main>
       <Footer />
     </>
