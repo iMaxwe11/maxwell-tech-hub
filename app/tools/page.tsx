@@ -97,7 +97,7 @@ export default function ToolsPage() {
             <span className="text-sm font-[family-name:var(--font-mono)]"><span className="text-[var(--accent-cyan)]">MN</span><span className="text-[var(--text-muted)]"> / </span>tools</span>
           </Link>
           <div className="hidden sm:flex gap-4">
-            {[{ href: "/terminal", label: "Terminal" }, { href: "/security", label: "Security" }, { href: "/contact", label: "Contact" }].map((l) => (
+            {[{ href: "/", label: "Home" }, { href: "/contact", label: "Contact" }].map((l) => (
               <Link key={l.href} href={l.href} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors font-[family-name:var(--font-mono)] uppercase tracking-wider glow-underline">{l.label}</Link>
             ))}
           </div>
