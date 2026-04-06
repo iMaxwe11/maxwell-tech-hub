@@ -68,7 +68,7 @@ function Section({ id, title, desc, children, accent = "cyan", index = 0 }: any)
 /* ── Tool Count Badge ──────────────────── */
 function ToolCountBadge() {
   const [count, setCount] = useState(0); const ref = useRef(null); const inView = useInView(ref, { once: true });
-  useEffect(() => { if (!inView) return; let i = 0; const iv = setInterval(() => { i++; setCount(i); if (i >= 14) clearInterval(iv); }, 60); return () => clearInterval(iv); }, [inView]);
+  useEffect(() => { if (!inView) return; let i = 0; const iv = setInterval(() => { i++; setCount(i); if (i >= 22) clearInterval(iv); }, 60); return () => clearInterval(iv); }, [inView]);
   return (
     <motion.div ref={ref} initial={{ scale: 0.8, opacity: 0 }} animate={inView ? { scale: 1, opacity: 1 } : {}} transition={{ type: "spring", stiffness: 300 }}
       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-cyan)]/5 border border-[var(--accent-cyan)]/15">
@@ -78,7 +78,332 @@ function ToolCountBadge() {
   );
 }
 
-const NAV_IDS = ["palette","markdown","inspo","json","regex","timestamp","contrast","generator","base64","url","lorem","hash","wordcount","cssunit"];
+const NAV_IDS = ["palette","markdown","inspo","json","regex","timestamp","contrast","generator","base64","url","lorem","hash","wordcount","cssunit","qrcode","jwt","pomodoro","ipinfo","diff","baseconv","gradient","password"];
+
+/* ═══════════════ TOOL 15: QR Code Generator ═══════════════ */
+function QRCodeGenerator() {
+  const [text, setText] = useState("https://maxwellnixon.com");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas || !text) return;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    const size = 200;
+    canvas.width = size; canvas.height = size;
+    // Simple QR using a free API as image source
+    const img = new Image(); img.crossOrigin = "anonymous";
+    img.onload = () => { ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,size,size); ctx.drawImage(img, 0, 0, size, size); };
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&bgcolor=0a0a0a&color=06b6d4`;
+  }, [text]);
+  const download = () => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const a = document.createElement("a"); a.download = "qrcode.png";
+    a.href = canvas.toDataURL("image/png"); a.click();
+  };
+  return (
+    <Section id="qrcode" title="QR Code Generator" desc="Generate downloadable QR codes from any text or URL." accent="cyan" index={14}>
+      <input className="tool-input neon-input mb-4" value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter URL or text..." />
+      <div className="flex flex-col sm:flex-row items-center gap-6">
+        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <canvas ref={canvasRef} className="rounded-lg" style={{ width: 180, height: 180 }} />
+        </div>
+        <div className="space-y-3">
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={download}>Download PNG</motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(text)}>Copy Text</motion.button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 16: JWT Decoder ═══════════════ */
+function JWTDecoder() {
+  const [jwt, setJwt] = useState("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik1heHdlbGwgTml4b24iLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+  const decoded = useMemo(() => {
+    try {
+      const parts = jwt.split(".");
+      if (parts.length !== 3) return null;
+      const header = JSON.parse(atob(parts[0].replace(/-/g,"+").replace(/_/g,"/")));
+      const payload = JSON.parse(atob(parts[1].replace(/-/g,"+").replace(/_/g,"/")));
+      const expDate = payload.exp ? new Date(payload.exp * 1000) : null;
+      const isExpired = expDate ? expDate < new Date() : false;
+      return { header, payload, signature: parts[2], expDate, isExpired };
+    } catch { return null; }
+  }, [jwt]);
+  return (
+    <Section id="jwt" title="JWT Decoder" desc="Decode and inspect JSON Web Tokens." accent="purple" index={15}>
+      <textarea className="tool-input neon-input min-h-[80px] resize-none mb-4 text-xs break-all" value={jwt} onChange={(e) => setJwt(e.target.value)} placeholder="Paste a JWT token..." />
+      {decoded ? (
+        <div className="space-y-3">
+          {(["header", "payload"] as const).map((section) => (
+            <div key={section} className="rounded-lg bg-black/20 border border-white/[0.04] p-3 cursor-pointer group" onClick={() => navigator.clipboard.writeText(JSON.stringify(decoded[section], null, 2))}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-[family-name:var(--font-mono)] text-[var(--accent-purple)] uppercase tracking-wider">{section}</span>
+                <span className="text-[0.55rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity">copy</span>
+              </div>
+              <pre className="text-xs text-[var(--text-secondary)] font-[family-name:var(--font-mono)] overflow-x-auto">{JSON.stringify(decoded[section], null, 2)}</pre>
+            </div>
+          ))}
+          {decoded.expDate && (
+            <div className={`text-xs font-[family-name:var(--font-mono)] px-3 py-2 rounded-lg border ${decoded.isExpired ? "bg-red-400/5 border-red-400/20 text-red-400" : "bg-green-400/5 border-green-400/20 text-green-400"}`}>
+              {decoded.isExpired ? "⚠ Expired" : "✓ Valid"} — Expires: {decoded.expDate.toLocaleString()}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-xs text-red-400/60 font-[family-name:var(--font-mono)] p-3 rounded-lg bg-red-400/5 border border-red-400/10">Invalid JWT format. Expected 3 base64 segments separated by dots.</div>
+      )}
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 17: Pomodoro Timer ═══════════════ */
+function PomodoroTimer() {
+  const [mode, setMode] = useState<"work"|"break">("work");
+  const [seconds, setSeconds] = useState(25 * 60);
+  const [running, setRunning] = useState(false);
+  const [sessions, setSessions] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (running) {
+      intervalRef.current = setInterval(() => {
+        setSeconds(s => {
+          if (s <= 1) {
+            setRunning(false);
+            if (mode === "work") { setSessions(p => p + 1); setMode("break"); return 5 * 60; }
+            else { setMode("work"); return 25 * 60; }
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } else if (intervalRef.current) clearInterval(intervalRef.current);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [running, mode]);
+  const reset = () => { setRunning(false); setMode("work"); setSeconds(25*60); };
+  const mins = Math.floor(seconds/60); const secs = seconds%60;
+  const pct = mode === "work" ? ((25*60 - seconds) / (25*60)) * 100 : ((5*60 - seconds) / (5*60)) * 100;
+  return (
+    <Section id="pomodoro" title="Pomodoro Timer" desc="Focus timer with work/break cycles." accent="gold" index={16}>
+      <div className="flex flex-col items-center">
+        <div className="relative w-48 h-48 mb-6">
+          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+            <circle cx="50" cy="50" r="45" fill="none" stroke={mode==="work" ? "var(--accent-gold)" : "var(--accent-cyan)"} strokeWidth="4" strokeDasharray={`${2*Math.PI*45}`} strokeDashoffset={`${2*Math.PI*45*(1-pct/100)}`} strokeLinecap="round" className="transition-all duration-1000" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-4xl font-bold text-white font-[family-name:var(--font-mono)] tabular-nums">{String(mins).padStart(2,"0")}:{String(secs).padStart(2,"0")}</div>
+            <div className={`text-xs font-[family-name:var(--font-mono)] uppercase tracking-wider mt-1 ${mode==="work" ? "text-[var(--accent-gold)]" : "text-[var(--accent-cyan)]"}`}>{mode}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 mb-4">
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={() => setRunning(!running)}>{running ? "Pause" : "Start"}</motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={reset}>Reset</motion.button>
+        </div>
+        <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Sessions completed: <span className="text-[var(--accent-gold)]">{sessions}</span></div>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 18: IP Address Info ═══════════════ */
+function IPInfo() {
+  const [info, setInfo] = useState<any>(null); const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch("https://ipapi.co/json/").then(r => r.json()).then(data => { setInfo(data); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+  const fields = info ? [
+    ["IP", info.ip], ["City", info.city], ["Region", info.region], ["Country", info.country_name],
+    ["ISP", info.org], ["Timezone", info.timezone], ["Latitude", info.latitude], ["Longitude", info.longitude],
+  ].filter(([,v]) => v) : [];
+  return (
+    <Section id="ipinfo" title="IP Address Info" desc="Your public IP and geolocation details." accent="cyan" index={17}>
+      {loading ? (<div className="h-32 bg-white/5 rounded-lg animate-pulse" />) : info ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {fields.map(([label, val]) => (
+            <motion.div key={label} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] cursor-pointer group" onClick={() => navigator.clipboard.writeText(String(val))}>
+              <div className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider">{label}</div>
+              <div className="text-sm text-[var(--text-primary)] font-[family-name:var(--font-mono)] mt-1 break-all">{String(val)}</div>
+              <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">copy</div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (<div className="text-xs text-[var(--text-muted)]">Could not fetch IP info.</div>)}
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 19: Diff Checker ═══════════════ */
+function DiffChecker() {
+  const [textA, setTextA] = useState("Hello World\nThis is line two\nLine three here");
+  const [textB, setTextB] = useState("Hello World\nThis is line 2\nLine three here\nNew line four");
+  const diff = useMemo(() => {
+    const a = textA.split("\n"); const b = textB.split("\n");
+    const maxLen = Math.max(a.length, b.length);
+    const lines: Array<{ left: string; right: string; type: "same"|"changed"|"added"|"removed" }> = [];
+    for (let i = 0; i < maxLen; i++) {
+      const l = a[i] ?? ""; const r = b[i] ?? "";
+      if (i >= a.length) lines.push({ left: "", right: r, type: "added" });
+      else if (i >= b.length) lines.push({ left: l, right: "", type: "removed" });
+      else if (l === r) lines.push({ left: l, right: r, type: "same" });
+      else lines.push({ left: l, right: r, type: "changed" });
+    }
+    return lines;
+  }, [textA, textB]);
+  const colors = { same: "", changed: "bg-yellow-400/5 border-l-2 border-yellow-400/30", added: "bg-green-400/5 border-l-2 border-green-400/30", removed: "bg-red-400/5 border-l-2 border-red-400/30" };
+  return (
+    <Section id="diff" title="Diff Checker" desc="Compare two texts side by side." accent="purple" index={18}>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div><label className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider mb-1 block">Original</label><textarea className="tool-input neon-input min-h-[100px] resize-none text-xs" value={textA} onChange={e => setTextA(e.target.value)} /></div>
+        <div><label className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider mb-1 block">Modified</label><textarea className="tool-input neon-input min-h-[100px] resize-none text-xs" value={textB} onChange={e => setTextB(e.target.value)} /></div>
+      </div>
+      <div className="rounded-lg bg-black/20 border border-white/[0.04] overflow-hidden">
+        {diff.map((line, i) => (
+          <div key={i} className={`grid grid-cols-2 text-xs font-[family-name:var(--font-mono)] ${colors[line.type]}`}>
+            <div className={`px-3 py-1 border-r border-white/[0.04] ${line.type==="removed"?"text-red-400/80":line.type==="changed"?"text-yellow-400/80":"text-[var(--text-secondary)]"}`}>
+              <span className="text-[var(--text-muted)] mr-2 select-none">{i+1}</span>{line.left}
+            </div>
+            <div className={`px-3 py-1 ${line.type==="added"?"text-green-400/80":line.type==="changed"?"text-yellow-400/80":"text-[var(--text-secondary)]"}`}>
+              <span className="text-[var(--text-muted)] mr-2 select-none">{i+1}</span>{line.right}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 20: Number Base Converter ═══════════════ */
+function BaseConverter() {
+  const [value, setValue] = useState("255"); const [fromBase, setFromBase] = useState(10);
+  const conversions = useMemo(() => {
+    try {
+      const num = parseInt(value, fromBase);
+      if (isNaN(num)) return null;
+      return { Decimal: num.toString(10), Binary: num.toString(2), Octal: num.toString(8), Hex: num.toString(16).toUpperCase() };
+    } catch { return null; }
+  }, [value, fromBase]);
+  const bases = [{ label: "Dec", val: 10 }, { label: "Bin", val: 2 }, { label: "Oct", val: 8 }, { label: "Hex", val: 16 }];
+  return (
+    <Section id="baseconv" title="Number Base Converter" desc="Convert between decimal, binary, octal, and hex." accent="gold" index={19}>
+      <div className="flex items-center gap-3 flex-wrap mb-4">
+        <input className="tool-input neon-input flex-1 min-w-[120px]" value={value} onChange={e => setValue(e.target.value)} placeholder="Enter number..." />
+        <div className="flex gap-1">
+          {bases.map(b => (<motion.button key={b.val} whileTap={{ scale: 0.95 }} onClick={() => setFromBase(b.val)}
+            className={`px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-mono)] uppercase tracking-wider transition-all ${fromBase===b.val?"bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] border border-[var(--accent-gold)]/20":"bg-white/[0.02] text-[var(--text-muted)] border border-white/[0.04]"}`}>{b.label}</motion.button>))}
+        </div>
+      </div>
+      {conversions ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {Object.entries(conversions).map(([label, val]) => (
+            <motion.div key={label} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] text-center cursor-pointer group" onClick={() => navigator.clipboard.writeText(val)}>
+              <div className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider">{label}</div>
+              <div className="text-sm text-[var(--accent-gold)] font-[family-name:var(--font-mono)] mt-1 break-all">{val}</div>
+              <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">copy</div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (<div className="text-xs text-red-400/60 font-[family-name:var(--font-mono)] p-3 rounded-lg bg-red-400/5 border border-red-400/10">Invalid number for selected base.</div>)}
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 21: CSS Gradient Generator ═══════════════ */
+function GradientGenerator() {
+  const [c1, setC1] = useState("#06b6d4"); const [c2, setC2] = useState("#8b5cf6");
+  const [angle, setAngle] = useState(135); const [type, setType] = useState<"linear"|"radial">("linear");
+  const gradient = type === "linear" ? `linear-gradient(${angle}deg, ${c1}, ${c2})` : `radial-gradient(circle, ${c1}, ${c2})`;
+  const css = `background: ${gradient};`;
+  return (
+    <Section id="gradient" title="Gradient Generator" desc="Create and copy beautiful CSS gradients." accent="cyan" index={20}>
+      <div className="rounded-xl overflow-hidden mb-4 border border-white/[0.06]" style={{ background: gradient, height: 140 }} />
+      <div className="flex items-center gap-3 flex-wrap mb-4">
+        <div className="flex items-center gap-2">
+          <input type="color" value={c1} onChange={e => setC1(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+          <input className="tool-input neon-input w-24 text-center text-xs" value={c1} onChange={e => setC1(e.target.value)} />
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="color" value={c2} onChange={e => setC2(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+          <input className="tool-input neon-input w-24 text-center text-xs" value={c2} onChange={e => setC2(e.target.value)} />
+        </div>
+        {type === "linear" && (<input type="range" min={0} max={360} value={angle} onChange={e => setAngle(+e.target.value)} className="flex-1 min-w-[80px] h-1 appearance-none bg-white/10 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400" />)}
+        {type === "linear" && <span className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] w-10">{angle}°</span>}
+        {(["linear","radial"] as const).map(t => (<motion.button key={t} whileTap={{ scale: 0.95 }} onClick={() => setType(t)}
+          className={`px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-mono)] uppercase transition-all ${type===t?"bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/20":"bg-white/[0.02] text-[var(--text-muted)] border border-white/[0.04]"}`}>{t}</motion.button>))}
+      </div>
+      <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3 flex items-center justify-between group cursor-pointer" onClick={() => navigator.clipboard.writeText(css)}>
+        <code className="text-xs text-[var(--text-secondary)] font-[family-name:var(--font-mono)]">{css}</code>
+        <span className="text-[0.55rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity">copy</span>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 22: Password Strength Tester ═══════════════ */
+function PasswordTester() {
+  const [pw, setPw] = useState("");
+  const analysis = useMemo(() => {
+    const checks = [
+      { label: "8+ characters", pass: pw.length >= 8 },
+      { label: "Uppercase letter", pass: /[A-Z]/.test(pw) },
+      { label: "Lowercase letter", pass: /[a-z]/.test(pw) },
+      { label: "Number", pass: /\d/.test(pw) },
+      { label: "Special character", pass: /[^A-Za-z0-9]/.test(pw) },
+      { label: "12+ characters", pass: pw.length >= 12 },
+      { label: "No common patterns", pass: !/^(password|123456|qwerty|abc123)/i.test(pw) && pw.length > 0 },
+    ];
+    const score = checks.filter(c => c.pass).length;
+    const strength = pw.length === 0 ? "" : score <= 2 ? "Weak" : score <= 4 ? "Fair" : score <= 5 ? "Strong" : "Very Strong";
+    const color = pw.length === 0 ? "white/20" : score <= 2 ? "red-400" : score <= 4 ? "yellow-400" : score <= 5 ? "green-400" : "cyan-400";
+    // Entropy estimate
+    let pool = 0;
+    if (/[a-z]/.test(pw)) pool += 26;
+    if (/[A-Z]/.test(pw)) pool += 26;
+    if (/\d/.test(pw)) pool += 10;
+    if (/[^A-Za-z0-9]/.test(pw)) pool += 32;
+    const entropy = pw.length > 0 ? Math.round(pw.length * Math.log2(pool || 1)) : 0;
+    return { checks, score, strength, color, entropy };
+  }, [pw]);
+  return (
+    <Section id="password" title="Password Strength" desc="Test password strength and get security tips." accent="gold" index={21}>
+      <input type="text" className="tool-input neon-input mb-4" value={pw} onChange={e => setPw(e.target.value)} placeholder="Enter a password to test..." autoComplete="off" />
+      {pw.length > 0 && (
+        <>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${(analysis.score / 7) * 100}%` }} className={`h-full rounded-full bg-${analysis.color}`} />
+            </div>
+            <span className={`text-sm font-bold font-[family-name:var(--font-mono)] text-${analysis.color}`}>{analysis.strength}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            <div className="rounded-lg p-2 bg-black/20 border border-white/[0.04] text-center">
+              <div className="text-lg font-bold text-[var(--accent-gold)] font-[family-name:var(--font-heading)]">{analysis.entropy}</div>
+              <div className="text-[0.55rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Entropy bits</div>
+            </div>
+            <div className="rounded-lg p-2 bg-black/20 border border-white/[0.04] text-center">
+              <div className="text-lg font-bold text-[var(--accent-gold)] font-[family-name:var(--font-heading)]">{pw.length}</div>
+              <div className="text-[0.55rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Length</div>
+            </div>
+            <div className="rounded-lg p-2 bg-black/20 border border-white/[0.04] text-center">
+              <div className="text-lg font-bold text-[var(--accent-gold)] font-[family-name:var(--font-heading)]">{analysis.score}/7</div>
+              <div className="text-[0.55rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Score</div>
+            </div>
+            <div className="rounded-lg p-2 bg-black/20 border border-white/[0.04] text-center">
+              <div className="text-lg font-bold text-[var(--accent-gold)] font-[family-name:var(--font-heading)]">{new Set(pw).size}</div>
+              <div className="text-[0.55rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Unique chars</div>
+            </div>
+          </div>
+          <div className="space-y-1">
+            {analysis.checks.map(c => (
+              <div key={c.label} className="flex items-center gap-2 text-xs font-[family-name:var(--font-mono)]">
+                <span className={c.pass ? "text-green-400" : "text-white/20"}>{c.pass ? "✓" : "○"}</span>
+                <span className={c.pass ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}>{c.label}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Section>
+  );
+}
 
 /* ═══════════════════════════════════════════
    PAGE LAYOUT
@@ -97,7 +422,7 @@ export default function ToolsPage() {
             <span className="text-sm font-[family-name:var(--font-mono)]"><span className="text-[var(--accent-cyan)]">MN</span><span className="text-[var(--text-muted)]"> / </span>tools</span>
           </Link>
           <div className="hidden sm:flex gap-4">
-            {[{ href: "/", label: "Home" }, { href: "/contact", label: "Contact" }].map((l) => (
+            {[{ href: "/", label: "Home" }, { href: "/play", label: "Arcade" }, { href: "/contact", label: "Contact" }].map((l) => (
               <Link key={l.href} href={l.href} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors font-[family-name:var(--font-mono)] uppercase tracking-wider glow-underline">{l.label}</Link>
             ))}
           </div>
@@ -116,7 +441,7 @@ export default function ToolsPage() {
                   <span className="text-shimmer">Developer Tools</span>
                 </motion.h1>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-[var(--text-secondary)] max-w-xl text-sm sm:text-base">
-                  14 client-side utilities for encoding, formatting, testing, and generating — zero tracking.
+                  22 client-side utilities for encoding, formatting, testing, and generating — zero tracking.
                 </motion.p>
               </div>
               <ToolCountBadge />
@@ -132,6 +457,7 @@ export default function ToolsPage() {
 
         <Palette /><MarkdownPreview /><Inspiration /><JSONFormatter /><RegexTester /><TimestampConverter /><ContrastChecker />
         <GeneratorKit /><Base64Tool /><URLTool /><LoremIpsum /><HashGenerator /><WordCounter /><CSSUnitConverter />
+        <QRCodeGenerator /><JWTDecoder /><PomodoroTimer /><IPInfo /><DiffChecker /><BaseConverter /><GradientGenerator /><PasswordTester />
 
         <AnimIn delay={0.2}>
           <div className="text-center pt-8 pb-4">
