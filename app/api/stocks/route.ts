@@ -2,121 +2,94 @@ import { NextResponse } from "next/server";
 
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META"];
 
-// Cache to avoid hammering APIs
-let cache: { data: any[]; ts: number } = { data: [], ts: 0 };
-const CACHE_MS = 120_000; // 2 min
-
-export async function GET() {
-  // Serve from cache if fresh
-  if (cache.data.length > 0 && Date.now() - cache.ts < CACHE_MS) {
-    return NextResponse.json(cache.data, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
-    });
-  }
-
-  // Strategy 1: Yahoo Finance v8
+async function fetchYahooChart(symbol: string): Promise<any | null> {
   try {
-    const joined = SYMBOLS.join(",");
-    const yRes = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${joined}`,
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`,
       {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
           Accept: "application/json",
-          "Accept-Language": "en-US,en;q=0.9",
         },
         cache: "no-store",
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
       }
     );
-    if (yRes.ok) {
-      const json = await yRes.json();
-      const quotes = json?.quoteResponse?.result;
-      if (Array.isArray(quotes) && quotes.length > 0) {
-        const data = quotes.map((q: any) => ({
-          symbol: q.symbol,
-          name: q.shortName || q.longName || q.symbol,
-          price: q.regularMarketPrice || 0,
-          change: q.regularMarketChange || 0,
-          changesPercentage: q.regularMarketChangePercent || 0,
-          dayHigh: q.regularMarketDayHigh || 0,
-          dayLow: q.regularMarketDayLow || 0,
-          volume: q.regularMarketVolume || 0,
-          marketCap: q.marketCap || 0,
-          previousClose: q.regularMarketPreviousClose || 0,
-        }));
-        if (data.some((d: any) => d.price > 0)) {
-          cache = { data, ts: Date.now() };
-          return NextResponse.json(data, {
-            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
-          });
-        }
-      }
-    }
-  } catch (e) {
-    console.error("Yahoo Finance failed:", e);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const result = json?.chart?.result?.[0];
+    if (!result) return null;
+
+    const meta = result.meta;
+    const closes = result.indicators?.quote?.[0]?.close;
+    const price = meta.regularMarketPrice ?? 0;
+    const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? 0;
+    const change = prevClose > 0 ? price - prevClose : 0;
+    const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+
+    // Build sparkline from last 5 days of close prices
+    const sparkline = closes
+      ? closes.filter((c: number | null) => c !== null).slice(-5)
+      : [];
+
+    return {
+      symbol: meta.symbol || symbol,
+      name: meta.shortName || meta.longName || symbol,
+      price,
+      change: +change.toFixed(2),
+      changesPercentage: +changePercent.toFixed(2),
+      dayHigh: meta.regularMarketDayHigh ?? 0,
+      dayLow: meta.regularMarketDayLow ?? 0,
+      previousClose: prevClose,
+      sparkline,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// In-memory cache
+let cache: { data: any[]; ts: number } = { data: [], ts: 0 };
+const CACHE_MS = 90_000; // 90 seconds
+
+export async function GET() {
+  // Serve cache if fresh
+  if (cache.data.length > 0 && Date.now() - cache.ts < CACHE_MS) {
+    return NextResponse.json(cache.data, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=180",
+        "X-Cache": "HIT",
+      },
+    });
   }
 
-  // Strategy 2: Finnhub (if API key provided)
-  const finnhubKey = process.env.FINNHUB_API_KEY;
-  if (finnhubKey) {
-    try {
-      const results = await Promise.allSettled(
-        SYMBOLS.map((s) =>
-          fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${finnhubKey}`, {
-            signal: AbortSignal.timeout(5000),
-          }).then((r) => r.json().then((d) => ({ symbol: s, ...d })))
-        )
-      );
-      const data = results
-        .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled" && r.value.c > 0)
-        .map((r) => ({
-          symbol: r.value.symbol,
-          name: r.value.symbol,
-          price: r.value.c,
-          change: r.value.d || 0,
-          changesPercentage: r.value.dp || 0,
-          dayHigh: r.value.h || 0,
-          dayLow: r.value.l || 0,
-          previousClose: r.value.pc || 0,
-          volume: 0,
-          marketCap: 0,
-        }));
-      if (data.length > 0) {
-        cache = { data, ts: Date.now() };
-        return NextResponse.json(data, {
-          headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
-        });
-      }
-    } catch (e) {
-      console.error("Finnhub failed:", e);
-    }
+  // Fetch all symbols in parallel via chart endpoint
+  const results = await Promise.allSettled(SYMBOLS.map(fetchYahooChart));
+  const data = results
+    .filter(
+      (r): r is PromiseFulfilledResult<any> =>
+        r.status === "fulfilled" && r.value !== null && r.value.price > 0
+    )
+    .map((r) => r.value);
+
+  if (data.length > 0) {
+    cache = { data, ts: Date.now() };
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=180",
+        "X-Cache": "MISS",
+      },
+    });
   }
 
-  // Strategy 3: FMP demo
-  try {
-    const fmpRes = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/AAPL?apikey=demo`,
-      { cache: "no-store", signal: AbortSignal.timeout(5000) }
-    );
-    if (fmpRes.ok) {
-      const fmpData = await fmpRes.json();
-      if (Array.isArray(fmpData) && fmpData.length > 0) {
-        cache = { data: fmpData, ts: Date.now() };
-        return NextResponse.json(fmpData, {
-          headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
-        });
-      }
-    }
-  } catch (e) {
-    console.error("FMP failed:", e);
-  }
-
-  // Return stale cache if available
+  // Return stale cache if current fetch failed
   if (cache.data.length > 0) {
     return NextResponse.json(cache.data, {
-      headers: { "X-Data-Stale": "true", "Cache-Control": "public, s-maxage=30" },
+      headers: {
+        "Cache-Control": "public, s-maxage=30",
+        "X-Cache": "STALE",
+      },
     });
   }
 
