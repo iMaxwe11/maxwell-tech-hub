@@ -57,14 +57,53 @@ function Sec({ children, className = "", delay = 0, id }: { children: React.Reac
   return <motion.section ref={ref} id={id} initial={{ opacity: 0, y: 40 }} animate={v ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9, delay, ease: [0.25, 0.1, 0.25, 1] }} className={className}>{children}</motion.section>;
 }
 
-/* ═══ PROJECT VISUAL CARD ═══ */
-function ProjectVisual({ gradient, icon, pattern }: { gradient: string; icon: string; pattern: string }) {
+/* ═══ PROJECT VISUAL — Live Demo Preview ═══ */
+function ProjectVisual({ gradient, icon, pattern, liveUrl, title }: { gradient: string; icon: string; pattern: string; liveUrl?: string; title: string }) {
+  const [showDemo, setShowDemo] = useState(false);
   return (
-    <div className={`relative w-full h-40 rounded-xl overflow-hidden bg-gradient-to-br ${gradient} mb-5 group-hover:scale-[1.02] transition-transform duration-500`}>
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: pattern, backgroundSize: "30px 30px" }} />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      <div className="absolute bottom-3 left-4 text-3xl drop-shadow-lg">{icon}</div>
-      <div className="absolute top-3 right-3 text-[10px] font-mono text-white/60 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">Preview</div>
+    <div className="relative mb-5">
+      {/* Browser chrome mockup */}
+      <div className={`relative w-full rounded-xl overflow-hidden ${showDemo && liveUrl ? "" : `bg-gradient-to-br ${gradient}`}`}
+        style={{ height: showDemo && liveUrl ? 280 : 160 }}>
+        {/* Browser top bar */}
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-3 py-2 bg-black/60 backdrop-blur-sm border-b border-white/5">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+          </div>
+          <div className="flex-1 text-center">
+            <span className="text-[9px] font-mono text-white/30 bg-white/5 px-3 py-0.5 rounded-full">
+              {liveUrl ? liveUrl.replace("https://", "") : `${title.toLowerCase().replace(/\s+/g, "-")}.dev`}
+            </span>
+          </div>
+          {liveUrl && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDemo(!showDemo); }}
+              className={`text-[9px] font-mono px-2 py-0.5 rounded-full border transition-all ${
+                showDemo ? "bg-cyan-400/10 text-cyan-400 border-cyan-400/30" : "bg-white/5 text-white/40 border-white/10 hover:border-white/20"
+              }`}>
+              {showDemo ? "Close" : "Live Demo"}
+            </button>
+          )}
+        </div>
+
+        {showDemo && liveUrl ? (
+          <iframe src={liveUrl} className="w-full h-full border-none pt-8" title={`${title} Demo`} loading="lazy" sandbox="allow-scripts allow-same-origin" />
+        ) : (
+          <>
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: pattern, backgroundSize: "30px 30px" }} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-3 left-4 text-3xl drop-shadow-lg">{icon}</div>
+            {liveUrl && (
+              <div className="absolute top-10 right-3 text-[9px] font-mono text-white/80 bg-green-500/20 border border-green-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Live
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -175,10 +214,13 @@ function AboutSection() {
 function ProjectsSection() {
   const projects = [
     { title: "Smart Data Pipeline", desc: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.", tags: ["FastAPI","Python","Docker","Streamlit","CI/CD"], gradient: "from-cyan-500 to-blue-600", icon: "🔄", github: "https://github.com/iMaxwe11/smart-data-pipeline", metrics: "End-to-end ETL · Docker Compose · CI/CD pipeline", pattern: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)" },
-    { title: "Developer Tools Hub", desc: "22 client-side developer utilities — JSON formatter, regex tester, hash generator, color palette, contrast checker, diff checker, JWT decoder, and more. Zero tracking, fully private.", tags: ["Next.js","TypeScript","Tailwind","Framer Motion"], gradient: "from-purple-500 to-pink-500", icon: "🛠️", link: "/tools", metrics: "22 tools · 100% client-side · Zero tracking", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
-    { title: "FiveM Game Server", desc: "Launched and managed a public FiveM multiplayer server with custom vehicles, physics mods, real-time logging, and automated mod loaders. Managed remote servers and multiplayer user systems.", tags: ["Lua","Server Admin","Modding","Multiplayer"], gradient: "from-green-500 to-emerald-600", icon: "🎮", github: "https://github.com/iMaxwe11", metrics: "Custom assets · Live multiplayer · Automated mod management", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
+    { title: "Developer Tools Hub", desc: "27 client-side developer utilities — JSON formatter, regex tester, hash generator, magic 8-ball, color guessing game, and more. Zero tracking, fully private.", tags: ["Next.js","TypeScript","Tailwind","Framer Motion"], gradient: "from-purple-500 to-pink-500", icon: "🛠️", link: "/tools", liveUrl: "https://maxwellnixon.com/tools", metrics: "27 tools · 100% client-side · Zero tracking", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
+    { title: "Space & Launch Tracker", desc: "Real-time space dashboard with ISS tracking, NASA imagery, full launch schedule from all providers, Mars rover photos, asteroid monitoring, and solar weather.", tags: ["Next.js","NASA API","Real-time","Space Devs API"], gradient: "from-indigo-500 to-purple-600", icon: "🚀", link: "/space", liveUrl: "https://maxwellnixon.com/space", metrics: "Live launches · ISS tracking · Mars photos · NEO monitoring", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
+    { title: "News Feed Hub", desc: "Auto-curated news from tech, world, and gaming sources via RSS feeds. Hacker News, BBC, The Verge, Kotaku, and more — refreshes every 15 minutes with zero manual work.", tags: ["RSS","Server-side","Auto-refresh","Next.js API"], gradient: "from-emerald-500 to-teal-600", icon: "📰", link: "/news", liveUrl: "https://maxwellnixon.com/news", metrics: "3 categories · 9 sources · Auto-updates every 15 min", pattern: "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)" },
+    { title: "Weather Dashboard", desc: "Full weather dashboard with live radar, hourly/daily forecasts, wind compass, sun arc visualization, air quality, and precipitation tracking. All from free APIs.", tags: ["Open-Meteo","Windy","Real-time","Canvas"], gradient: "from-sky-500 to-blue-600", icon: "🌦️", link: "/weather", liveUrl: "https://maxwellnixon.com/weather", metrics: "Live radar · 7-day forecast · AQI · Wind compass", pattern: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)" },
+    { title: "Neon Arcade", desc: "5 browser-based games — Snake, Pong vs AI, Memory Matrix, Reaction Timer, and Type Racer. Canvas rendering, retro CRT effects, and an animated arcade cabinet hub.", tags: ["Canvas","Game Dev","CSS Art","Framer Motion"], gradient: "from-fuchsia-500 to-pink-600", icon: "🕹️", link: "/play", liveUrl: "https://maxwellnixon.com/play", metrics: "5 games · Zero installs · Retro arcade experience", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
+    { title: "FiveM Game Server", desc: "Launched and managed a public FiveM multiplayer server with custom vehicles, physics mods, real-time logging, and automated mod loaders.", tags: ["Lua","Server Admin","Modding","Multiplayer"], gradient: "from-green-500 to-emerald-600", icon: "🎮", github: "https://github.com/iMaxwe11", metrics: "Custom assets · Live multiplayer · Automated mod management", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
     { title: "Home Lab & AI Automation", desc: "Self-hosted containerized LLaMA and Mistral LLMs with GPU acceleration. Prompt tuning, offline inference, and scripting pipelines with a privacy-first mindset.", tags: ["LLaMA","Mistral","Docker","GPU","Python"], gradient: "from-orange-500 to-red-500", icon: "🧠", github: "https://github.com/iMaxwe11", metrics: "Self-hosted LLMs · GPU accelerated · Privacy-first", pattern: "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)" },
-    { title: "Media Server Stack", desc: "Optimized Plex-based home server with remote access, hardware transcoding, metadata scripting, and automated library management across devices.", tags: ["Plex","Linux","Networking","Automation"], gradient: "from-yellow-500 to-orange-500", icon: "📺", github: "https://github.com/iMaxwe11", metrics: "Hardware transcoding · Remote access · Multi-device streaming", pattern: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)" },
     { title: "IT Infrastructure @ PCS", desc: "Enterprise IT support for law firms and businesses across NJ, PA, and DE. Windows Server deployment, Active Directory, VLANs, PXE imaging, VPN, and ConnectWise ticketing.", tags: ["Windows Server","AD","VLANs","PXE","ConnectWise"], gradient: "from-blue-500 to-indigo-600", icon: "🏢", metrics: "Multi-site enterprise · 50+ endpoints managed · 99.9% uptime target", pattern: "linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)" },
   ];
   return (
@@ -189,10 +231,10 @@ function ProjectsSection() {
           <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">What I Build</h2>
           <p className="mt-4 text-white/60 max-w-2xl">From data pipelines and dev tools to game servers and AI labs — real projects with real impact.</p>
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((p, i) => (
-            <motion.div key={p.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.6 }} whileHover={{ y: -6 }} className="glass-card p-6 h-full group relative overflow-hidden cursor-default">
-              <ProjectVisual gradient={p.gradient} icon={p.icon} pattern={p.pattern} />
+            <motion.div key={p.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06, duration: 0.6 }} whileHover={{ y: -6 }} className="glass-card p-6 h-full group relative overflow-hidden cursor-default">
+              <ProjectVisual gradient={p.gradient} icon={p.icon} pattern={p.pattern} liveUrl={(p as any).liveUrl} title={p.title} />
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{p.title}</h3>
               <p className="text-white/55 leading-relaxed mb-3 text-sm">{p.desc}</p>
               <p className="text-[11px] font-mono text-cyan-400/70 mb-4 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>{p.metrics}</p>

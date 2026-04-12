@@ -69,7 +69,7 @@ function Section({ id, title, desc, children, accent = "cyan", index = 0 }: any)
 /* ── Tool Count Badge ──────────────────── */
 function ToolCountBadge() {
   const [count, setCount] = useState(0); const ref = useRef(null); const inView = useInView(ref, { once: true });
-  useEffect(() => { if (!inView) return; let i = 0; const iv = setInterval(() => { i++; setCount(i); if (i >= 22) clearInterval(iv); }, 60); return () => clearInterval(iv); }, [inView]);
+  useEffect(() => { if (!inView) return; let i = 0; const iv = setInterval(() => { i++; setCount(i); if (i >= 27) clearInterval(iv); }, 60); return () => clearInterval(iv); }, [inView]);
   return (
     <motion.div ref={ref} initial={{ scale: 0.8, opacity: 0 }} animate={inView ? { scale: 1, opacity: 1 } : {}} transition={{ type: "spring", stiffness: 300 }}
       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-cyan)]/5 border border-[var(--accent-cyan)]/15">
@@ -79,7 +79,7 @@ function ToolCountBadge() {
   );
 }
 
-const NAV_IDS = ["palette","markdown","inspo","json","regex","timestamp","contrast","generator","base64","url","lorem","hash","wordcount","cssunit","qrcode","jwt","pomodoro","ipinfo","diff","baseconv","gradient","password"];
+const NAV_IDS = ["palette","markdown","inspo","json","regex","timestamp","contrast","generator","base64","url","lorem","hash","wordcount","cssunit","qrcode","jwt","pomodoro","ipinfo","diff","baseconv","gradient","password","eightball","coinflip","dice","ascii","colorgame"];
 
 /* ═══════════════ TOOL 15: QR Code Generator ═══════════════ */
 function QRCodeGenerator() {
@@ -432,6 +432,11 @@ const TOOL_META: Record<string, { cat: string; keywords: string }> = {
   baseconv: { cat: "Convert", keywords: "base convert binary hex octal decimal" },
   gradient: { cat: "Design", keywords: "gradient css color generate linear" },
   password: { cat: "Encode", keywords: "password strength test secure checker" },
+  eightball: { cat: "Fun", keywords: "magic 8 ball random answer shake" },
+  coinflip: { cat: "Fun", keywords: "coin flip heads tails 3d animation" },
+  dice: { cat: "Fun", keywords: "dice roller d6 roll random numbers" },
+  ascii: { cat: "Fun", keywords: "ascii art text convert block letters" },
+  colorgame: { cat: "Fun", keywords: "color game matching guess puzzle" },
 };
 const CATEGORIES = ["All", "Code", "Encode", "Design", "Text", "Convert", "Fun"];
 const CAT_COLORS: Record<string, string> = { All: "#06b6d4", Code: "#a855f7", Encode: "#f59e0b", Design: "#ec4899", Text: "#10b981", Convert: "#3b82f6", Fun: "#ef4444" };
@@ -521,7 +526,8 @@ export default function ToolsPage() {
     wordcount: <WordCounter key="wordcount" />, cssunit: <CSSUnitConverter key="cssunit" />, qrcode: <QRCodeGenerator key="qrcode" />,
     jwt: <JWTDecoder key="jwt" />, pomodoro: <PomodoroTimer key="pomodoro" />, ipinfo: <IPInfo key="ipinfo" />,
     diff: <DiffChecker key="diff" />, baseconv: <BaseConverter key="baseconv" />, gradient: <GradientGenerator key="gradient" />,
-    password: <PasswordTester key="password" />,
+    password: <PasswordTester key="password" />, eightball: <Magic8Ball key="eightball" />, coinflip: <CoinFlip key="coinflip" />,
+    dice: <DiceRoller key="dice" />, ascii: <ASCIIArtGenerator key="ascii" />, colorgame: <ColorGuessingGame key="colorgame" />,
   };
 
   return (
@@ -544,7 +550,7 @@ export default function ToolsPage() {
                   <span className={hackerMode ? "text-green-400" : "text-shimmer"}>{hackerMode ? "> Developer_Tools" : "Developer Tools"}</span>
                 </motion.h1>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-[var(--text-secondary)] max-w-xl text-sm sm:text-base">
-                  {filteredIds.length === 22 ? "22 client-side utilities" : `Showing ${filteredIds.length} of 22 tools`} for encoding, formatting, testing, and generating — zero tracking.
+                  {filteredIds.length === 27 ? "27 client-side utilities" : `Showing ${filteredIds.length} of 27 tools`} for encoding, formatting, testing, and generating — zero tracking.
                 </motion.p>
               </div>
               <div className="flex items-center gap-3">
@@ -990,6 +996,350 @@ function CSSUnitConverter() {
             <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">click to copy</div>
           </motion.div>
         ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 23: Magic 8-Ball ═══════════════ */
+function Magic8Ball() {
+  const responses = [
+    "It is certain", "It is decidedly so", "Without a doubt", "Yes definitely", "You may rely on it",
+    "As I see it yes", "Most likely", "Outlook good", "Yes", "Signs point to yes",
+    "Reply hazy try again", "Ask again later", "Better not tell you now", "Cannot predict now", "Concentrate and ask again",
+    "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful"
+  ];
+  const [result, setResult] = useState<string | null>(null);
+  const [shaking, setShaking] = useState(false);
+  const shake = () => {
+    setShaking(true);
+    setResult(null);
+    setTimeout(() => {
+      setResult(responses[Math.floor(Math.random() * responses.length)]);
+      setShaking(false);
+    }, 1200);
+  };
+  return (
+    <Section id="eightball" title="Magic 8-Ball" desc="Ask a question and shake for answers." accent="purple" index={22}>
+      <div className="flex flex-col items-center gap-6">
+        <motion.div
+          animate={shaking ? { rotate: [0, -15, 15, -15, 15, 0], y: [0, -10, 0, -10, 0] } : {}}
+          transition={{ duration: 1.2 }}
+          onClick={shake}
+          className="w-40 h-40 rounded-full bg-gradient-to-br from-slate-900 to-black border-4 border-slate-700 flex items-center justify-center cursor-pointer shadow-2xl relative"
+        >
+          <div className="absolute inset-3 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center relative overflow-hidden">
+                <div className="absolute top-2 left-4 w-3 h-3 rounded-full bg-blue-300 opacity-60" />
+                {result ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+                    <p className="text-xs font-bold text-white font-[family-name:var(--font-heading)] text-center px-2">{result}</p>
+                  </motion.div>
+                ) : (
+                  <span className="text-white text-3xl font-bold opacity-40">8</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+        <div className="text-center">
+          <p className="text-sm text-[var(--text-secondary)] mb-3 font-[family-name:var(--font-mono)]">Ask a yes/no question and click the ball</p>
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={shake}>
+            {shaking ? "Shaking..." : "Shake Ball"}
+          </motion.button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 24: Coin Flip ═══════════════ */
+function CoinFlip() {
+  const [result, setResult] = useState<"heads" | "tails" | null>(null);
+  const [flipping, setFlipping] = useState(false);
+  const [history, setHistory] = useState<Array<"heads" | "tails">>([]);
+  const [streak, setStreak] = useState(0);
+  const flip = () => {
+    setFlipping(true);
+    setResult(null);
+    setTimeout(() => {
+      const newResult = Math.random() > 0.5 ? "heads" : "tails";
+      setResult(newResult);
+      const newHistory = [newResult, ...history].slice(0, 10) as Array<"heads" | "tails">;
+      setHistory(newHistory);
+      const newStreak = newHistory[0] === newHistory[1] ? streak + 1 : 1;
+      setStreak(newStreak);
+      setFlipping(false);
+    }, 1000);
+  };
+  const heads = history.filter(h => h === "heads").length;
+  const headsPercent = history.length > 0 ? Math.round((heads / history.length) * 100) : 50;
+  return (
+    <Section id="coinflip" title="Coin Flip" desc="3D animated coin with streak tracker." accent="gold" index={23}>
+      <div className="flex flex-col items-center gap-6">
+        <motion.div
+          animate={flipping ? { rotateY: [0, 1800], rotateX: [0, 360] } : {}}
+          transition={{ duration: 1, ease: "easeOut" }}
+          style={{ perspective: 1000 }}
+          className="w-32 h-32 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center cursor-pointer shadow-xl text-3xl font-bold border-4 border-yellow-700"
+          onClick={flip}
+        >
+          {!flipping && result && (
+            <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="text-white font-[family-name:var(--font-heading)]">
+              {result === "heads" ? "H" : "T"}
+            </motion.div>
+          )}
+        </motion.div>
+        <div className="text-center">
+          {result && (
+            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-lg font-bold text-white capitalize mb-2 font-[family-name:var(--font-heading)]">
+              {result}!
+            </motion.p>
+          )}
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn mb-4" onClick={flip}>
+            {flipping ? "Flipping..." : "Flip Coin"}
+          </motion.button>
+        </div>
+        <div className="w-full space-y-3">
+          <div className="flex justify-between items-center text-xs text-[var(--text-muted)]">
+            <span>Streak: <span className="text-[var(--accent-gold)] font-bold">{streak}</span></span>
+            <span>Last 10: <span className="text-[var(--accent-gold)]">{heads}</span>H / <span className="text-[var(--accent-gold)]">{history.length - heads}</span>T</span>
+          </div>
+          <div className="flex gap-1 h-6">
+            {history.slice(0, 10).map((h, i) => (
+              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`flex-1 rounded ${h === "heads" ? "bg-[var(--accent-cyan)]" : "bg-[var(--accent-purple)]"} relative`} title={h} />
+            ))}
+          </div>
+          {history.length > 0 && (
+            <div className="text-xs text-center text-[var(--text-secondary)]">
+              Heads: <span className="text-[var(--accent-gold)]">{headsPercent}%</span> | Tails: <span className="text-[var(--accent-gold)]">{100 - headsPercent}%</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 25: Dice Roller ═══════════════ */
+function DiceRoller() {
+  const [numDice, setNumDice] = useState(1);
+  const [results, setResults] = useState<number[]>([]);
+  const [history, setHistory] = useState<number[]>([]);
+  const roll = () => {
+    const newResults = Array.from({ length: numDice }, () => Math.floor(Math.random() * 6) + 1);
+    setResults(newResults);
+    const sum = newResults.reduce((a, b) => a + b, 0);
+    setHistory([sum, ...history].slice(0, 15));
+  };
+  useEffect(() => {
+    roll();
+  }, []);
+  const sum = results.reduce((a, b) => a + b, 0);
+  return (
+    <Section id="dice" title="Dice Roller" desc="Roll 1-6 dice with sum and history." accent="cyan" index={24}>
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-4 mb-2">
+          <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Dice count</label>
+          <input type="number" min={1} max={6} value={numDice} onChange={e => setNumDice(+e.target.value || 1)} className="tool-input neon-input w-20 text-center" />
+        </div>
+        <div className="flex flex-wrap gap-3 justify-center">
+          {results.map((result, i) => (
+            <motion.div key={i} initial={{ rotateZ: Math.random() * 360, scale: 0 }} animate={{ rotateZ: 0, scale: 1 }} transition={{ type: "spring", stiffness: 300 }} className="w-16 h-16 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-2xl font-bold border-2 border-red-800 shadow-lg" title={`Die ${i + 1}`}>
+              {result}
+            </motion.div>
+          ))}
+        </div>
+        <div className="text-center">
+          <motion.p key={sum} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="text-3xl font-bold text-[var(--accent-cyan)] font-[family-name:var(--font-heading)] mb-3">
+            Total: {sum}
+          </motion.p>
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={roll}>
+            Roll Dice
+          </motion.button>
+        </div>
+        {history.length > 0 && (
+          <div className="w-full">
+            <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] mb-2">Roll History:</p>
+            <div className="flex gap-1 flex-wrap">
+              {history.map((h, i) => (
+                <span key={i} className="px-2 py-1 rounded text-xs bg-black/20 border border-white/10 text-[var(--text-secondary)]">
+                  {h}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 26: ASCII Art Generator ═══════════════ */
+function ASCIIArtGenerator() {
+  const [input, setInput] = useState("Hello");
+  const BLOCK_CHARS: Record<string, string[]> = {
+    A: [" ███ ", "█   █", "█████", "█   █"],
+    B: ["████ ", "█   █", "████ ", "█   █", "████ "],
+    C: [" ███ ", "█    ", "█    ", " ███ "],
+    D: ["████ ", "█   █", "█   █", "████ "],
+    E: ["█████", "█    ", "███  ", "█    ", "█████"],
+    F: ["█████", "█    ", "███  ", "█    ", "█    "],
+    G: [" ███ ", "█    ", "█  ██", "█   █", " ███ "],
+    H: ["█   █", "█   █", "█████", "█   █", "█   █"],
+    I: ["█████", "  █  ", "  █  ", "  █  ", "█████"],
+    J: ["█████", "    █", "    █", "█   █", " ███ "],
+    K: ["█   █", "█  █ ", "███  ", "█  █ ", "█   █"],
+    L: ["█    ", "█    ", "█    ", "█    ", "█████"],
+    M: ["█   █", "██ ██", "█ █ █", "█   █", "█   █"],
+    N: ["█   █", "██  █", "█ █ █", "█  ██", "█   █"],
+    O: [" ███ ", "█   █", "█   █", "█   █", " ███ "],
+    P: ["████ ", "█   █", "████ ", "█    ", "█    "],
+    Q: [" ███ ", "█   █", "█   █", "█  ██", " ██ █"],
+    R: ["████ ", "█   █", "████ ", "█  █ ", "█   █"],
+    S: [" ███ ", "█    ", " ███ ", "    █", " ███ "],
+    T: ["█████", "  █  ", "  █  ", "  █  ", "  █  "],
+    U: ["█   █", "█   █", "█   █", "█   █", " ███ "],
+    V: ["█   █", "█   █", "█   █", " █ █ ", "  █  "],
+    W: ["█   █", "█   █", "█ █ █", "██ ██", "█   █"],
+    X: ["█   █", " █ █ ", "  █  ", " █ █ ", "█   █"],
+    Y: ["█   █", " █ █ ", "  █  ", "  █  ", "  █  "],
+    Z: ["█████", "    █", "  █  ", " █   ", "█████"],
+    "0": [" ███ ", "█   █", "█   █", "█   █", " ███ "],
+    "1": ["  █  ", " ██  ", "  █  ", "  █  ", " ███ "],
+    "2": [" ███ ", "█   █", "    █", "  █  ", "█████"],
+    "3": [" ███ ", "█   █", "   █ ", "█   █", " ███ "],
+    "4": ["█   █", "█   █", "█████", "    █", "    █"],
+    "5": ["█████", "█    ", "████ ", "    █", "████ "],
+    "6": [" ███ ", "█    ", "████ ", "█   █", " ███ "],
+    "7": ["█████", "    █", "   █ ", "  █  ", " █   "],
+    "8": [" ███ ", "█   █", " ███ ", "█   █", " ███ "],
+    "9": [" ███ ", "█   █", " ████", "    █", " ███ "],
+    " ": ["     ", "     ", "     ", "     ", "     "],
+  };
+  const output = input.toUpperCase().split("").map(c => BLOCK_CHARS[c] || BLOCK_CHARS[" "]);
+  const lines = Array.from({ length: 5 }, (_, row) => output.map(col => col[row]).join(" ")).join("\n");
+  return (
+    <Section id="ascii" title="ASCII Art Generator" desc="Convert text to large ASCII block letters." accent="purple" index={25}>
+      <input className="tool-input neon-input mb-4" value={input} onChange={e => setInput(e.target.value.slice(0, 8))} placeholder="Type text (max 8 chars)..." />
+      <motion.pre className="bg-black/20 border border-white/[0.04] p-4 rounded-lg overflow-x-auto text-xs font-[family-name:var(--font-mono)] text-[var(--accent-cyan)] mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        {lines}
+      </motion.pre>
+      <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={() => navigator.clipboard.writeText(lines)}>
+        Copy ASCII
+      </motion.button>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 27: Color Guessing Game ═══════════════ */
+function ColorGuessingGame() {
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [difficulty, setDifficulty] = useState(0);
+  const [colors, setColors] = useState<string[]>([]);
+  const [target, setTarget] = useState("");
+  const [feedback, setFeedback] = useState<{ type: "correct" | "wrong" | null; shake?: boolean }>({ type: null });
+  const [shaking, setShaking] = useState(false);
+
+  const generateRound = useCallback(() => {
+    const diffRange = [80, 60, 40, 20][Math.min(difficulty, 3)];
+    const baseHue = Math.floor(Math.random() * 360);
+    const targetColor = `hsl(${baseHue}, 100%, 50%)`;
+    const shuffledColors = [
+      targetColor,
+      `hsl(${(baseHue + diffRange) % 360}, 100%, 50%)`,
+      `hsl(${(baseHue - diffRange) % 360}, 100%, 50%)`,
+    ].sort(() => Math.random() - 0.5);
+    setColors(shuffledColors);
+    setTarget(targetColor);
+    setFeedback({ type: null });
+    setShaking(false);
+  }, [difficulty]);
+
+  useEffect(() => {
+    generateRound();
+  }, [generateRound]);
+
+  const handleGuess = (color: string) => {
+    if (color === target) {
+      setScore(score + 1);
+      setStreak(streak + 1);
+      setFeedback({ type: "correct" });
+      setTimeout(() => {
+        setDifficulty(Math.min(difficulty + 1, 3));
+        generateRound();
+      }, 800);
+    } else {
+      setFeedback({ type: "wrong", shake: true });
+      setStreak(0);
+      setShaking(true);
+      setTimeout(() => {
+        generateRound();
+        setShaking(false);
+      }, 1000);
+    }
+  };
+
+  return (
+    <Section id="colorgame" title="Color Guessing Game" desc="Match the hex color with one of three squares." accent="gold" index={26}>
+      <div className="flex flex-col items-center gap-6">
+        <div className="text-center">
+          <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] mb-2">Match this color:</p>
+          <motion.div animate={shaking ? { x: [-5, 5, -5, 5, 0] } : {}} transition={{ duration: 0.4 }} className="w-24 h-24 rounded-lg border-2 border-white/20" style={{ background: target }} />
+        </div>
+
+        <motion.div className="grid grid-cols-3 gap-4 w-full max-w-xs" animate={shaking ? { x: [-5, 5, -5, 0] } : {}}>
+          {colors.map((color, i) => (
+            <motion.button
+              key={i}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => handleGuess(color)}
+              className="h-20 rounded-lg border-2 border-white/20 transition-all hover:border-white/40"
+              style={{ background: color }}
+              disabled={feedback.type !== null}
+            />
+          ))}
+        </motion.div>
+
+        <AnimatePresence mode="wait">
+          {feedback.type === "correct" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+              className="text-center px-4 py-2 bg-green-400/20 border border-green-400/40 rounded-lg"
+            >
+              <p className="text-green-400 font-bold text-sm font-[family-name:var(--font-heading)]">Correct!</p>
+            </motion.div>
+          )}
+          {feedback.type === "wrong" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+              className="text-center px-4 py-2 bg-red-400/20 border border-red-400/40 rounded-lg"
+            >
+              <p className="text-red-400 font-bold text-sm font-[family-name:var(--font-heading)]">Wrong!</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex gap-6 text-center w-full">
+          <div className="flex-1">
+            <div className="text-2xl font-bold text-[var(--accent-gold)] font-[family-name:var(--font-heading)]">{score}</div>
+            <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Score</div>
+          </div>
+          <div className="flex-1">
+            <div className="text-2xl font-bold text-[var(--accent-cyan)] font-[family-name:var(--font-heading)]">{streak}</div>
+            <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Streak</div>
+          </div>
+          <div className="flex-1">
+            <div className="text-2xl font-bold text-[var(--accent-purple)] font-[family-name:var(--font-heading)]">{difficulty + 1}</div>
+            <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Level</div>
+          </div>
+        </div>
       </div>
     </Section>
   );
