@@ -7,36 +7,28 @@ interface CoinData {
   id: string;
   symbol: string;
   name: string;
-  current_price: number;
-  price_change_percentage_24h: number;
-  market_cap: number;
-  image: string;
+  price: number;
+  change24h: number;
+  marketCap: number;
+  image: string | null;
 }
 
 const COIN_ICONS: Record<string, string> = {
   bitcoin: "₿", ethereum: "Ξ", tether: "₮", binancecoin: "◆", solana: "◎",
   ripple: "✕", cardano: "₳", dogecoin: "Ð", polkadot: "●", avalanche: "▲",
+  "usd-coin": "◉", bnb: "◆", xrp: "✕",
 };
 
 export function CryptoTicker() {
   const [crypto, setCrypto] = useState<CoinData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [lastUpdated, setLastUpdated] = useState("");
 
   useEffect(() => {
     const fetchCrypto = async () => {
       try {
-        // CoinGecko free API - direct client call, no proxy needed
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-
-        const res = await fetch(
-          "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=6&page=1&sparkline=false&price_change_percentage=24h",
-          { signal: controller.signal }
-        );
-        clearTimeout(timeout);
-
+        const res = await fetch("/api/crypto");
         if (!res.ok) throw new Error(`API ${res.status}`);
         const data = await res.json();
 
@@ -49,14 +41,14 @@ export function CryptoTicker() {
         }
       } catch (e) {
         console.error("Crypto error:", e);
-        setError(true);
+        if (crypto.length === 0) setError(true);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCrypto();
-    const interval = setInterval(fetchCrypto, 90000); // 90s to avoid rate limits
+    const interval = setInterval(fetchCrypto, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -89,7 +81,9 @@ export function CryptoTicker() {
     return (
       <div className="glass-card p-6">
         <h3 className="text-lg font-bold text-white mb-4">📈 Top Crypto</h3>
-        <p className="text-white/40 text-sm">Market data temporarily unavailable. CoinGecko API rate limited — try refreshing in a moment.</p>
+        <p className="text-white/40 text-sm">Market data temporarily unavailable.</p>
+        <button onClick={() => { setLoading(true); setError(false); }}
+          className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 font-mono">Retry</button>
       </div>
     );
   }
@@ -102,8 +96,7 @@ export function CryptoTicker() {
       </div>
       <div className="space-y-2">
         {crypto.map((coin) => {
-          const change = coin.price_change_percentage_24h || 0;
-          const isPositive = change > 0;
+          const isPositive = coin.change24h > 0;
           return (
             <div key={coin.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0 group hover:bg-white/[0.02] rounded-lg px-2 -mx-2 transition-colors">
               <div className="flex items-center gap-3">
@@ -117,12 +110,12 @@ export function CryptoTicker() {
               </div>
               <div className="text-right">
                 <div className="text-white font-mono font-semibold text-sm">
-                  ${coin.current_price >= 1
-                    ? coin.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : coin.current_price.toFixed(4)}
+                  ${coin.price >= 1
+                    ? coin.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : coin.price.toFixed(4)}
                 </div>
                 <div className={`text-xs font-mono ${isPositive ? "text-green-400" : "text-red-400"}`}>
-                  {isPositive ? "▲" : "▼"} {Math.abs(change).toFixed(2)}%
+                  {isPositive ? "▲" : "▼"} {Math.abs(coin.change24h).toFixed(2)}%
                 </div>
               </div>
             </div>
@@ -130,7 +123,7 @@ export function CryptoTicker() {
         })}
       </div>
       <div className="mt-3 pt-3 border-t border-white/5 text-center">
-        <span className="text-[10px] text-white/25 font-mono">Data from CoinGecko · Updates every 90s</span>
+        <span className="text-[10px] text-white/25 font-mono">Live market data · Updates every 60s</span>
       </div>
     </motion.div>
   );

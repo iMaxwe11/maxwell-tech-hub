@@ -22,7 +22,7 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { const fn = () => setScrolled(window.scrollY > 40); window.addEventListener("scroll", fn); return () => window.removeEventListener("scroll", fn); }, []);
-  const links = [{ href: "#projects", label: "Projects" }, { href: "#experience", label: "Experience" }, { href: "/tools", label: "Tools" }, { href: "/space", label: "Space" }, { href: "/weather", label: "Weather" }, { href: "/play", label: "Arcade" }, { href: "#contact", label: "Contact" }];
+  const links = [{ href: "#projects", label: "Projects" }, { href: "#experience", label: "Experience" }, { href: "/tools", label: "Tools" }, { href: "/space", label: "Space" }, { href: "/weather", label: "Weather" }, { href: "/news", label: "News" }, { href: "/play", label: "Arcade" }, { href: "#contact", label: "Contact" }];
   return (
     <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${scrolled ? "bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.15] shadow-[0_4px_20px_rgba(0,0,0,0.5)]" : "bg-transparent"}`}>

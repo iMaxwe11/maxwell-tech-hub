@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/tools", label: "Tools", hash: false },
   { href: "/space", label: "Space", hash: false },
   { href: "/weather", label: "Weather", hash: false },
+  { href: "/news", label: "News", hash: false },
   { href: "/play", label: "Arcade", hash: false },
   { href: "/contact", label: "Contact", hash: false },
 ];
