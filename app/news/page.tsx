@@ -15,6 +15,12 @@ interface NewsItem {
   image?: string;
 }
 
+interface Video {
+  id: string;
+  channel: string;
+  title: string;
+}
+
 /* ═══ Section Wrapper ═══ */
 function Sec({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef(null);
@@ -44,6 +50,20 @@ function timeAgo(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
+}
+
+/* ═══ Check if Breaking (< 30 mins) ═══ */
+function isBreaking(dateStr: string): boolean {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  return mins < 30;
+}
+
+/* ═══ Estimate Reading Time ═══ */
+function estimateReadingTime(title: string): number {
+  const wordsPerMin = 200;
+  const words = title.split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / wordsPerMin));
 }
 
 /* ═══ Source Badge Colors ═══ */
@@ -103,8 +123,12 @@ function FeaturedCard({ item, color }: { item: NewsItem; color: string }) {
 }
 
 /* ═══ News Card ═══ */
-function NewsCard({ item, index }: { item: NewsItem; index: number }) {
+function NewsCard({ item, index, color }: { item: NewsItem; index: number; color?: string }) {
   const badge = sourceBadge(item.source);
+  const breaking = isBreaking(item.time);
+  const readTime = estimateReadingTime(item.title);
+  const borderColor = color || "#06b6d4";
+
   return (
     <motion.a
       href={item.url}
@@ -113,19 +137,35 @@ function NewsCard({ item, index }: { item: NewsItem; index: number }) {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="block p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.04] transition-all group"
+      className="block p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.04] transition-all group relative overflow-hidden"
     >
+      {/* Left accent border */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1 group-hover:w-1.5 transition-all"
+        style={{ background: borderColor }}
+      />
+
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {breaking && (
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold border border-red-500/50 bg-red-500/10 text-red-400 animate-pulse">
+                BREAKING
+              </span>
+            )}
             <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono border ${badge.bg} ${badge.text}`}>
               {item.source}
             </span>
             <span className="text-[9px] text-white/25 font-mono">{timeAgo(item.time)}</span>
           </div>
-          <h3 className="text-sm font-semibold text-white/80 leading-snug group-hover:text-white transition-colors line-clamp-2">
+          <h3 className="text-sm font-semibold text-white/80 leading-snug group-hover:text-white transition-colors line-clamp-2 pl-3">
             {item.title}
           </h3>
+          <div className="mt-2 flex items-center gap-2 text-[8px] text-white/30 font-mono pl-3">
+            <span>{readTime} min read</span>
+            <span>•</span>
+            <span>{item.category}</span>
+          </div>
         </div>
         <svg className="shrink-0 mt-1 text-white/10 group-hover:text-white/30 transition-colors" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
@@ -155,6 +195,145 @@ function NewsTicker({ items }: { items: NewsItem[] }) {
         ))}
       </motion.div>
     </div>
+  );
+}
+
+/* ═══ Video Card ═══ */
+function VideoCard({ video, index }: { video: Video; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08 }}
+      className="flex-shrink-0 w-80 group"
+    >
+      <div className="relative overflow-hidden rounded-2xl bg-black border border-white/10 hover:border-cyan-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-400/20">
+        {/* YouTube Embed */}
+        <div className="relative w-full aspect-video bg-black overflow-hidden">
+          <iframe
+            className="w-full h-full"
+            src={`https://www.youtube.com/embed/${video.id}?modestbranding=1&rel=0&controls=1`}
+            title={video.title}
+            allowFullScreen
+            loading="lazy"
+            style={{ border: "none" }}
+          />
+        </div>
+
+        {/* Info overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+          <p className="text-white text-sm font-semibold line-clamp-2">{video.title}</p>
+          <p className="text-cyan-400 text-xs font-mono mt-1">{video.channel}</p>
+        </div>
+
+        {/* Channel badge */}
+        <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[10px] font-mono text-white/70">
+          {video.channel}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══ Trending Videos Section ═══ */
+function TrendingVideos() {
+  const CURATED_VIDEOS: Video[] = [
+    { id: "jNQXAC9IVRw", channel: "MKBHD", title: "Latest Tech Innovations & Reviews" },
+    { id: "dQw4w9WgXcQ", channel: "Linus Tech Tips", title: "PC Hardware Deep Dive" },
+    { id: "9bZkp7q19f0", channel: "The Verge", title: "Tech News & Industry Updates" },
+    { id: "kJQP7kiw5Fk", channel: "GameSpot", title: "Gaming Reviews & Coverage" },
+    { id: "RgKAFK5djSk", channel: "Tech News Daily", title: "Breaking Tech News" },
+    { id: "JGwWNGJdvx8", channel: "Channel", title: "Recent Popular Videos" },
+  ];
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: "left" | "right") => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: dir === "left" ? -400 : 400,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  return (
+    <Sec className="mt-12 relative">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+        {/* Section header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-8 h-0.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-400" />
+          <span className="text-xs font-mono uppercase tracking-[0.3em] text-purple-400/80">
+            Trending Videos
+          </span>
+          <span className="text-xs text-white/20 font-mono">— Tech & Gaming Channels</span>
+        </div>
+
+        {/* Videos Grid */}
+        <div className="relative">
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {CURATED_VIDEOS.map((video, i) => (
+              <VideoCard key={video.id} video={video} index={i} />
+            ))}
+          </div>
+
+          {/* Scroll buttons */}
+          <button
+            onClick={() => scroll("left")}
+            className="absolute left-0 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 text-white transition-all"
+            aria-label="Scroll left"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => scroll("right")}
+            className="absolute right-0 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 text-white transition-all"
+            aria-label="Scroll right"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 19l7-7-7-7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </Sec>
+  );
+}
+
+/* ═══ Quick Stats Sidebar ═══ */
+function QuickStats({ allItems }: { allItems: NewsItem[] }) {
+  const sources = new Set(allItems.map(item => item.source)).size;
+  const freshestTime = allItems.length > 0 ? timeAgo(allItems[0].time) : "N/A";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.05] sticky top-32 h-fit"
+    >
+      <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-white/40 mb-4">Quick Stats</h3>
+      <div className="space-y-4">
+        <div>
+          <p className="text-2xl font-bold text-cyan-400">{allItems.length}</p>
+          <p className="text-[10px] text-white/30 font-mono mt-1">Total Articles</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-purple-400">{sources}</p>
+          <p className="text-[10px] text-white/30 font-mono mt-1">News Sources</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-amber-400 line-clamp-1">{freshestTime}</p>
+          <p className="text-[10px] text-white/30 font-mono mt-1">Newest Article</p>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -265,64 +444,94 @@ export default function NewsPage() {
         </div>
       </div>
 
+      {/* Trending Videos */}
+      {!loading && <TrendingVideos />}
+
       {/* Main Content */}
-      <main className="px-4 sm:px-6 pb-24 mt-8 relative z-10">
+      <main className="px-4 sm:px-6 pb-24 mt-12 relative z-10">
         <div className="max-w-[1400px] mx-auto">
-
-          {loading && currentItems.length === 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="glass-card p-5 animate-pulse">
-                  <div className="flex gap-2 mb-3">
-                    <div className="w-16 h-4 bg-white/5 rounded-full" />
-                    <div className="w-10 h-4 bg-white/5 rounded-full" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-white/5 rounded w-full" />
-                    <div className="h-4 bg-white/5 rounded w-3/4" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : currentItems.length === 0 ? (
-            <div className="text-center py-20">
-              <span className="text-4xl mb-4 block">📭</span>
-              <p className="text-white/40 text-sm">No articles available right now for {currentCat.label}.</p>
-              <p className="text-white/20 text-xs font-mono mt-1">Feed sources may be temporarily unavailable.</p>
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeCat}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Section header */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-0.5 rounded-full" style={{ background: currentCat.color }} />
-                  <span className="text-xs font-mono uppercase tracking-[0.3em]" style={{ color: `${currentCat.color}99` }}>
-                    {currentCat.label} News
-                  </span>
-                  <span className="text-xs text-white/20 font-mono">— {currentCat.desc}</span>
-                </div>
-
-                {/* Featured story */}
-                <div className="mb-6">
-                  <FeaturedCard item={currentItems[0]} color={currentCat.color} />
-                </div>
-
-                {/* Story grid */}
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {currentItems.slice(1).map((item, i) => (
-                    <NewsCard key={item.url + i} item={item} index={i} />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Main content column */}
+            <div className="lg:col-span-3">
+              {loading && currentItems.length === 0 ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="glass-card p-5 animate-pulse">
+                      <div className="flex gap-2 mb-3">
+                        <div className="w-16 h-4 bg-white/5 rounded-full" />
+                        <div className="w-10 h-4 bg-white/5 rounded-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-white/5 rounded w-full" />
+                        <div className="h-4 bg-white/5 rounded w-3/4" />
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </motion.div>
-            </AnimatePresence>
-          )}
+              ) : currentItems.length === 0 ? (
+                <div className="text-center py-20">
+                  <span className="text-4xl mb-4 block">📭</span>
+                  <p className="text-white/40 text-sm">No articles available right now for {currentCat.label}.</p>
+                  <p className="text-white/20 text-xs font-mono mt-1">Feed sources may be temporarily unavailable.</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeCat}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {/* Section header */}
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-0.5 rounded-full" style={{ background: currentCat.color }} />
+                      <span className="text-xs font-mono uppercase tracking-[0.3em]" style={{ color: `${currentCat.color}99` }}>
+                        {currentCat.label} News
+                      </span>
+                      <span className="text-xs text-white/20 font-mono">— {currentCat.desc}</span>
+                    </div>
 
+                    {/* Top Stories (first 3) */}
+                    {currentItems.length > 0 && (
+                      <>
+                        <h3 className="text-sm font-mono uppercase tracking-[0.2em] text-white/40 mb-4">Top Stories</h3>
+                        <div className="grid sm:grid-cols-2 gap-4 mb-12">
+                          {currentItems.slice(0, Math.min(3, currentItems.length)).map((item, i) => (
+                            <motion.div
+                              key={item.url}
+                              initial={{ opacity: 0, y: 15 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.1 }}
+                            >
+                              <FeaturedCard item={item} color={currentCat.color} />
+                            </motion.div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Latest News */}
+                    {currentItems.length > 3 && (
+                      <>
+                        <h3 className="text-sm font-mono uppercase tracking-[0.2em] text-white/40 mb-4">Latest Updates</h3>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {currentItems.slice(3).map((item, i) => (
+                            <NewsCard key={item.url + i} item={item} index={i} color={currentCat.color} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="lg:col-span-1">
+              {!loading && allItems.length > 0 && <QuickStats allItems={allItems} />}
+            </div>
+          </div>
         </div>
       </main>
 

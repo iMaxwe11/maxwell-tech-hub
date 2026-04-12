@@ -336,35 +336,68 @@ function PrecipTimeline({ hours }: { hours: HourlyData[] }) {
 /* ═══ Radar Embed ═══ */
 function RadarEmbed() {
   const [expanded, setExpanded] = useState(false);
+  const [overlay, setOverlay] = useState("rainViewer");
+
+  const overlays = [
+    { id: "rainViewer", label: "Rain/Snow", icon: "🌧️" },
+    { id: "wind", label: "Wind", icon: "💨" },
+    { id: "temp", label: "Temp", icon: "🌡️" },
+    { id: "clouds", label: "Clouds", icon: "☁️" },
+    { id: "thunder", label: "Thunder", icon: "⛈️" },
+  ];
+
+  // RainViewer uses a different embed; Windy handles the rest
+  const iframeSrc = overlay === "rainViewer"
+    ? "https://www.rainviewer.com/map.html?loc=39.95,-74.71,8&oFa=1&oC=1&oU=1&oCS=1&oF=0&oAP=1&c=1&o=83&lm=1&layer=radar&sm=1&sn=1"
+    : `https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=in&metricTemp=%C2%B0F&metricWind=mph&zoom=8&overlay=${overlay}&product=ecmwf&level=surface&lat=39.95&lon=-74.71&detailLat=39.95&detailLon=-74.71&marker=true&pressure=true&message=true`;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-      className="glass-card overflow-hidden">
-      <div className="p-4 flex items-center justify-between">
+    <div className="glass-card overflow-hidden">
+      <div className="p-4 flex items-start justify-between">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <span className="text-xl">📡</span> Live Radar
           </h3>
-          <p className="text-xs text-white/40 font-mono mt-1">Interactive weather radar — Windy.com</p>
+          <p className="text-xs text-white/40 font-mono mt-1">Interactive weather visualization</p>
         </div>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => setExpanded(!expanded)}
-          className="text-xs font-mono px-3 py-1.5 rounded-lg bg-white/5 text-white/50 border border-white/10 hover:border-white/20 transition-all"
+          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-white/50 hover:text-white/80 transition-colors"
         >
-          {expanded ? "Collapse" : "Expand"}
+          {expanded ? "Collapse ↑" : "Expand ↓"}
         </motion.button>
       </div>
+
+      {/* Overlay tabs */}
+      <div className="px-4 pb-3 flex gap-1.5 overflow-x-auto">
+        {overlays.map(o => (
+          <button
+            key={o.id}
+            onClick={() => setOverlay(o.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all border ${
+              overlay === o.id
+                ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
+            }`}
+          >
+            <span>{o.icon}</span>
+            <span>{o.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="relative transition-all duration-500" style={{ height: expanded ? 600 : 380 }}>
         <iframe
-          src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=in&metricTemp=%C2%B0F&metricWind=mph&zoom=8&overlay=radar&product=radar&level=surface&lat=39.95&lon=-74.71&detailLat=39.95&detailLon=-74.71&marker=true&pressure=true&message=true"
+          key={overlay}
+          src={iframeSrc}
           style={{ width: "100%", height: "100%", border: "none" }}
           title="Weather Radar"
           loading="lazy"
-          allow="fullscreen"
+          allowFullScreen
         />
       </div>
-    </motion.div>
+    </div>
   );
 }
 

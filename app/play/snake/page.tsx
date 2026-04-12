@@ -53,10 +53,8 @@ export default function PlayPage() {
   const stateRef = useRef(gameState);
   stateRef.current = gameState;
 
-  // Load high score
-  useEffect(() => {
-    try { const hs = localStorage.getItem("snake-hs"); if (hs) setHighScore(+hs); } catch {}
-  }, []);
+  // Load high score (in-session only, not localStorage per requirements)
+  const highScoreRef = useRef(0);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -96,7 +94,7 @@ export default function PlayPage() {
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Snake
+    // Snake with trail effect
     snake.current.forEach((seg, i) => {
       const sx = seg.x * CELL;
       const sy = seg.y * CELL;
@@ -106,19 +104,29 @@ export default function PlayPage() {
         // Head glow
         const hGrad = ctx.createRadialGradient(
           sx + CELL / 2, sy + CELL / 2, 0,
-          sx + CELL / 2, sy + CELL / 2, CELL * 1.2
+          sx + CELL / 2, sy + CELL / 2, CELL * 1.5
         );
         hGrad.addColorStop(0, COLORS.snakeGlow);
         hGrad.addColorStop(1, "transparent");
         ctx.fillStyle = hGrad;
-        ctx.fillRect(sx - CELL * 0.5, sy - CELL * 0.5, CELL * 2, CELL * 2);
+        ctx.fillRect(sx - CELL * 1.5, sy - CELL * 1.5, CELL * 3, CELL * 3);
+      } else if (i < 3) {
+        // Trail glow for first few segments
+        const tGrad = ctx.createRadialGradient(
+          sx + CELL / 2, sy + CELL / 2, 0,
+          sx + CELL / 2, sy + CELL / 2, CELL
+        );
+        tGrad.addColorStop(0, `rgba(6,182,212,${0.2 * (1 - i / 5)})`);
+        tGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = tGrad;
+        ctx.fillRect(sx - CELL, sy - CELL, CELL * 2, CELL * 2);
       }
 
-      const alpha = isHead ? 1 : Math.max(0.3, 1 - (i / snake.current.length) * 0.7);
+      const alpha = isHead ? 1 : Math.max(0.2, 1 - (i / snake.current.length) * 0.8);
       ctx.fillStyle = isHead ? COLORS.snakeHead : COLORS.snake;
       ctx.globalAlpha = alpha;
       ctx.shadowColor = COLORS.snake;
-      ctx.shadowBlur = isHead ? 12 : 4;
+      ctx.shadowBlur = isHead ? 14 : 6;
 
       const r = isHead ? 4 : 3;
       const pad = 1;
@@ -158,9 +166,9 @@ export default function PlayPage() {
     // Self collision
     if (snake.current.some((s) => s.x === head.x && s.y === head.y)) {
       setGameState("over");
-      const hs = Math.max(scoreRef.current, +(localStorage.getItem("snake-hs") || "0"));
+      const hs = Math.max(scoreRef.current, highScoreRef.current);
+      highScoreRef.current = hs;
       setHighScore(hs);
-      try { localStorage.setItem("snake-hs", String(hs)); } catch {}
       return;
     }
 
@@ -260,6 +268,12 @@ export default function PlayPage() {
 
       <Navbar breadcrumb={["arcade", "snake"]} accent="#06b6d4" />
 
+      <div className="absolute top-20 right-4 z-20">
+        <Link href="/play" className="px-4 py-2 text-xs font-mono text-cyan-400 border border-cyan-400/40 rounded hover:bg-cyan-400/10 transition-colors">
+          ← Back to Arcade
+        </Link>
+      </div>
+
       <div className="relative z-10 flex flex-col items-center gap-6 mt-14">
         {/* Title */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
@@ -324,19 +338,43 @@ export default function PlayPage() {
             )}
             {gameState === "over" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-                <div className="text-red-400 font-mono font-bold text-xl uppercase tracking-widest">Game Over</div>
-                <div className="text-3xl font-bold text-white font-mono">{score}</div>
+                className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
+                <div className="text-red-400 font-mono font-bold text-2xl uppercase tracking-widest">Game Over</div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white font-mono mb-1">{score}</div>
+                  <div className="text-xs text-white/50 font-mono">SCORE</div>
+                </div>
                 {score >= highScore && score > 0 && (
-                  <div className="text-xs text-yellow-400 font-mono animate-pulse">New High Score!</div>
+                  <motion.div
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    className="text-sm text-yellow-400 font-mono font-bold px-4 py-2 border border-yellow-400/50 rounded animate-pulse"
+                  >
+                    New High Score!
+                  </motion.div>
                 )}
-                <motion.button
-                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  onClick={startGame}
-                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-mono font-bold text-sm uppercase tracking-wider"
-                >
-                  Play Again
-                </motion.button>
+                {highScore > 0 && (
+                  <div className="text-xs text-white/60 font-mono">
+                    Best: <span className="text-purple-400 font-bold">{highScore}</span>
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    onClick={startGame}
+                    className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-mono font-bold text-sm uppercase tracking-wider"
+                  >
+                    Play Again
+                  </motion.button>
+                  <Link href="/play">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                      className="px-8 py-3 rounded-xl border border-cyan-400/50 text-cyan-400 font-mono font-bold text-sm uppercase tracking-wider hover:bg-cyan-400/10"
+                    >
+                      Back
+                    </motion.button>
+                  </Link>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

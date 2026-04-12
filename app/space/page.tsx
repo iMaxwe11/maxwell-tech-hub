@@ -460,7 +460,7 @@ function PeopleInSpace() {
   const [people, setPeople] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetch("http://api.open-notify.org/astros.json")
+    fetch("/api/astros")
       .then(r => r.json())
       .then(data => { setPeople(data?.people || []); setLoading(false); })
       .catch(() => setLoading(false));

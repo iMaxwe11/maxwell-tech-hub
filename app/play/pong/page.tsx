@@ -31,11 +31,19 @@ export default function PongPage() {
   const aiScoreRef = useRef(0);
   const rallyRef = useRef(0);
   const particles = useRef<{ x: number; y: number; vx: number; vy: number; life: number; color: string }[]>([]);
+  const powerups = useRef<{ x: number; y: number; type: "speed" | "paddle" | "multi"; life: number }[]>([]);
 
   const spawnParticles = (x: number, y: number, color: string, count = 8) => {
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
       particles.current.push({ x, y, vx: Math.cos(angle) * (2 + Math.random() * 3), vy: Math.sin(angle) * (2 + Math.random() * 3), life: 1, color });
+    }
+  };
+
+  const spawnPowerup = (x: number, y: number) => {
+    if (Math.random() > 0.85) {
+      const types: Array<"speed" | "paddle" | "multi"> = ["speed", "paddle", "multi"];
+      powerups.current.push({ x, y, type: types[Math.floor(Math.random() * types.length)], life: 1 });
     }
   };
 
@@ -108,18 +116,23 @@ export default function PongPage() {
     if (b.x < 0) {
       aiScoreRef.current++; setAiScore(aiScoreRef.current);
       spawnParticles(0, b.y, "#ef4444", 15);
+      spawnPowerup(Math.random() * W, Math.random() * H);
       if (aiScoreRef.current >= WINNING_SCORE) { setGameState("lost"); return; }
       resetBall(1);
     }
     if (b.x > W) {
       pScoreRef.current++; setPlayerScore(pScoreRef.current);
       spawnParticles(W, b.y, "#06b6d4", 15);
+      spawnPowerup(Math.random() * W, Math.random() * H);
       if (pScoreRef.current >= WINNING_SCORE) { setGameState("won"); return; }
       resetBall(-1);
     }
 
     // Update particles
     particles.current = particles.current.filter(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; return p.life > 0; });
+
+    // Update powerups
+    powerups.current = powerups.current.filter(p => { p.life -= 0.02; return p.life > 0; });
 
     // ── DRAW ──
     ctx.fillStyle = "#050505";
@@ -169,6 +182,26 @@ export default function PongPage() {
       ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
     });
     ctx.globalAlpha = 1;
+
+    // Powerups
+    powerups.current.forEach(p => {
+      ctx.globalAlpha = p.life;
+      const colors: Record<string, string> = { speed: "#06b6d4", paddle: "#a855f7", multi: "#f59e0b" };
+      ctx.fillStyle = colors[p.type];
+      ctx.shadowColor = colors[p.type];
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    ctx.globalAlpha = 1;
+
+    // Score overlay on canvas
+    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    ctx.font = "14px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(`${pScoreRef.current} - ${aiScoreRef.current}`, W / 2, 25);
 
     // Border
     ctx.strokeStyle = "rgba(255,255,255,0.06)";
@@ -222,6 +255,12 @@ export default function PongPage() {
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(168,85,247,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.3) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
       <Navbar breadcrumb={["arcade", "pong"]} accent="#a855f7" />
+
+      <div className="absolute top-20 right-4 z-20">
+        <Link href="/play" className="px-4 py-2 text-xs font-mono text-purple-400 border border-purple-400/40 rounded hover:bg-purple-400/10 transition-colors">
+          ← Back to Arcade
+        </Link>
+      </div>
 
       <div className="relative z-10 flex flex-col items-center gap-6 mt-14">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">

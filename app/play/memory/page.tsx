@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 
-type Phase = "menu" | "showing" | "input" | "correct" | "wrong";
+type Phase = "menu" | "diff-select" | "showing" | "input" | "correct" | "wrong";
+type Difficulty = "easy" | "medium" | "hard";
 
 export default function MemoryPage() {
   const [level, setLevel] = useState(1);
@@ -15,15 +16,27 @@ export default function MemoryPage() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [bestLevel, setBestLevel] = useState(0);
   const [showingIndex, setShowingIndex] = useState(-1);
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [startTime, setStartTime] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    try { const b = localStorage.getItem("memory-best"); if (b) setBestLevel(+b); } catch {}
-  }, []);
+    if (phase !== "showing" && phase !== "input") return;
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 100);
+    return () => clearInterval(interval);
+  }, [phase, startTime]);
+
+  // No localStorage per requirements - bestLevel stays in session
 
   const tileCount = useCallback(() => Math.min(3 + Math.floor((level - 1) / 2), gridSize * gridSize - 1), [level, gridSize]);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((diff: Difficulty) => {
+    setDifficulty(diff);
     setLevel(1); setGridSize(3); setSelected([]);
+    const speeds = { easy: 800, medium: 500, hard: 300 };
+    // speeds are used in the showing phase effects
     const count = Math.min(3, 8);
     const tiles: number[] = [];
     while (tiles.length < count) {
@@ -31,6 +44,8 @@ export default function MemoryPage() {
       if (!tiles.includes(r)) tiles.push(r);
     }
     setPattern(tiles);
+    setStartTime(Date.now());
+    setElapsedTime(0);
     setPhase("showing");
     setShowingIndex(0);
   }, []);
@@ -56,14 +71,15 @@ export default function MemoryPage() {
   // Animate showing phase: reveal tiles one by one then hide
   useEffect(() => {
     if (phase !== "showing") return;
+    const speeds = { easy: 800, medium: 500, hard: 300 };
     if (showingIndex < pattern.length) {
-      const t = setTimeout(() => setShowingIndex(showingIndex + 1), 500);
+      const t = setTimeout(() => setShowingIndex(showingIndex + 1), speeds[difficulty]);
       return () => clearTimeout(t);
     } else {
       const t = setTimeout(() => { setShowingIndex(-1); setPhase("input"); }, 600);
       return () => clearTimeout(t);
     }
-  }, [phase, showingIndex, pattern.length]);
+  }, [phase, showingIndex, pattern.length, difficulty]);
 
   const handleTileClick = (i: number) => {
     if (phase !== "input" || selected.includes(i)) return;
@@ -75,7 +91,6 @@ export default function MemoryPage() {
       setPhase("wrong");
       const best = Math.max(level - 1, bestLevel);
       setBestLevel(best);
-      try { localStorage.setItem("memory-best", String(best)); } catch {}
       return;
     }
 
@@ -84,7 +99,6 @@ export default function MemoryPage() {
       setPhase("correct");
       const best = Math.max(level, bestLevel);
       setBestLevel(best);
-      try { localStorage.setItem("memory-best", String(best)); } catch {}
       setTimeout(nextLevel, 800);
     }
   };
@@ -109,6 +123,12 @@ export default function MemoryPage() {
 
       <Navbar breadcrumb={["arcade", "memory"]} accent="#f59e0b" />
 
+      <div className="absolute top-20 right-4 z-20">
+        <Link href="/play" className="px-4 py-2 text-xs font-mono text-amber-400 border border-amber-400/40 rounded hover:bg-amber-400/10 transition-colors">
+          ← Back to Arcade
+        </Link>
+      </div>
+
       <div className="relative z-10 flex flex-col items-center gap-6 mt-14">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 font-mono">MEMORY MATRIX</h1>
@@ -116,22 +136,29 @@ export default function MemoryPage() {
         </motion.div>
 
         {/* Stats */}
-        <div className="flex items-center gap-8">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-amber-400 font-mono tabular-nums">{phase === "menu" ? 0 : level}</div>
-            <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Level</div>
+        {phase !== "menu" && (
+          <div className="flex items-center gap-8">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-amber-400 font-mono tabular-nums">{level}</div>
+              <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Level</div>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-400 font-mono tabular-nums">{bestLevel}</div>
+              <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Best</div>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white/60 font-mono tabular-nums">{elapsedTime}s</div>
+              <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Time</div>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <div className="text-2xl font-bold text-cyan-400 font-mono tabular-nums">{pattern.length}</div>
+              <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Tiles</div>
+            </div>
           </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-400 font-mono tabular-nums">{bestLevel}</div>
-            <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Best</div>
-          </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white/60 font-mono tabular-nums">{pattern.length}</div>
-            <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Tiles</div>
-          </div>
-        </div>
+        )}
 
         {/* Grid */}
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -140,20 +167,39 @@ export default function MemoryPage() {
           {phase === "menu" ? (
             <div className="w-72 h-72 sm:w-80 sm:h-80 flex flex-col items-center justify-center gap-4 bg-black/40 rounded-xl border border-white/[0.06]">
               <div className="text-6xl">🧠</div>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={startGame}
-                className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-mono font-bold text-sm uppercase tracking-wider shadow-[0_0_30px_rgba(245,158,11,0.3)]">
-                Play
-              </motion.button>
+              <p className="text-[10px] text-white/40 font-mono">Choose Difficulty:</p>
+              <div className="flex gap-2">
+                {(["easy", "medium", "hard"] as const).map(d => (
+                  <motion.button
+                    key={d}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => startGame(d)}
+                    className="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-400 font-mono font-bold text-xs uppercase tracking-wider hover:bg-amber-500/30"
+                  >
+                    {d}
+                  </motion.button>
+                ))}
+              </div>
               <p className="text-[10px] text-white/30 font-mono">Watch, then recall</p>
             </div>
           ) : (
             <div className="w-72 h-72 sm:w-80 sm:h-80 gap-1.5 bg-black/20 rounded-xl border border-white/[0.06] p-3"
               style={{ display: "grid", gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
               {Array.from({ length: gridSize * gridSize }).map((_, i) => (
-                <motion.button key={`${level}-${gridSize}-${i}`}
+                <motion.button
+                  key={`${level}-${gridSize}-${i}`}
                   whileTap={phase === "input" ? { scale: 0.92 } : {}}
                   onClick={() => handleTileClick(i)}
+                  initial={{ rotateY: 0 }}
+                  animate={{
+                    rotateY: isRevealed(i) ? 0 : 180,
+                  }}
+                  transition={{ duration: 0.4 }}
                   className={`rounded-lg border transition-all duration-200 ${tileColor(i)} ${phase === "input" && !selected.includes(i) ? "cursor-pointer" : "cursor-default"}`}
+                  style={{
+                    perspective: "1000px",
+                  }}
                 />
               ))}
             </div>
@@ -177,8 +223,14 @@ export default function MemoryPage() {
           {phase === "wrong" && (
             <motion.div key="wrong" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-3">
-              <p className="text-red-400 text-sm font-mono font-bold">Wrong! You reached level {level}</p>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={startGame}
+              <p className="text-red-400 text-sm font-mono font-bold">Wrong!</p>
+              <div className="text-white/60 font-mono text-xs space-y-1">
+                <p>Level Reached: {level}</p>
+                <p>Time: {elapsedTime}s</p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={() => startGame(difficulty)}
                 className="px-6 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-mono font-bold text-xs uppercase tracking-wider">
                 Try Again
               </motion.button>
