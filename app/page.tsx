@@ -8,6 +8,8 @@ import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
 import { StockTicker } from "@/components/widgets/StockTicker";
 import { WeatherRadar } from "@/components/widgets/WeatherRadar";
+import { ISSTracker } from "@/components/widgets/ISSTracker";
+import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
 
 const SOCIALS = [
   { name: "GitHub", href: "https://github.com/iMaxwe11", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> },
@@ -20,7 +22,7 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { const fn = () => setScrolled(window.scrollY > 40); window.addEventListener("scroll", fn); return () => window.removeEventListener("scroll", fn); }, []);
-  const links = [{ href: "#projects", label: "Projects" }, { href: "#experience", label: "Experience" }, { href: "/tools", label: "Tools" }, { href: "/play", label: "Arcade" }, { href: "#contact", label: "Contact" }];
+  const links = [{ href: "#projects", label: "Projects" }, { href: "#experience", label: "Experience" }, { href: "/tools", label: "Tools" }, { href: "/space", label: "Space" }, { href: "/play", label: "Arcade" }, { href: "#contact", label: "Contact" }];
   return (
     <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${scrolled ? "bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.15] shadow-[0_4px_20px_rgba(0,0,0,0.5)]" : "bg-transparent"}`}>
@@ -137,6 +139,10 @@ function LiveDataSection() {
           <CryptoTicker />
           <StockTicker />
         </div>
+        <div className="mt-6 grid md:grid-cols-2 gap-6">
+          <ISSTracker />
+          <NASAAPODCard />
+        </div>
         <div className="mt-6">
           <WeatherRadar />
         </div>
@@ -169,7 +175,7 @@ function AboutSection() {
 function ProjectsSection() {
   const projects = [
     { title: "Smart Data Pipeline", desc: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.", tags: ["FastAPI","Python","Docker","Streamlit","CI/CD"], gradient: "from-cyan-500 to-blue-600", icon: "🔄", github: "https://github.com/iMaxwe11/smart-data-pipeline", metrics: "End-to-end ETL · Docker Compose · CI/CD pipeline", pattern: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)" },
-    { title: "Developer Tools Hub", desc: "14 client-side developer utilities — JSON formatter, regex tester, hash generator, color palette, contrast checker, and more. Zero tracking, fully private.", tags: ["Next.js","TypeScript","Tailwind","Framer Motion"], gradient: "from-purple-500 to-pink-500", icon: "🛠️", link: "/tools", metrics: "14 tools · 100% client-side · Zero tracking", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
+    { title: "Developer Tools Hub", desc: "22 client-side developer utilities — JSON formatter, regex tester, hash generator, color palette, contrast checker, diff checker, JWT decoder, and more. Zero tracking, fully private.", tags: ["Next.js","TypeScript","Tailwind","Framer Motion"], gradient: "from-purple-500 to-pink-500", icon: "🛠️", link: "/tools", metrics: "22 tools · 100% client-side · Zero tracking", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
     { title: "FiveM Game Server", desc: "Launched and managed a public FiveM multiplayer server with custom vehicles, physics mods, real-time logging, and automated mod loaders. Managed remote servers and multiplayer user systems.", tags: ["Lua","Server Admin","Modding","Multiplayer"], gradient: "from-green-500 to-emerald-600", icon: "🎮", github: "https://github.com/iMaxwe11", metrics: "Custom assets · Live multiplayer · Automated mod management", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
     { title: "Home Lab & AI Automation", desc: "Self-hosted containerized LLaMA and Mistral LLMs with GPU acceleration. Prompt tuning, offline inference, and scripting pipelines with a privacy-first mindset.", tags: ["LLaMA","Mistral","Docker","GPU","Python"], gradient: "from-orange-500 to-red-500", icon: "🧠", github: "https://github.com/iMaxwe11", metrics: "Self-hosted LLMs · GPU accelerated · Privacy-first", pattern: "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)" },
     { title: "Media Server Stack", desc: "Optimized Plex-based home server with remote access, hardware transcoding, metadata scripting, and automated library management across devices.", tags: ["Plex","Linux","Networking","Automation"], gradient: "from-yellow-500 to-orange-500", icon: "📺", github: "https://github.com/iMaxwe11", metrics: "Hardware transcoding · Remote access · Multi-device streaming", pattern: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)" },
@@ -301,19 +307,62 @@ function ContactSection() {
   );
 }
 
+/* ═══ BACK TO TOP ═══ */
+function BackToTop() {
+  const [show, setShow] = useState(false);
+  useEffect(() => { const fn = () => setShow(window.scrollY > 600); window.addEventListener("scroll", fn); return () => window.removeEventListener("scroll", fn); }, []);
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-8 right-8 z-50 w-11 h-11 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-white/60 hover:text-cyan-400 hover:border-cyan-400/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all flex items-center justify-center"
+          aria-label="Back to top">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ═══ FOOTER ═══ */
 function Footer() {
+  const footerLinks = [
+    { label: "Projects", href: "#projects" },
+    { label: "Experience", href: "#experience" },
+    { label: "Tools", href: "/tools" },
+    { label: "Space", href: "/space" },
+    { label: "Arcade", href: "/play" },
+    { label: "Contact", href: "#contact" },
+  ];
   return (
-    <footer className="relative py-16 px-4 sm:px-6 border-t border-white/5">
+    <footer className="relative py-16 px-4 sm:px-6">
+      <div className="section-divider mb-16" />
       <div className="max-w-[1200px] mx-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="text-center sm:text-left">
-            <p className="text-white/50 text-sm font-mono">© {new Date().getFullYear()} Maxwell Nixon</p>
-            <p className="text-white/25 text-xs mt-1 font-mono">Built with Next.js, TypeScript & Framer Motion</p>
+        <div className="grid sm:grid-cols-3 gap-10 mb-12">
+          <div>
+            <Link href="/" className="flex items-center gap-3 group mb-4">
+              <div className="relative w-8 h-8"><div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30" /><div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center"><span className="text-xs font-bold gradient-text">M</span></div></div>
+              <span className="text-base font-semibold tracking-wide text-white/80">maxwellnixon<span className="text-cyan-400">.</span>com</span>
+            </Link>
+            <p className="text-white/40 text-sm leading-relaxed">Cloud-savvy IT technician and full-stack developer building premium software experiences.</p>
           </div>
-          <div className="flex items-center gap-5">
-            {SOCIALS.map(s => <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-cyan-400 transition-colors flex items-center gap-1.5"><span className="hidden sm:inline text-xs font-mono">{s.name}</span><span className="sm:hidden">{s.icon}</span></a>)}
+          <div>
+            <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Navigation</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {footerLinks.map(l => <a key={l.label} href={l.href} className="text-sm text-white/35 hover:text-cyan-400 transition-colors">{l.label}</a>)}
+            </div>
           </div>
+          <div>
+            <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Connect</h4>
+            <div className="flex flex-col gap-2">
+              {SOCIALS.map(s => <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm text-white/35 hover:text-cyan-400 transition-colors flex items-center gap-2">{s.icon}<span>{s.name}</span></a>)}
+            </div>
+          </div>
+        </div>
+        <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-white/25 text-xs font-mono">&copy; {new Date().getFullYear()} Maxwell Nixon. All rights reserved.</p>
+          <p className="text-white/20 text-xs font-mono">Built with Next.js, TypeScript &amp; Framer Motion</p>
         </div>
       </div>
     </footer>
@@ -343,6 +392,7 @@ export default function Home() {
         <ContactSection />
       </main>
       <Footer />
+      <BackToTop />
     </>
   );
 }
