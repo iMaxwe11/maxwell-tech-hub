@@ -2,6 +2,7 @@
 import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import Link from "next/link";
+import { Navbar } from "@/components/Navbar";
 
 /* ── Spotlight Cursor ──────────────────── */
 function SpotlightCursor() {
@@ -406,63 +407,223 @@ function PasswordTester() {
 }
 
 /* ═══════════════════════════════════════════
+   CATEGORIES
+   ═══════════════════════════════════════════ */
+const TOOL_META: Record<string, { cat: string; keywords: string }> = {
+  palette: { cat: "Design", keywords: "color palette hsl css design" },
+  markdown: { cat: "Text", keywords: "markdown preview convert text" },
+  inspo: { cat: "Fun", keywords: "inspiration quote random motivational" },
+  json: { cat: "Code", keywords: "json format validate pretty print" },
+  regex: { cat: "Code", keywords: "regex regular expression test match" },
+  timestamp: { cat: "Convert", keywords: "timestamp unix date time convert" },
+  contrast: { cat: "Design", keywords: "contrast wcag accessibility color" },
+  generator: { cat: "Code", keywords: "uuid generate random id" },
+  base64: { cat: "Encode", keywords: "base64 encode decode binary text" },
+  url: { cat: "Encode", keywords: "url encode decode uri component" },
+  lorem: { cat: "Text", keywords: "lorem ipsum placeholder dummy text" },
+  hash: { cat: "Encode", keywords: "hash md5 sha1 sha256 digest" },
+  wordcount: { cat: "Text", keywords: "word count character line text" },
+  cssunit: { cat: "Design", keywords: "css unit convert px rem em vh" },
+  qrcode: { cat: "Fun", keywords: "qr code generate scan url" },
+  jwt: { cat: "Code", keywords: "jwt json web token decode header" },
+  pomodoro: { cat: "Fun", keywords: "pomodoro timer focus productivity" },
+  ipinfo: { cat: "Convert", keywords: "ip address geolocation info lookup" },
+  diff: { cat: "Code", keywords: "diff compare text changes check" },
+  baseconv: { cat: "Convert", keywords: "base convert binary hex octal decimal" },
+  gradient: { cat: "Design", keywords: "gradient css color generate linear" },
+  password: { cat: "Encode", keywords: "password strength test secure checker" },
+};
+const CATEGORIES = ["All", "Code", "Encode", "Design", "Text", "Convert", "Fun"];
+const CAT_COLORS: Record<string, string> = { All: "#06b6d4", Code: "#a855f7", Encode: "#f59e0b", Design: "#ec4899", Text: "#10b981", Convert: "#3b82f6", Fun: "#ef4444" };
+
+/* ═══════════════════════════════════════════
+   HACKER MODE (Easter Egg)
+   ═══════════════════════════════════════════ */
+function MatrixRain({ active }: { active: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (!active) return;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const cols = Math.floor(canvas.width / 14);
+    const drops = Array(cols).fill(1);
+    const chars = "01アイウエオカキクケコサシスセソタチツテトMNDEV";
+    const draw = () => {
+      ctx.fillStyle = "rgba(2,2,4,0.06)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#06b6d4";
+      ctx.font = "12px monospace";
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillStyle = Math.random() > 0.96 ? "#fff" : `rgba(6,182,212,${Math.random() * 0.5 + 0.3})`;
+        ctx.fillText(text, i * 14, drops[i] * 14);
+        if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    };
+    const id = setInterval(draw, 50);
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.addEventListener("resize", resize);
+    return () => { clearInterval(id); window.removeEventListener("resize", resize); };
+  }, [active]);
+  if (!active) return null;
+  return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none opacity-40" />;
+}
+
+/* ═══════════════════════════════════════════
    PAGE LAYOUT
    ═══════════════════════════════════════════ */
 export default function ToolsPage() {
+  const [search, setSearch] = useState("");
+  const [activeCat, setActiveCat] = useState("All");
+  const [hackerMode, setHackerMode] = useState(false);
+  const [toolUses, setToolUses] = useState(0);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut: Ctrl+K to focus search
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); searchRef.current?.focus(); }
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, []);
+
+  // Track tool interaction (scroll into view = "use")
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) setToolUses(p => p + 1); });
+    }, { threshold: 0.5 });
+    NAV_IDS.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, []);
+
+  const filteredIds = NAV_IDS.filter(id => {
+    const meta = TOOL_META[id];
+    if (!meta) return true;
+    if (activeCat !== "All" && meta.cat !== activeCat) return false;
+    if (search && !meta.keywords.includes(search.toLowerCase()) && !id.includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const luckyTool = () => {
+    const id = NAV_IDS[Math.floor(Math.random() * NAV_IDS.length)];
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  // Map of ID -> component
+  const TOOL_COMPONENTS: Record<string, React.ReactNode> = {
+    palette: <Palette key="palette" />, markdown: <MarkdownPreview key="markdown" />, inspo: <Inspiration key="inspo" />,
+    json: <JSONFormatter key="json" />, regex: <RegexTester key="regex" />, timestamp: <TimestampConverter key="timestamp" />,
+    contrast: <ContrastChecker key="contrast" />, generator: <GeneratorKit key="generator" />, base64: <Base64Tool key="base64" />,
+    url: <URLTool key="url" />, lorem: <LoremIpsum key="lorem" />, hash: <HashGenerator key="hash" />,
+    wordcount: <WordCounter key="wordcount" />, cssunit: <CSSUnitConverter key="cssunit" />, qrcode: <QRCodeGenerator key="qrcode" />,
+    jwt: <JWTDecoder key="jwt" />, pomodoro: <PomodoroTimer key="pomodoro" />, ipinfo: <IPInfo key="ipinfo" />,
+    diff: <DiffChecker key="diff" />, baseconv: <BaseConverter key="baseconv" />, gradient: <GradientGenerator key="gradient" />,
+    password: <PasswordTester key="password" />,
+  };
+
   return (
     <>
       <SpotlightCursor />
       <ToolsParticles />
+      <MatrixRain active={hackerMode} />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
-      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors group">
-            <motion.div whileHover={{ x: -3 }} className="text-xs">←</motion.div>
-            <span className="text-sm font-[family-name:var(--font-mono)]"><span className="text-[var(--accent-cyan)]">MN</span><span className="text-[var(--text-muted)]"> / </span>tools</span>
-          </Link>
-          <div className="hidden sm:flex gap-4">
-            {[{ href: "/", label: "Home" }, { href: "/play", label: "Arcade" }, { href: "/contact", label: "Contact" }].map((l) => (
-              <Link key={l.href} href={l.href} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors font-[family-name:var(--font-mono)] uppercase tracking-wider glow-underline">{l.label}</Link>
-            ))}
-          </div>
-        </div>
-      </motion.nav>
+      <Navbar breadcrumb={["tools"]} />
       <main className="pt-20 sm:pt-24 pb-20 px-4 sm:px-6 max-w-[1200px] mx-auto space-y-6 sm:space-y-8 relative z-10">
         <AnimIn>
           <div className="mb-8 sm:mb-12">
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="flex items-center gap-3 mb-4">
               <motion.span animate={{ boxShadow: ["0 0 8px var(--accent-cyan)", "0 0 20px var(--accent-cyan)", "0 0 8px var(--accent-cyan)"] }} transition={{ duration: 2.5, repeat: Infinity }} className="w-2 h-2 rounded-full bg-[var(--accent-cyan)]" />
-              <span className="text-sm font-[family-name:var(--font-mono)] text-[var(--accent-cyan)]">❯ developer_tools</span>
+              <span className={`text-sm font-[family-name:var(--font-mono)] ${hackerMode ? "text-green-400" : "text-[var(--accent-cyan)]"}`}>{hackerMode ? "$ sudo developer_tools --hacker" : "❯ developer_tools"}</span>
             </motion.div>
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
               <div>
                 <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl md:text-5xl font-bold">
-                  <span className="text-shimmer">Developer Tools</span>
+                  <span className={hackerMode ? "text-green-400" : "text-shimmer"}>{hackerMode ? "> Developer_Tools" : "Developer Tools"}</span>
                 </motion.h1>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-[var(--text-secondary)] max-w-xl text-sm sm:text-base">
-                  22 client-side utilities for encoding, formatting, testing, and generating — zero tracking.
+                  {filteredIds.length === 22 ? "22 client-side utilities" : `Showing ${filteredIds.length} of 22 tools`} for encoding, formatting, testing, and generating — zero tracking.
                 </motion.p>
               </div>
-              <ToolCountBadge />
+              <div className="flex items-center gap-3">
+                <ToolCountBadge />
+                {toolUses > 5 && (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--accent-purple)]/5 border border-[var(--accent-purple)]/15">
+                    <span className="text-xs text-[var(--accent-purple)] font-[family-name:var(--font-mono)]">{toolUses} explored</span>
+                  </motion.div>
+                )}
+              </div>
             </div>
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="mt-6 sm:mt-8 flex flex-wrap gap-2">
-              {NAV_IDS.map((id, i) => (
+
+            {/* Search + Actions */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-6 flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input ref={searchRef} type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tools... (Ctrl+K)"
+                  className="tool-input neon-input pl-10 pr-4" />
+                {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 text-xs">&times;</button>}
+              </div>
+              <div className="flex gap-2">
+                <motion.button whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }} onClick={luckyTool}
+                  className="tool-btn-primary tool-btn flex items-center gap-1.5 whitespace-nowrap">
+                  <span>🎲</span> Feeling Lucky
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }} onClick={() => setHackerMode(!hackerMode)}
+                  className={`tool-btn flex items-center gap-1.5 whitespace-nowrap transition-all ${hackerMode ? "!bg-green-400/10 !border-green-400/30 !text-green-400" : ""}`}>
+                  <span>{hackerMode ? "🟢" : "💻"}</span> <span className="hidden sm:inline">{hackerMode ? "Exit Matrix" : "Hacker Mode"}</span>
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* Category Filters */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="mt-4 flex flex-wrap gap-2">
+              {CATEGORIES.map(cat => (
+                <motion.button key={cat} whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveCat(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-[0.65rem] font-[family-name:var(--font-mono)] uppercase tracking-wider border transition-all cursor-pointer ${
+                    activeCat === cat
+                      ? "text-white border-transparent"
+                      : "text-white/40 border-white/[0.06] bg-white/[0.02] hover:border-white/10 hover:text-white/60"
+                  }`}
+                  style={activeCat === cat ? { background: `${CAT_COLORS[cat]}20`, borderColor: `${CAT_COLORS[cat]}40`, color: CAT_COLORS[cat] } : {}}>
+                  {cat} {cat !== "All" && <span className="ml-1 opacity-50">({NAV_IDS.filter(id => TOOL_META[id]?.cat === cat).length})</span>}
+                </motion.button>
+              ))}
+            </motion.div>
+
+            {/* Quick Jump Tags */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="mt-4 flex flex-wrap gap-1.5">
+              {filteredIds.map((id, i) => (
                 <motion.a key={id} href={`#${id}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8+i*0.03 }} whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.95 }} className="tech-tag text-[0.65rem] cursor-pointer">{id}</motion.a>
+                  transition={{ delay: 0.9+i*0.02 }} whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.95 }}
+                  className={`tech-tag text-[0.6rem] cursor-pointer ${hackerMode ? "!text-green-400/60 !border-green-400/20 hover:!text-green-400 hover:!border-green-400/40" : ""}`}>
+                  {id}
+                </motion.a>
               ))}
             </motion.div>
           </div>
         </AnimIn>
 
-        <Palette /><MarkdownPreview /><Inspiration /><JSONFormatter /><RegexTester /><TimestampConverter /><ContrastChecker />
-        <GeneratorKit /><Base64Tool /><URLTool /><LoremIpsum /><HashGenerator /><WordCounter /><CSSUnitConverter />
-        <QRCodeGenerator /><JWTDecoder /><PomodoroTimer /><IPInfo /><DiffChecker /><BaseConverter /><GradientGenerator /><PasswordTester />
+        {/* Filtered tools */}
+        <AnimatePresence mode="sync">
+          {filteredIds.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+              <div className="text-5xl mb-4">🔍</div>
+              <p className="text-white/50 font-[family-name:var(--font-mono)] text-sm">No tools match &quot;{search}&quot; in {activeCat}</p>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setSearch(""); setActiveCat("All"); }}
+                className="mt-4 tool-btn-primary tool-btn">Clear Filters</motion.button>
+            </motion.div>
+          ) : (
+            filteredIds.map(id => TOOL_COMPONENTS[id])
+          )}
+        </AnimatePresence>
 
         <AnimIn delay={0.2}>
           <div className="text-center pt-8 pb-4">
-            <motion.p whileHover={{ scale: 1.02 }} className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
-              All tools run client-side · No data leaves your browser · <Link href="/" className="text-[var(--accent-cyan)] hover:underline">Back to Hub</Link>
+            <motion.p whileHover={{ scale: 1.02 }} className={`text-xs font-[family-name:var(--font-mono)] ${hackerMode ? "text-green-400/40" : "text-[var(--text-muted)]"}`}>
+              {hackerMode ? "// all tools run client-side | no data exfiltrated | privacy: maximum" : "All tools run client-side · No data leaves your browser"} · <Link href="/" className={hackerMode ? "text-green-400 hover:underline" : "text-[var(--accent-cyan)] hover:underline"}>Back to Hub</Link>
             </motion.p>
           </div>
         </AnimIn>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { Navbar } from "@/components/Navbar";
 
 const CELL = 16;
 const COLS = 24;
@@ -257,18 +258,7 @@ export default function PlayPage() {
       {/* Subtle grid bg */}
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(6,182,212,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.3) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
-      {/* Nav */}
-      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="max-w-[1200px] mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
-            <span className="text-xs">←</span>
-            <span className="text-sm font-mono"><span className="text-cyan-400">MN</span><span className="text-white/30"> / </span>arcade</span>
-          </Link>
-          <div className="flex gap-4">
-            <Link href="/tools" className="text-xs text-white/30 hover:text-white/60 font-mono uppercase tracking-wider transition-colors">Tools</Link>
-          </div>
-        </div>
-      </motion.nav>
+      <Navbar breadcrumb={["arcade", "snake"]} accent="#06b6d4" />
 
       <div className="relative z-10 flex flex-col items-center gap-6 mt-14">
         {/* Title */}

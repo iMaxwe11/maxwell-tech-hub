@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { GrokStarfield } from "@/components/GrokStarfield";
+import { Navbar } from "@/components/Navbar";
 
 const GAMES = [
   {
@@ -58,28 +59,7 @@ export default function ArcadePage() {
       <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
 
-      {/* Nav */}
-      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.08]">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-8 h-8">
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30 group-hover:opacity-50 transition-opacity" />
-              <div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center">
-                <span className="text-xs font-bold gradient-text">M</span>
-              </div>
-            </div>
-            <span className="text-base font-semibold tracking-wide text-white/90 hidden sm:inline">
-              maxwellnixon<span className="text-cyan-400">.</span>com
-            </span>
-          </Link>
-          <div className="flex items-center gap-1">
-            <Link href="/" className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/50 hover:text-white transition-colors font-mono">Home</Link>
-            <Link href="/tools" className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/50 hover:text-white transition-colors font-mono">Tools</Link>
-            <Link href="/space" className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/50 hover:text-white transition-colors font-mono">Space</Link>
-          </div>
-        </div>
-      </motion.nav>
+      <Navbar breadcrumb={["arcade"]} accent="#a855f7" />
 
       {/* Hero */}
       <div className="pt-32 pb-12 px-4 sm:px-6">

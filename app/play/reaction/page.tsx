@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { Navbar } from "@/components/Navbar";
 
 type Phase = "idle" | "waiting" | "ready" | "result" | "tooearly";
 
@@ -66,14 +67,7 @@ export default function ReactionPage() {
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(16,185,129,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.3) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
-      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="max-w-[1200px] mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/play" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
-            <span className="text-xs">&larr;</span>
-            <span className="text-sm font-mono"><span className="text-green-400">MN</span><span className="text-white/30"> / </span>arcade<span className="text-white/30"> / </span>reaction</span>
-          </Link>
-        </div>
-      </motion.nav>
+      <Navbar breadcrumb={["arcade", "reaction"]} accent="#10b981" />
 
       <div className="relative z-10 flex flex-col items-center gap-6 mt-14 w-full max-w-md">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
