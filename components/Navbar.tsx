@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/#projects", label: "Projects", hash: true },
   { href: "/tools", label: "Tools", hash: false },
   { href: "/space", label: "Space", hash: false },
+  { href: "/weather", label: "Weather", hash: false },
   { href: "/play", label: "Arcade", hash: false },
   { href: "/contact", label: "Contact", hash: false },
 ];
