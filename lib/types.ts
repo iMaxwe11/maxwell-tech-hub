@@ -179,6 +179,24 @@ export interface RainViewerFrame {
   time: number;
 }
 
+export interface ComponentStatus {
+  name: string;
+  status: string;
+}
+
+export interface IncidentUpdate {
+  body: string;
+  updated_at: string;
+}
+
+export interface ActiveIncident {
+  name: string;
+  impact: string;
+  status: string;
+  updatedAt: string;
+  latestUpdate?: string;
+}
+
 export interface ServiceStatus {
   name: string;
   category: "cloud" | "social" | "streaming" | "gaming" | "ai";
@@ -188,4 +206,6 @@ export interface ServiceStatus {
   url: string;
   icon: string;
   lastChecked: string;
+  components?: ComponentStatus[];
+  activeIncidents?: ActiveIncident[];
 }
