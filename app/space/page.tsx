@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, useInView, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
@@ -446,8 +447,13 @@ function MarsRoverPhotos() {
           <motion.div key={photo.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.06 }} onClick={() => setSelectedPhoto(photo)}
             className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group">
-            <img src={photo.img_src} alt={`Mars - ${photo.camera.full_name}`}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy" />
+            <Image
+              src={photo.img_src}
+              alt={`Mars - ${photo.camera.full_name}`}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-110"
+              sizes="(min-width: 1024px) 20vw, 33vw"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute bottom-1 left-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <p className="text-[9px] text-white font-mono truncate">{photo.camera.name}</p>
@@ -462,7 +468,14 @@ function MarsRoverPhotos() {
             onClick={() => setSelectedPhoto(null)}>
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
               className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-              <img src={selectedPhoto.img_src} alt={selectedPhoto.camera.full_name} className="w-full rounded-xl" />
+              <Image
+                src={selectedPhoto.img_src}
+                alt={selectedPhoto.camera.full_name}
+                width={1400}
+                height={1400}
+                className="w-full rounded-xl h-auto"
+                sizes="(min-width: 1280px) 960px, 100vw"
+              />
               <div className="mt-3 flex items-center justify-between">
                 <div>
                   <p className="text-white font-semibold text-sm">{selectedPhoto.camera.full_name}</p>

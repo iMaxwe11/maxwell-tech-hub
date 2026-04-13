@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 import type { ApodData } from "@/lib/types";
 
@@ -75,7 +76,13 @@ export function NASAAPODCard() {
             allowFullScreen
           />
         ) : (
-          <img src={mediaUrl} alt={apod.title} className="w-full h-full object-cover" loading="lazy" />
+          <Image
+            src={mediaUrl}
+            alt={apod.title}
+            fill
+            className="object-cover"
+            sizes="(min-width: 1280px) 420px, (min-width: 768px) 50vw, 100vw"
+          />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
         <div className="absolute bottom-4 left-4 right-4 pointer-events-none">

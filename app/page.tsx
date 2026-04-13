@@ -3,52 +3,16 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { SocialIcon } from "@/components/SocialIcon";
 import { GrokStarfield } from "@/components/GrokStarfield";
+import { Navbar } from "@/components/Navbar";
 import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
 import { StockTicker } from "@/components/widgets/StockTicker";
 import { WeatherRadar } from "@/components/widgets/WeatherRadar";
 import { ISSTracker } from "@/components/widgets/ISSTracker";
 import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
-
-const SOCIALS = [
-  { name: "GitHub", href: "https://github.com/iMaxwe11", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> },
-  { name: "LinkedIn", href: "https://linkedin.com/in/maxwell-nixon-90351627a", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> },
-  { name: "Email", href: "mailto:mnixon112@outlook.com", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg> },
-];
-
-/* ═══ NAVBAR ═══ */
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  useEffect(() => { const fn = () => setScrolled(window.scrollY > 40); window.addEventListener("scroll", fn); return () => window.removeEventListener("scroll", fn); }, []);
-  const links = [{ href: "#projects", label: "Projects" }, { href: "#experience", label: "Experience" }, { href: "/tools", label: "Tools" }, { href: "/space", label: "Space" }, { href: "/weather", label: "Weather" }, { href: "/news", label: "News" }, { href: "/play", label: "Arcade" }, { href: "#contact", label: "Contact" }];
-  return (
-    <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${scrolled ? "bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.15] shadow-[0_4px_20px_rgba(0,0,0,0.5)]" : "bg-transparent"}`}>
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-8 h-8"><motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30 group-hover:opacity-50 transition-opacity" /><div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center"><span className="text-xs font-bold gradient-text">M</span></div></div>
-          <span className="text-base font-semibold tracking-wide text-white/90 hover:text-white transition-colors hidden sm:inline">maxwellnixon<span className="text-cyan-400">.</span>com</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-1">
-          {links.map(l => <a key={l.href} href={l.href} className="px-4 py-2 text-sm font-medium tracking-wider uppercase text-white/70 hover:text-white transition-colors font-mono">{l.label}</a>)}
-          <div className="ml-4 flex items-center gap-2 pl-4 border-l border-white/10">
-            {SOCIALS.map(s => <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-cyan-400 transition-colors p-1.5" aria-label={s.name}>{s.icon}</a>)}
-          </div>
-        </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-white/70 hover:text-white p-2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{mobileOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}</svg></button>
-      </div>
-      <AnimatePresence>{mobileOpen && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-          className="md:hidden bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 px-4 pb-4 overflow-hidden">
-          {links.map(l => <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} className="block py-3 text-sm font-medium tracking-wider uppercase text-white/70 hover:text-white transition-colors font-mono border-b border-white/5 last:border-0">{l.label}</a>)}
-          <div className="flex gap-4 pt-3">{SOCIALS.map(s => <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-cyan-400 transition-colors">{s.icon}</a>)}</div>
-        </motion.div>
-      )}</AnimatePresence>
-    </motion.nav>
-  );
-}
+import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 
 /* ═══ SECTION WRAPPER ═══ */
 function Sec({ children, className = "", delay = 0, id }: { children: React.ReactNode; className?: string; delay?: number; id?: string }) {
@@ -108,6 +72,19 @@ function ProjectVisual({ gradient, icon, pattern, liveUrl, title }: { gradient: 
   );
 }
 
+interface ProjectCard {
+  title: string;
+  desc: string;
+  tags: string[];
+  gradient: string;
+  icon: string;
+  metrics: string;
+  pattern: string;
+  github?: string;
+  link?: string;
+  liveUrl?: string;
+}
+
 /* ═══ HERO ═══ */
 function HeroSection() {
   const [time, setTime] = useState("");
@@ -128,7 +105,7 @@ function HeroSection() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8"><WeatherWidget /></motion.div>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.8 }} className="flex items-center gap-4 mb-8 sm:mb-10">
           <motion.span animate={{ boxShadow: ["0 0 8px var(--accent-cyan)","0 0 20px var(--accent-cyan)","0 0 8px var(--accent-cyan)"] }} transition={{ duration: 3, repeat: Infinity }} className="status-dot" />
-          <span className="terminal-prompt font-mono text-xs sm:text-sm text-white/80">{time ? `EST ${time}` : "loading..."}<span className="text-white/40 mx-2">·</span>Southampton, NJ</span>
+          <span className="terminal-prompt font-mono text-xs sm:text-sm text-white/80">{time ? `EST ${time}` : "loading..."}<span className="text-white/40 mx-2">·</span>{siteConfig.location}</span>
         </motion.div>
         <div className="space-y-4">
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0, ...(rgbMode !== "off" ? anim() : {}) }} transition={{ opacity: { duration: 1.1, delay: 0.5 }, y: { duration: 1.1, delay: 0.5 }, ...(rgbMode !== "off" ? { backgroundPosition: trans() } : {}) }}
@@ -155,7 +132,7 @@ function HeroSection() {
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 1.0 }} className="mt-10 flex flex-wrap gap-4">
           <a href="#projects" className="glow-btn glow-btn-filled"><span>View Projects</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-          <a href="/Maxwell_Nixon_Resume.docx" download="Maxwell_Nixon_Resume.docx" className="glow-btn"><span>Download Resume</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
+          <a href={siteConfig.resumePath} download="Maxwell_Nixon_Resume.docx" className="glow-btn"><span>Download Resume</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
           <a href="#contact" className="glow-btn"><span>Get in Touch</span></a>
         </motion.div>
       </motion.div>
@@ -212,7 +189,7 @@ function AboutSection() {
 
 /* ═══ PROJECTS ═══ */
 function ProjectsSection() {
-  const projects = [
+  const projects: ProjectCard[] = [
     { title: "Smart Data Pipeline", desc: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.", tags: ["FastAPI","Python","Docker","Streamlit","CI/CD"], gradient: "from-cyan-500 to-blue-600", icon: "🔄", github: "https://github.com/iMaxwe11/smart-data-pipeline", metrics: "End-to-end ETL · Docker Compose · CI/CD pipeline", pattern: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)" },
     { title: "Developer Tools Hub", desc: "27 client-side developer utilities — JSON formatter, regex tester, hash generator, magic 8-ball, color guessing game, and more. Zero tracking, fully private.", tags: ["Next.js","TypeScript","Tailwind","Framer Motion"], gradient: "from-purple-500 to-pink-500", icon: "🛠️", link: "/tools", liveUrl: "https://maxwellnixon.com/tools", metrics: "27 tools · 100% client-side · Zero tracking", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
     { title: "Space & Launch Tracker", desc: "Real-time space dashboard with ISS tracking, NASA imagery, full launch schedule from all providers, Mars rover photos, asteroid monitoring, and solar weather.", tags: ["Next.js","NASA API","Real-time","Space Devs API"], gradient: "from-indigo-500 to-purple-600", icon: "🚀", link: "/space", liveUrl: "https://maxwellnixon.com/space", metrics: "Live launches · ISS tracking · Mars photos · NEO monitoring", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
@@ -234,7 +211,7 @@ function ProjectsSection() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((p, i) => (
             <motion.div key={p.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06, duration: 0.6 }} whileHover={{ y: -6 }} className="glass-card p-6 h-full group relative overflow-hidden cursor-default">
-              <ProjectVisual gradient={p.gradient} icon={p.icon} pattern={p.pattern} liveUrl={(p as any).liveUrl} title={p.title} />
+              <ProjectVisual gradient={p.gradient} icon={p.icon} pattern={p.pattern} liveUrl={p.liveUrl} title={p.title} />
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{p.title}</h3>
               <p className="text-white/55 leading-relaxed mb-3 text-sm">{p.desc}</p>
               <p className="text-[11px] font-mono text-cyan-400/70 mb-4 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>{p.metrics}</p>
@@ -262,7 +239,7 @@ function ExperienceSection() {
       <div className="max-w-[1200px] mx-auto">
         <div className="mb-16 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
           <div><span className="terminal-prompt font-mono text-sm text-white/70">experience</span><h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Where I&apos;ve Worked</h2><p className="mt-4 text-white/60 max-w-xl">From hands-on field tech to systems management — building expertise across IT infrastructure.</p></div>
-          <a href="/Maxwell_Nixon_Resume.docx" download="Maxwell_Nixon_Resume.docx" className="glow-btn text-sm shrink-0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Download Resume</span></a>
+          <a href={siteConfig.resumePath} download="Maxwell_Nixon_Resume.docx" className="glow-btn text-sm shrink-0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Download Resume</span></a>
         </div>
         <div className="relative">
           <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-px bg-gradient-to-b from-cyan-400/30 via-purple-400/20 to-transparent" />
@@ -314,7 +291,7 @@ function ContactSection() {
   const submit = () => {
     const subject = encodeURIComponent(`Portfolio Contact from ${form.name}`);
     const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
-    window.location.href = `mailto:mnixon112@outlook.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${siteConfig.email}?subject=${subject}&body=${body}`;
     setSent(true); setTimeout(() => setSent(false), 4000);
   };
   return (
@@ -324,11 +301,11 @@ function ContactSection() {
         <div className="grid md:grid-cols-[1fr_1.2fr] gap-10">
           <div className="space-y-6">
             <div className="glass-card p-7 space-y-5">
-              <a href="mailto:mnixon112@outlook.com" className="flex items-center gap-4 group"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Email</p><p className="text-white/90 hover:text-cyan-400 transition-colors text-sm">mnixon112@outlook.com</p></div></a>
-              <a href="tel:609-923-9437" className="flex items-center gap-4 group"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Phone</p><p className="text-white/90 hover:text-cyan-400 transition-colors text-sm">(609) 923-9437</p></div></a>
-              <div className="flex items-center gap-4"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Location</p><p className="text-white/90 text-sm">Southampton, NJ</p></div></div>
+              <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-4 group"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Email</p><p className="text-white/90 hover:text-cyan-400 transition-colors text-sm">{siteConfig.email}</p></div></a>
+              <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-4 group"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Phone</p><p className="text-white/90 hover:text-cyan-400 transition-colors text-sm">(609) 923-9437</p></div></a>
+              <div className="flex items-center gap-4"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Location</p><p className="text-white/90 text-sm">{siteConfig.location}</p></div></div>
             </div>
-            <div className="flex gap-3">{SOCIALS.map(s => <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="glass-card p-3.5 text-white/40 hover:text-cyan-400 hover:border-cyan-400/30 transition-all flex items-center gap-2">{s.icon}<span className="text-xs font-mono hidden sm:inline">{s.name}</span></a>)}</div>
+            <div className="flex gap-3">{socialLinks.map((social) => <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer" className="glass-card p-3.5 text-white/40 hover:text-cyan-400 hover:border-cyan-400/30 transition-all flex items-center gap-2" aria-label={social.name}><SocialIcon name={social.name} className="w-[18px] h-[18px]" /><span className="text-xs font-mono hidden sm:inline">{social.name}</span></a>)}</div>
           </div>
           <div className="glass-card p-7">
             <h3 className="text-white/80 font-semibold mb-5 text-sm">Send a Message</h3>
@@ -369,14 +346,6 @@ function BackToTop() {
 
 /* ═══ FOOTER ═══ */
 function Footer() {
-  const footerLinks = [
-    { label: "Projects", href: "#projects" },
-    { label: "Experience", href: "#experience" },
-    { label: "Tools", href: "/tools" },
-    { label: "Space", href: "/space" },
-    { label: "Arcade", href: "/play" },
-    { label: "Contact", href: "#contact" },
-  ];
   return (
     <footer className="relative py-16 px-4 sm:px-6">
       <div className="section-divider mb-16" />
@@ -385,20 +354,20 @@ function Footer() {
           <div>
             <Link href="/" className="flex items-center gap-3 group mb-4">
               <div className="relative w-8 h-8"><div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30" /><div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center"><span className="text-xs font-bold gradient-text">M</span></div></div>
-              <span className="text-base font-semibold tracking-wide text-white/80">maxwellnixon<span className="text-cyan-400">.</span>com</span>
+              <span className="text-base font-semibold tracking-wide text-white/80">{siteConfig.domain.replace(".com", "")}<span className="text-cyan-400">.</span>com</span>
             </Link>
-            <p className="text-white/40 text-sm leading-relaxed">Cloud-savvy IT technician and full-stack developer building premium software experiences.</p>
+            <p className="text-white/40 text-sm leading-relaxed">{siteConfig.shortDescription}</p>
           </div>
           <div>
             <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Navigation</h4>
             <div className="grid grid-cols-2 gap-2">
-              {footerLinks.map(l => <a key={l.label} href={l.href} className="text-sm text-white/35 hover:text-cyan-400 transition-colors">{l.label}</a>)}
+              {footerNavLinks.map(link => <a key={link.label} href={link.href} className="text-sm text-white/35 hover:text-cyan-400 transition-colors">{link.label}</a>)}
             </div>
           </div>
           <div>
             <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Connect</h4>
             <div className="flex flex-col gap-2">
-              {SOCIALS.map(s => <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm text-white/35 hover:text-cyan-400 transition-colors flex items-center gap-2">{s.icon}<span>{s.name}</span></a>)}
+              {socialLinks.map((social) => <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer" className="text-sm text-white/35 hover:text-cyan-400 transition-colors flex items-center gap-2"><SocialIcon name={social.name} /><span>{social.name}</span></a>)}
             </div>
           </div>
         </div>
@@ -417,7 +386,7 @@ export default function Home() {
     <>
       <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
-      <Navbar />
+      <Navbar links={homeNavLinks} />
       <main>
         <HeroSection />
         <div className="section-divider" />
