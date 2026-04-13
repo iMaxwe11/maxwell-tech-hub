@@ -38,6 +38,34 @@ const PASSWORD_TONE_STYLES: Record<PasswordTone, { barClass: string; textClass: 
   veryStrong: { barClass: "bg-cyan-400", textClass: "text-cyan-400" },
 };
 
+const HTTP_STATUSES = [
+  { code: 200, label: "OK", category: "Success", note: "Standard successful response." },
+  { code: 201, label: "Created", category: "Success", note: "Resource created successfully." },
+  { code: 204, label: "No Content", category: "Success", note: "Success with no response body." },
+  { code: 301, label: "Moved Permanently", category: "Redirect", note: "Permanent redirect to a new URL." },
+  { code: 302, label: "Found", category: "Redirect", note: "Temporary redirect." },
+  { code: 304, label: "Not Modified", category: "Redirect", note: "Use cached content." },
+  { code: 400, label: "Bad Request", category: "Client", note: "Malformed or invalid request." },
+  { code: 401, label: "Unauthorized", category: "Client", note: "Authentication required or invalid." },
+  { code: 403, label: "Forbidden", category: "Client", note: "Authenticated but not allowed." },
+  { code: 404, label: "Not Found", category: "Client", note: "Requested resource does not exist." },
+  { code: 409, label: "Conflict", category: "Client", note: "State conflict, often on writes." },
+  { code: 422, label: "Unprocessable Content", category: "Client", note: "Validation failed or semantic issue." },
+  { code: 429, label: "Too Many Requests", category: "Client", note: "Rate limit reached." },
+  { code: 500, label: "Internal Server Error", category: "Server", note: "Unexpected server failure." },
+  { code: 502, label: "Bad Gateway", category: "Server", note: "Upstream dependency returned an invalid response." },
+  { code: 503, label: "Service Unavailable", category: "Server", note: "Temporary outage or maintenance." },
+  { code: 504, label: "Gateway Timeout", category: "Server", note: "Upstream service timed out." },
+] as const;
+
+const CRON_PRESETS = [
+  { label: "Every 15 min", value: "*/15 * * * *", detail: "Runs every quarter-hour." },
+  { label: "Hourly", value: "0 * * * *", detail: "Runs once at the top of every hour." },
+  { label: "Daily 9 AM", value: "0 9 * * *", detail: "Runs daily at 9:00 AM." },
+  { label: "Weekdays 9 AM", value: "0 9 * * 1-5", detail: "Runs Monday through Friday at 9:00 AM." },
+  { label: "Mondays 8 AM", value: "0 8 * * 1", detail: "Runs every Monday morning." },
+] as const;
+
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
 }
@@ -74,6 +102,7 @@ function AnimIn({ children, className = "", delay = 0 }: { children: React.React
 /* ── Section Wrapper ───────────────────── */
 function Section({ id, title, desc, children, accent = "cyan", index = 0 }: SectionProps) {
   const colors: Record<Accent, string> = { cyan: "var(--accent-cyan)", purple: "var(--accent-purple)", gold: "var(--accent-gold)" };
+  const resolvedIndex = NAV_IDS.includes(id as ToolId) ? NAV_IDS.indexOf(id as ToolId) : index;
   const ref = useRef<HTMLElement>(null);
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!ref.current) return; const rect = ref.current.getBoundingClientRect();
@@ -81,15 +110,15 @@ function Section({ id, title, desc, children, accent = "cyan", index = 0 }: Sect
     ref.current.style.setProperty('--tool-y', `${((e.clientY-rect.top)/rect.height)*100}%`);
   }, []);
   return (
-    <AnimIn delay={index * 0.05}>
+    <AnimIn delay={resolvedIndex * 0.05}>
       <section ref={ref} id={id} onMouseMove={handleMouseMove} className="tool-section group shimmer-sweep breathe-border">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
           <div className="flex items-center gap-3">
             <motion.div initial={{ scale: 0, rotate: -90 }} whileInView={{ scale: 1, rotate: 0 }} viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index*0.05, type: "spring", stiffness: 300 }}
+              transition={{ duration: 0.5, delay: resolvedIndex * 0.05, type: "spring", stiffness: 300 }}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold font-[family-name:var(--font-mono)]"
               style={{ background: `${colors[accent]||colors.cyan}15`, border: `1px solid ${colors[accent]||colors.cyan}30`, color: colors[accent]||colors.cyan }}>
-              {String(index + 1).padStart(2, "0")}
+              {String(resolvedIndex + 1).padStart(2, "0")}
             </motion.div>
             <div>
               <span className="text-[0.65rem] font-[family-name:var(--font-mono)] uppercase tracking-[0.2em] text-[var(--text-muted)]"><span style={{ color: colors[accent]||colors.cyan }}>❯</span> {id}</span>
@@ -120,25 +149,43 @@ function ToolCountBadge() {
 /* ═══════════════ TOOL 15: QR Code Generator ═══════════════ */
 function QRCodeGenerator() {
   const [text, setText] = useState("https://maxwellnixon.com");
+  const [size, setSize] = useState(240);
+  const [fg, setFg] = useState("06b6d4");
+  const [bg, setBg] = useState("0a0a0a");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas || !text) return;
     const ctx = canvas.getContext("2d"); if (!ctx) return;
-    const size = 200;
     canvas.width = size; canvas.height = size;
     // Simple QR using a free API as image source
     const img = new Image(); img.crossOrigin = "anonymous";
-    img.onload = () => { ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,size,size); ctx.drawImage(img, 0, 0, size, size); };
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&bgcolor=0a0a0a&color=06b6d4`;
-  }, [text]);
+    img.onload = () => { ctx.fillStyle = `#${bg}`; ctx.fillRect(0,0,size,size); ctx.drawImage(img, 0, 0, size, size); };
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&bgcolor=${bg}&color=${fg}`;
+  }, [bg, fg, size, text]);
   const download = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     const a = document.createElement("a"); a.download = "qrcode.png";
     a.href = canvas.toDataURL("image/png"); a.click();
   };
   return (
-    <Section id="qrcode" title="QR Code Generator" desc="Generate downloadable QR codes from any text or URL." accent="cyan" index={14}>
+    <Section id="qrcode" title="QR Code Generator" desc="Generate branded QR codes with custom size and colors." accent="cyan" index={19}>
       <input className="tool-input neon-input mb-4" value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter URL or text..." />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
+          Size
+          <select value={size} onChange={(event) => setSize(Number(event.target.value))} className="tool-input neon-input ml-2 w-24">
+            {[180, 240, 320].map((option) => <option key={option} value={option}>{option}px</option>)}
+          </select>
+        </label>
+        <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] flex items-center gap-2">
+          Foreground
+          <input type="color" value={`#${fg}`} onChange={(event) => setFg(event.target.value.replace("#", ""))} className="w-8 h-8 rounded border border-white/10" />
+        </label>
+        <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] flex items-center gap-2">
+          Background
+          <input type="color" value={`#${bg}`} onChange={(event) => setBg(event.target.value.replace("#", ""))} className="w-8 h-8 rounded border border-white/10" />
+        </label>
+      </div>
       <div className="flex flex-col sm:flex-row items-center gap-6">
         <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
           <canvas ref={canvasRef} className="rounded-lg" style={{ width: 180, height: 180 }} />
@@ -146,6 +193,7 @@ function QRCodeGenerator() {
         <div className="space-y-3">
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={download}>Download PNG</motion.button>
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(text)}>Copy Text</motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={() => setText("https://maxwellnixon.com/status")}>Load Sample</motion.button>
         </div>
       </div>
     </Section>
@@ -167,10 +215,23 @@ function JWTDecoder() {
     } catch { return null; }
   }, [jwt]);
   return (
-    <Section id="jwt" title="JWT Decoder" desc="Decode and inspect JSON Web Tokens." accent="purple" index={15}>
+    <Section id="jwt" title="JWT Decoder" desc="Decode payloads, inspect claims, and spot expired tokens fast." accent="purple" index={20}>
       <textarea className="tool-input neon-input min-h-[80px] resize-none mb-4 text-xs break-all" value={jwt} onChange={(e) => setJwt(e.target.value)} placeholder="Paste a JWT token..." />
       {decoded ? (
         <div className="space-y-3">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-2">
+            {[
+              ["Algorithm", decoded.header.alg ?? "—"],
+              ["Subject", decoded.payload.sub ?? decoded.payload.name ?? "—"],
+              ["Issuer", decoded.payload.iss ?? "—"],
+              ["Audience", Array.isArray(decoded.payload.aud) ? decoded.payload.aud.join(", ") : decoded.payload.aud ?? "—"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-3">
+                <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{label}</div>
+                <div className="mt-2 text-sm text-[var(--text-primary)] break-all">{String(value)}</div>
+              </div>
+            ))}
+          </div>
           {(["header", "payload"] as const).map((section) => (
             <div key={section} className="rounded-lg bg-black/20 border border-white/[0.04] p-3 cursor-pointer group" onClick={() => navigator.clipboard.writeText(JSON.stringify(decoded[section], null, 2))}>
               <div className="flex items-center justify-between mb-2">
@@ -195,8 +256,14 @@ function JWTDecoder() {
 
 /* ═══════════════ TOOL 17: Pomodoro Timer ═══════════════ */
 function PomodoroTimer() {
+  const PRESETS = [
+    { label: "25/5", work: 25, break: 5 },
+    { label: "50/10", work: 50, break: 10 },
+    { label: "90/15", work: 90, break: 15 },
+  ] as const;
+  const [preset, setPreset] = useState<(typeof PRESETS)[number]>(PRESETS[0]);
   const [mode, setMode] = useState<"work"|"break">("work");
-  const [seconds, setSeconds] = useState(25 * 60);
+  const [seconds, setSeconds] = useState(PRESETS[0].work * 60);
   const [running, setRunning] = useState(false);
   const [sessions, setSessions] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -206,21 +273,42 @@ function PomodoroTimer() {
         setSeconds(s => {
           if (s <= 1) {
             setRunning(false);
-            if (mode === "work") { setSessions(p => p + 1); setMode("break"); return 5 * 60; }
-            else { setMode("work"); return 25 * 60; }
+            if (mode === "work") { setSessions(p => p + 1); setMode("break"); return preset.break * 60; }
+            else { setMode("work"); return preset.work * 60; }
           }
           return s - 1;
         });
       }, 1000);
     } else if (intervalRef.current) clearInterval(intervalRef.current);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running, mode]);
-  const reset = () => { setRunning(false); setMode("work"); setSeconds(25*60); };
+  }, [mode, preset.break, preset.work, running]);
+  useEffect(() => {
+    setRunning(false);
+    setMode("work");
+    setSeconds(preset.work * 60);
+  }, [preset]);
+  const reset = () => { setRunning(false); setMode("work"); setSeconds(preset.work * 60); };
   const mins = Math.floor(seconds/60); const secs = seconds%60;
-  const pct = mode === "work" ? ((25*60 - seconds) / (25*60)) * 100 : ((5*60 - seconds) / (5*60)) * 100;
+  const pct = mode === "work" ? ((preset.work*60 - seconds) / (preset.work*60)) * 100 : ((preset.break*60 - seconds) / (preset.break*60)) * 100;
   return (
-    <Section id="pomodoro" title="Pomodoro Timer" desc="Focus timer with work/break cycles." accent="gold" index={16}>
+    <Section id="pomodoro" title="Pomodoro Timer" desc="Switch between focus presets, track completed rounds, and keep momentum." accent="gold" index={21}>
       <div className="flex flex-col items-center">
+        <div className="mb-4 flex flex-wrap justify-center gap-2">
+          {PRESETS.map((option) => (
+            <motion.button
+              key={option.label}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setPreset(option)}
+              className={`px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-mono)] uppercase tracking-wider transition-all ${
+                preset.label === option.label
+                  ? "bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] border border-[var(--accent-gold)]/20"
+                  : "bg-white/[0.02] text-[var(--text-muted)] border border-white/[0.04]"
+              }`}
+            >
+              {option.label}
+            </motion.button>
+          ))}
+        </div>
         <div className="relative w-48 h-48 mb-6">
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
             <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
@@ -235,7 +323,9 @@ function PomodoroTimer() {
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={() => setRunning(!running)}>{running ? "Pause" : "Start"}</motion.button>
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={reset}>Reset</motion.button>
         </div>
-        <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Sessions completed: <span className="text-[var(--accent-gold)]">{sessions}</span></div>
+        <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] text-center">
+          Sessions completed: <span className="text-[var(--accent-gold)]">{sessions}</span> · Current cadence: {preset.work}m focus / {preset.break}m reset
+        </div>
       </div>
     </Section>
   );
@@ -533,7 +623,9 @@ export default function ToolsPage() {
     json: JSONFormatter, regex: RegexTester, timestamp: TimestampConverter,
     contrast: ContrastChecker, generator: GeneratorKit, base64: Base64Tool,
     url: URLTool, lorem: LoremIpsum, hash: HashGenerator,
-    wordcount: WordCounter, cssunit: CSSUnitConverter, qrcode: QRCodeGenerator,
+    wordcount: WordCounter, cssunit: CSSUnitConverter, slug: SlugStudio,
+    textcase: TextCaseStudio, csvjson: CSVJSONStudio, httpstatus: HTTPStatusExplorer,
+    cron: CronBuilder, qrcode: QRCodeGenerator,
     jwt: JWTDecoder, pomodoro: PomodoroTimer, ipinfo: IPInfo,
     diff: DiffChecker, baseconv: BaseConverter, gradient: GradientGenerator,
     password: PasswordTester, eightball: Magic8Ball, coinflip: CoinFlip,
@@ -619,6 +711,38 @@ export default function ToolsPage() {
                 </motion.a>
               ))}
             </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="mt-6 grid md:grid-cols-3 gap-3">
+              {[
+                {
+                  title: "Content Ops",
+                  desc: "Slug, text case, and markdown tools for shipping cleaner copy.",
+                  links: ["slug", "textcase", "markdown"],
+                },
+                {
+                  title: "API Debugging",
+                  desc: "JSON, regex, HTTP status codes, and JWT inspection in one stop.",
+                  links: ["json", "regex", "httpstatus", "jwt"],
+                },
+                {
+                  title: "Shipping Prep",
+                  desc: "Cron schedules, CSV transforms, QR codes, and generators for handoff work.",
+                  links: ["cron", "csvjson", "qrcode", "generator"],
+                },
+              ].map((panel) => (
+                <div key={panel.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                  <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{panel.title}</div>
+                  <p className="mt-3 text-sm text-[var(--text-secondary)]">{panel.desc}</p>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {panel.links.map((link) => (
+                      <a key={link} href={`#${link}`} className="tech-tag text-[0.6rem]">
+                        {link}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
           </div>
         </AnimIn>
 
@@ -655,17 +779,50 @@ export default function ToolsPage() {
 function Palette() {
   const [h, setH] = useState(200); const [s, setS] = useState(100); const [l, setL] = useState(60); const [copied, setCopied] = useState(false);
   const color = `hsl(${h} ${s}% ${l}%)`;
+  const hslToRgb = useCallback((hue: number, sat: number, light: number) => {
+    const saturation = sat / 100;
+    const brightness = light / 100;
+    const chroma = (1 - Math.abs(2 * brightness - 1)) * saturation;
+    const segment = hue / 60;
+    const x = chroma * (1 - Math.abs((segment % 2) - 1));
+    let r = 0, g = 0, b = 0;
+
+    if (segment >= 0 && segment < 1) [r, g, b] = [chroma, x, 0];
+    else if (segment < 2) [r, g, b] = [x, chroma, 0];
+    else if (segment < 3) [r, g, b] = [0, chroma, x];
+    else if (segment < 4) [r, g, b] = [0, x, chroma];
+    else if (segment < 5) [r, g, b] = [x, 0, chroma];
+    else [r, g, b] = [chroma, 0, x];
+
+    const match = brightness - chroma / 2;
+    return [r, g, b].map((channel) => Math.round((channel + match) * 255));
+  }, []);
+  const [r, g, b] = useMemo(() => hslToRgb(h, s, l), [h, s, l, hslToRgb]);
+  const hex = useMemo(
+    () =>
+      `#${[r, g, b]
+        .map((channel) => channel.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase()}`,
+    [r, g, b],
+  );
   const paletteControls = [
     { label: "Hue", value: h, setValue: setH, max: 360 },
     { label: "Sat", value: s, setValue: setS, max: 100 },
     { label: "Light", value: l, setValue: setL, max: 100 },
   ] as const;
-  function copy() { navigator.clipboard.writeText(`hsl(${h} ${s}% ${l}%)`); setCopied(true); setTimeout(() => setCopied(false), 1500); }
+  const swatches = [20, 35, 50, 65, 80];
+  function copy(value = `hsl(${h} ${s}% ${l}%)`) { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); }
+  function randomize() {
+    setH(Math.floor(Math.random() * 361));
+    setS(Math.floor(Math.random() * 41) + 55);
+    setL(Math.floor(Math.random() * 31) + 35);
+  }
   return (
-    <Section id="palette" title="Color Palette" desc="Generate a quick palette and copy the CSS value." accent="purple" index={0}>
+    <Section id="palette" title="Color Palette" desc="Generate a quick palette, randomize a colorway, and copy CSS-ready values." accent="purple" index={0}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
         <motion.div whileHover={{ scale: 1.05, rotate: 2 }} transition={{ type: "spring", stiffness: 300 }}
-          className="w-full sm:w-40 h-24 sm:h-28 rounded-xl border border-white/10 shadow-lg cursor-pointer" style={{ background: color, boxShadow: `0 8px 30px ${color}33` }} onClick={copy} />
+          className="w-full sm:w-40 h-24 sm:h-28 rounded-xl border border-white/10 shadow-lg cursor-pointer" style={{ background: color, boxShadow: `0 8px 30px ${color}33` }} onClick={() => copy()} />
         <div className="flex-1 w-full grid sm:grid-cols-3 gap-3 sm:gap-4">
           {paletteControls.map((control) => (
             <div key={control.label}><label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider">{control.label} <span className="text-[var(--accent-cyan)]">{control.value}</span></label>
@@ -673,14 +830,45 @@ function Palette() {
           ))}
         </div>
       </div>
+      <div className="mt-4 grid sm:grid-cols-3 gap-2">
+        {[
+          { label: "HSL", value: `hsl(${h} ${s}% ${l}%)` },
+          { label: "RGB", value: `rgb(${r}, ${g}, ${b})` },
+          { label: "HEX", value: hex },
+        ].map((token) => (
+          <motion.button
+            key={token.label}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => copy(token.value)}
+            className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-3 text-left transition-colors hover:border-white/10"
+          >
+            <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{token.label}</div>
+            <div className="mt-1 text-sm text-[var(--accent-cyan)] font-[family-name:var(--font-mono)] break-all">{token.value}</div>
+          </motion.button>
+        ))}
+      </div>
       <div className="mt-4 text-sm flex flex-wrap items-center gap-3 font-[family-name:var(--font-mono)]">
-        <span className="text-[var(--text-muted)]">CSS:</span><code className="text-[var(--accent-cyan)]">hsl({h} {s}% {l}%)</code>
-        <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn-primary tool-btn" onClick={copy}>
+        <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn-primary tool-btn" onClick={() => copy()}>
           <AnimatePresence mode="wait"><motion.span key={copied?"done":"copy"} initial={{ opacity:0, y:5 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-5 }}>{copied ? "✓ Copied!" : "Copy"}</motion.span></AnimatePresence>
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={randomize}>
+          Randomize
         </motion.button>
       </div>
       <div className="mt-4 flex gap-1 rounded-lg overflow-hidden">
-        {[20, 35, 50, 65, 80].map((lt) => (<motion.div key={lt} whileHover={{ scaleY: 1.5 }} className="flex-1 h-6 cursor-pointer transition-transform" style={{ background: `hsl(${h} ${s}% ${lt}%)` }} onClick={() => { setL(lt); copy(); }} />))}
+        {swatches.map((lt) => (
+          <motion.div
+            key={lt}
+            whileHover={{ scaleY: 1.5 }}
+            className="flex-1 h-6 cursor-pointer transition-transform"
+            style={{ background: `hsl(${h} ${s}% ${lt}%)` }}
+            onClick={() => {
+              setL(lt);
+              copy(`hsl(${h} ${s}% ${lt}%)`);
+            }}
+          />
+        ))}
       </div>
     </Section>
   );
@@ -688,9 +876,30 @@ function Palette() {
 
 /* ═══════════════ TOOL 2: Markdown Preview ═══════════════ */
 function MarkdownPreview() {
-  const [text, setText] = useState("# Hello\n\nThis is **live** preview with *italic* support.\n\n## Features\n- Real-time rendering\n- Clean output");
+  const starter =
+    "# Release Notes\n\nThis is **live** preview with *italic* support.\n\n## Features\n- Real-time rendering\n- Copy-ready notes\n- Fast client-only parsing";
+  const [text, setText] = useState(starter);
+  const stats = useMemo(() => {
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const headings = text.split("\n").filter((line) => line.startsWith("#")).length;
+    return { words, headings };
+  }, [text]);
   return (
     <Section id="markdown" title="Markdown Preview" desc="Lightweight headings, bold, italics, lists." accent="cyan" index={1}>
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-[family-name:var(--font-mono)]">
+        <span className="rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-white/50">
+          {stats.words} words
+        </span>
+        <span className="rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-white/50">
+          {stats.headings} headings
+        </span>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn text-xs" onClick={() => setText(starter)}>
+          Reset Sample
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn text-xs" onClick={() => navigator.clipboard.writeText(text)}>
+          Copy Markdown
+        </motion.button>
+      </div>
       <div className="grid md:grid-cols-2 gap-4">
         <textarea value={text} onChange={(e) => setText(e.target.value)} className="tool-input neon-input min-h-[200px] sm:min-h-[220px] resize-none" />
         <motion.div layout className="prose prose-invert max-w-none p-4 rounded-xl border border-white/[0.04] bg-black/20 min-h-[200px] overflow-auto text-sm">
@@ -785,8 +994,9 @@ function Inspiration() {
 
 /* ═══════════════ TOOL 4: JSON Formatter ═══════════════ */
 function JSONFormatter() {
-  const [input, setInput] = useState('{"hello":"world","arr":[1,2,3]}'); const [space, setSpace] = useState(2);
-  const [error, setError] = useState<string|null>(null); const [output, setOutput] = useState("");
+  const starterJson = '{"hello":"world","arr":[1,2,3]}';
+  const [input, setInput] = useState(starterJson); const [space, setSpace] = useState(2);
+  const [error, setError] = useState<string|null>(null); const [output, setOutput] = useState(() => JSON.stringify(JSON.parse(starterJson), null, 2));
   function prettify() { try { setError(null); setOutput(JSON.stringify(JSON.parse(input), null, space)); } catch (error) { setError(getErrorMessage(error)); setOutput(""); } }
   function minify() { try { setError(null); setOutput(JSON.stringify(JSON.parse(input))); } catch (error) { setError(getErrorMessage(error)); setOutput(""); } }
   return (
@@ -801,6 +1011,7 @@ function JSONFormatter() {
         <input type="number" min={0} max={8} value={space} onChange={(e) => setSpace(parseInt(e.target.value||"0"))} className="tool-input w-16 text-center neon-input" />
         <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn-primary tool-btn" onClick={prettify}>Prettify</motion.button>
         <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={minify}>Minify</motion.button>
+        <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={() => setInput('{"name":"maxwell","stack":["next","react","tailwind"],"status":"shipping"}')}>Load Sample</motion.button>
         <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(output)}>Copy</motion.button>
       </div>
     </Section>
@@ -1075,6 +1286,375 @@ function CSSUnitConverter() {
             <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">click to copy</div>
           </motion.div>
         ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 15: Slug Studio ═══════════════ */
+function SlugStudio() {
+  const [input, setInput] = useState("Maxwell Nixon Portfolio Launch Checklist");
+  const slug = useMemo(() => {
+    return input
+      .normalize("NFKD")
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }, [input]);
+  const snake = slug.replace(/-/g, "_");
+
+  return (
+    <Section id="slug" title="Slug Studio" desc="Generate clean SEO slugs, URL paths, and snake case handles." accent="gold" index={14}>
+      <textarea
+        className="tool-input neon-input min-h-[120px] resize-none"
+        value={input}
+        onChange={(event) => setInput(event.target.value)}
+        placeholder="Paste a title, page name, or route label..."
+      />
+      <div className="mt-4 grid md:grid-cols-3 gap-3">
+        {[
+          { label: "Slug", value: slug || "-" },
+          { label: "Snake", value: snake || "-" },
+          { label: "Route", value: slug ? `/${slug}` : "/" },
+        ].map((token) => (
+          <motion.button
+            key={token.label}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigator.clipboard.writeText(token.value)}
+            className="rounded-xl border border-white/[0.05] bg-black/20 p-4 text-left"
+          >
+            <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{token.label}</div>
+            <div className="mt-2 text-sm text-[var(--accent-gold)] font-[family-name:var(--font-mono)] break-all">{token.value}</div>
+          </motion.button>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 16: Text Case Studio ═══════════════ */
+function TextCaseStudio() {
+  const [input, setInput] = useState("Launch the obsidian luxe dashboard");
+  const words = useMemo(
+    () => input.trim().split(/\s+/).filter(Boolean),
+    [input],
+  );
+  const titleCase = useMemo(
+    () => words.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" "),
+    [words],
+  );
+  const sentenceCase = useMemo(() => {
+    const normalized = input.trim();
+    return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase() : "";
+  }, [input]);
+  const camelCase = useMemo(
+    () =>
+      words
+        .map((word, index) =>
+          index === 0
+            ? word.toLowerCase()
+            : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(""),
+    [words],
+  );
+  const pascalCase = useMemo(
+    () => words.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(""),
+    [words],
+  );
+  const kebabCase = useMemo(() => words.map((word) => word.toLowerCase()).join("-"), [words]);
+  const snakeCase = useMemo(() => words.map((word) => word.toLowerCase()).join("_"), [words]);
+  const outputs = [
+    { label: "Upper", value: input.toUpperCase() },
+    { label: "Lower", value: input.toLowerCase() },
+    { label: "Title", value: titleCase },
+    { label: "Sentence", value: sentenceCase },
+    { label: "camelCase", value: camelCase },
+    { label: "PascalCase", value: pascalCase },
+    { label: "kebab-case", value: kebabCase },
+    { label: "snake_case", value: snakeCase },
+  ];
+
+  return (
+    <Section id="textcase" title="Text Case Studio" desc="Flip between title, sentence, camel, Pascal, kebab, and snake case." accent="cyan" index={15}>
+      <textarea
+        className="tool-input neon-input min-h-[120px] resize-none"
+        value={input}
+        onChange={(event) => setInput(event.target.value)}
+        placeholder="Type text to transform..."
+      />
+      <div className="mt-4 grid sm:grid-cols-2 gap-3">
+        {outputs.map((output) => (
+          <motion.button
+            key={output.label}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigator.clipboard.writeText(output.value)}
+            className="rounded-xl border border-white/[0.05] bg-black/20 p-4 text-left"
+          >
+            <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{output.label}</div>
+            <div className="mt-2 text-sm text-[var(--text-primary)] break-all">{output.value || "—"}</div>
+          </motion.button>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 17: CSV ↔ JSON ═══════════════ */
+function CSVJSONStudio() {
+  const csvSample = "name,role,stack\nMaxwell,Builder,Next.js\nClaude,Reviewer,Research\nCodex,Shipper,React";
+  const jsonSample = '[{"name":"Maxwell","role":"Builder","stack":"Next.js"},{"name":"Claude","role":"Reviewer","stack":"Research"}]';
+  const [mode, setMode] = useState<"csv-to-json" | "json-to-csv">("csv-to-json");
+  const [input, setInput] = useState(csvSample);
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const parseCsvLine = useCallback((line: string) => {
+    const cells: string[] = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index];
+      const next = line[index + 1];
+
+      if (char === '"') {
+        if (inQuotes && next === '"') {
+          current += '"';
+          index += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+
+      if (char === "," && !inQuotes) {
+        cells.push(current.trim());
+        current = "";
+        continue;
+      }
+
+      current += char;
+    }
+
+    cells.push(current.trim());
+    return cells;
+  }, []);
+
+  const convert = useCallback(() => {
+    try {
+      setError(null);
+
+      if (mode === "csv-to-json") {
+        const lines = input.split(/\r?\n/).filter((line) => line.trim());
+        const [headerLine, ...rows] = lines;
+        if (!headerLine) {
+          setOutput("[]");
+          return;
+        }
+
+        const headers = parseCsvLine(headerLine);
+        const items = rows.map((row) => {
+          const values = parseCsvLine(row);
+          return headers.reduce<Record<string, string>>((acc, header, index) => {
+            acc[header] = values[index] ?? "";
+            return acc;
+          }, {});
+        });
+
+        setOutput(JSON.stringify(items, null, 2));
+        return;
+      }
+
+      const records = JSON.parse(input) as Array<Record<string, unknown>>;
+      if (!Array.isArray(records)) {
+        throw new Error("Expected an array of objects.");
+      }
+
+      const headers = Array.from(
+        new Set(records.flatMap((record) => Object.keys(record ?? {}))),
+      );
+      const csv = [
+        headers.join(","),
+        ...records.map((record) =>
+          headers
+            .map((header) => {
+              const raw = String(record?.[header] ?? "");
+              return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
+            })
+            .join(","),
+        ),
+      ].join("\n");
+
+      setOutput(csv);
+    } catch (error) {
+      setError(getErrorMessage(error));
+      setOutput("");
+    }
+  }, [input, mode, parseCsvLine]);
+
+  useEffect(() => {
+    convert();
+  }, [convert]);
+
+  return (
+    <Section id="csvjson" title="CSV ↔ JSON Studio" desc="Convert flat CSV rows into JSON objects and send object arrays back to CSV." accent="purple" index={16}>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {([
+          ["csv-to-json", "CSV → JSON"],
+          ["json-to-csv", "JSON → CSV"],
+        ] as const).map(([value, label]) => (
+          <motion.button
+            key={value}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setMode(value);
+              setInput(value === "csv-to-json" ? csvSample : jsonSample);
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-[family-name:var(--font-mono)] uppercase tracking-wider transition-all duration-300 ${
+              mode === value
+                ? "bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] border border-[var(--accent-purple)]/20"
+                : "bg-white/[0.02] text-[var(--text-muted)] border border-white/[0.04]"
+            }`}
+          >
+            {label}
+          </motion.button>
+        ))}
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <textarea className="tool-input neon-input min-h-[200px] resize-none" value={input} onChange={(event) => setInput(event.target.value)} />
+        <textarea className="tool-input min-h-[200px] resize-none bg-black/20" value={output} readOnly />
+      </div>
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-3 text-xs text-red-400 font-[family-name:var(--font-mono)]">
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn-primary tool-btn" onClick={convert}>Convert</motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(output)}>Copy Output</motion.button>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 18: HTTP Status Explorer ═══════════════ */
+function HTTPStatusExplorer() {
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return HTTP_STATUSES;
+    return HTTP_STATUSES.filter((status) =>
+      `${status.code} ${status.label} ${status.category} ${status.note}`
+        .toLowerCase()
+        .includes(normalized),
+    );
+  }, [query]);
+
+  return (
+    <Section id="httpstatus" title="HTTP Status Explorer" desc="Search the common response codes you keep half-remembering mid-debug." accent="cyan" index={17}>
+      <input
+        className="tool-input neon-input"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search 404, auth, validation, redirects..."
+      />
+      <div className="mt-4 grid md:grid-cols-2 gap-3">
+        {results.map((status) => (
+          <motion.button
+            key={status.code}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigator.clipboard.writeText(String(status.code))}
+            className="rounded-xl border border-white/[0.05] bg-black/20 p-4 text-left"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-2xl font-bold text-[var(--accent-cyan)] font-[family-name:var(--font-heading)]">{status.code}</div>
+              <span className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{status.category}</span>
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white">{status.label}</div>
+            <p className="mt-2 text-xs text-[var(--text-secondary)]">{status.note}</p>
+          </motion.button>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 19: Cron Builder ═══════════════ */
+function CronBuilder() {
+  const [minute, setMinute] = useState("*/15");
+  const [hour, setHour] = useState("*");
+  const [dayOfMonth, setDayOfMonth] = useState("*");
+  const [month, setMonth] = useState("*");
+  const [dayOfWeek, setDayOfWeek] = useState("*");
+  const expression = `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
+  const explanation = useMemo(() => {
+    const phrases = [
+      minute === "*" ? "every minute" : minute.startsWith("*/") ? `every ${minute.slice(2)} minutes` : `at minute ${minute}`,
+      hour === "*" ? "every hour" : `at hour ${hour}`,
+      dayOfMonth === "*" ? "every day of the month" : `on day ${dayOfMonth}`,
+      month === "*" ? "every month" : `in month ${month}`,
+      dayOfWeek === "*" ? "every weekday" : `weekday ${dayOfWeek}`,
+    ];
+    return phrases.join(" • ");
+  }, [dayOfMonth, dayOfWeek, hour, minute, month]);
+
+  return (
+    <Section id="cron" title="Cron Builder" desc="Build a five-field cron expression with presets and a plain-English summary." accent="gold" index={18}>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {CRON_PRESETS.map((preset) => (
+          <motion.button
+            key={preset.value}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              const [nextMinute, nextHour, nextDayOfMonth, nextMonth, nextDayOfWeek] = preset.value.split(" ");
+              setMinute(nextMinute);
+              setHour(nextHour);
+              setDayOfMonth(nextDayOfMonth);
+              setMonth(nextMonth);
+              setDayOfWeek(nextDayOfWeek);
+            }}
+            className="px-3 py-2 rounded-lg border border-white/[0.06] bg-white/[0.03] text-[0.65rem] uppercase tracking-[0.18em] text-white/50 font-[family-name:var(--font-mono)]"
+            title={preset.detail}
+          >
+            {preset.label}
+          </motion.button>
+        ))}
+      </div>
+      <div className="grid sm:grid-cols-5 gap-3">
+        {[
+          ["Minute", minute, setMinute, "*/15"],
+          ["Hour", hour, setHour, "9"],
+          ["Day", dayOfMonth, setDayOfMonth, "*"],
+          ["Month", month, setMonth, "*"],
+          ["Weekday", dayOfWeek, setDayOfWeek, "1-5"],
+        ].map(([label, value, setter, placeholder]) => (
+          <div key={label as string}>
+            <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider">{label as string}</label>
+            <input
+              className="tool-input neon-input mt-1"
+              value={value as string}
+              onChange={(event) => (setter as React.Dispatch<React.SetStateAction<string>>)(event.target.value)}
+              placeholder={placeholder as string}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 rounded-xl border border-white/[0.05] bg-black/20 p-4">
+        <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">Expression</div>
+        <div className="mt-2 text-lg text-[var(--accent-gold)] font-[family-name:var(--font-mono)] break-all">{expression}</div>
+        <p className="mt-3 text-sm text-[var(--text-secondary)]">{explanation}</p>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn-primary tool-btn" onClick={() => navigator.clipboard.writeText(expression)}>Copy Cron</motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(explanation)}>Copy Summary</motion.button>
       </div>
     </Section>
   );

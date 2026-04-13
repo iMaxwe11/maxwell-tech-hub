@@ -6,7 +6,20 @@ import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import { useState, useEffect, useRef } from "react";
 
-const GAMES = [
+interface ArcadeGame {
+  title: string;
+  desc: string;
+  href: string;
+  icon: string;
+  color: string;
+  colorName: string;
+  genre: string;
+  difficulty: string;
+  controls: string;
+  hook: string;
+}
+
+const GAMES: ArcadeGame[] = [
   {
     title: "Neon Snake",
     desc: "Classic snake reimagined with neon glow, wall-wrapping, and buttery controls.",
@@ -14,6 +27,10 @@ const GAMES = [
     icon: "🐍",
     color: "#06b6d4",
     colorName: "cyan",
+    genre: "Arcade Classic",
+    difficulty: "Easy to Learn",
+    controls: "Arrow keys / WASD",
+    hook: "Perfect for short neon speed runs.",
   },
   {
     title: "Neon Pong",
@@ -22,6 +39,10 @@ const GAMES = [
     icon: "🏓",
     color: "#a855f7",
     colorName: "purple",
+    genre: "Versus Duel",
+    difficulty: "Medium",
+    controls: "Arrow keys / W S",
+    hook: "Momentum swings fast once rallies heat up.",
   },
   {
     title: "Memory Matrix",
@@ -30,6 +51,10 @@ const GAMES = [
     icon: "🧠",
     color: "#f59e0b",
     colorName: "amber",
+    genre: "Brain Burner",
+    difficulty: "Scaling",
+    controls: "Mouse / Tap",
+    hook: "Clean, focused rounds that punish overconfidence.",
   },
   {
     title: "Reaction Time",
@@ -38,6 +63,10 @@ const GAMES = [
     icon: "⚡",
     color: "#10b981",
     colorName: "green",
+    genre: "Reflex Lab",
+    difficulty: "Quick Hits",
+    controls: "Mouse / Tap",
+    hook: "Ideal for rapid-fire leaderboard attempts.",
   },
   {
     title: "Type Racer",
@@ -46,10 +75,22 @@ const GAMES = [
     icon: "⌨️",
     color: "#f43f5e",
     colorName: "rose",
+    genre: "Skill Trial",
+    difficulty: "Medium",
+    controls: "Keyboard",
+    hook: "A cleaner way to flex speed and accuracy.",
   },
 ];
 
-function ArcadeCabinet({ selectedGameIndex, setSelectedGameIndex }: { selectedGameIndex: number | null; setSelectedGameIndex: (index: number | null) => void }) {
+function ArcadeCabinet({
+  selectedGameIndex,
+  setSelectedGameIndex,
+  quickStartIndex,
+}: {
+  selectedGameIndex: number | null;
+  setSelectedGameIndex: (index: number | null) => void;
+  quickStartIndex: number;
+}) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -276,6 +317,7 @@ function ArcadeCabinet({ selectedGameIndex, setSelectedGameIndex }: { selectedGa
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedGameIndex(quickStartIndex)}
                   className="arcade-button w-16 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-900 border-2 border-purple-400 text-xs font-bold text-white font-mono"
                   style={{
                     boxShadow: "0 0 15px rgba(168, 85, 247, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2)"
@@ -299,7 +341,7 @@ function ArcadeCabinet({ selectedGameIndex, setSelectedGameIndex }: { selectedGa
   );
 }
 
-function GameCard({ game, index, onPlayInCabinet }: { game: typeof GAMES[0]; index: number; onPlayInCabinet: (index: number) => void }) {
+function GameCard({ game, index, onPlayInCabinet }: { game: ArcadeGame; index: number; onPlayInCabinet: (index: number) => void }) {
   const [isHovering, setIsHovering] = useState(false);
 
   const renderGamePreview = () => {
@@ -431,10 +473,18 @@ function GameCard({ game, index, onPlayInCabinet }: { game: typeof GAMES[0]; ind
             <p className="text-white/40 text-xs font-mono mt-1">{game.desc}</p>
           </div>
 
-          {/* High score / Stats area */}
-          <div className="mb-4 p-2 bg-black/40 rounded border border-white/5 text-center">
-            <p className="text-xs font-mono text-white/50">HIGH SCORE</p>
-            <p className="text-xl font-bold font-mono" style={{ color: game.color }}>---</p>
+          {/* Meta area */}
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {[
+              ["Genre", game.genre],
+              ["Difficulty", game.difficulty],
+              ["Controls", game.controls],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded border border-white/5 bg-black/40 px-2 py-2 text-center">
+                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider">{label}</p>
+                <p className="mt-1 text-[11px] font-mono text-white/70">{value}</p>
+              </div>
+            ))}
           </div>
 
           {/* Buttons */}
@@ -477,9 +527,147 @@ function GameCard({ game, index, onPlayInCabinet }: { game: typeof GAMES[0]; ind
   );
 }
 
+function ArcadeSidebar({
+  currentGame,
+  recentGame,
+  onPlayInCabinet,
+}: {
+  currentGame: ArcadeGame;
+  recentGame: ArcadeGame | null;
+  onPlayInCabinet: (index: number) => void;
+}) {
+  const currentIndex = GAMES.findIndex((game) => game.title === currentGame.title);
+  const recentIndex = recentGame ? GAMES.findIndex((game) => game.title === recentGame.title) : -1;
+
+  return (
+    <div className="space-y-4">
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-sm"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-cyan-400/60">Now Highlighted</p>
+            <h2 className="mt-3 text-2xl font-black text-white">{currentGame.title}</h2>
+            <p className="mt-3 text-sm text-white/45">{currentGame.hook}</p>
+          </div>
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl"
+            style={{ borderColor: `${currentGame.color}50`, backgroundColor: `${currentGame.color}15` }}
+          >
+            {currentGame.icon}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {[
+            ["Genre", currentGame.genre],
+            ["Difficulty", currentGame.difficulty],
+            ["Controls", currentGame.controls],
+            ["Accent", currentGame.colorName],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-white/5 bg-black/30 px-3 py-3">
+              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/35">{label}</p>
+              <p className="mt-2 text-sm text-white/75">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2">
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onPlayInCabinet(currentIndex)}
+            className="rounded-xl border px-4 py-3 text-sm font-bold font-mono"
+            style={{
+              borderColor: `${currentGame.color}70`,
+              color: currentGame.color,
+              backgroundColor: `${currentGame.color}18`,
+            }}
+          >
+            Launch In Cabinet
+          </motion.button>
+          <Link
+            href={currentGame.href}
+            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-sm font-bold font-mono text-white/65 transition-colors hover:text-white hover:border-white/20"
+          >
+            Open Standalone
+          </Link>
+        </div>
+      </motion.div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-sm">
+          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-purple-400/60">Cabinet Hotkeys</p>
+          <div className="mt-4 space-y-3 text-sm text-white/65">
+            <p><span className="text-cyan-300">1-5</span> jump straight into a cabinet slot.</p>
+            <p><span className="text-cyan-300">Escape</span> clears the current selection.</p>
+            <p><span className="text-cyan-300">Fullscreen</span> gives the game a clean CRT-style stage.</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-sm">
+          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-amber-400/60">Recent Slot</p>
+          {recentGame && recentIndex >= 0 ? (
+            <div className="mt-4">
+              <p className="text-lg font-semibold text-white">{recentGame.title}</p>
+              <p className="mt-2 text-sm text-white/45">{recentGame.desc}</p>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onPlayInCabinet(recentIndex)}
+                className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold font-mono text-amber-300"
+              >
+                Reload Recent Game
+              </motion.button>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-white/45">Start a game and the cabinet will keep your last pick ready here.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ArcadePage() {
   const cabinetRef = useRef<HTMLDivElement>(null);
   const [selectedGameIndex, setSelectedGameIndex] = useState<number | null>(null);
+  const [recentGameIndex, setRecentGameIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("arcade:last-game");
+    if (!stored) return;
+    const parsed = Number(stored);
+    if (Number.isInteger(parsed) && parsed >= 0 && parsed < GAMES.length) {
+      setRecentGameIndex(parsed);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedGameIndex === null) return;
+    setRecentGameIndex(selectedGameIndex);
+    window.localStorage.setItem("arcade:last-game", String(selectedGameIndex));
+  }, [selectedGameIndex]);
+
+  useEffect(() => {
+    const handleHotkeys = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedGameIndex(null);
+        return;
+      }
+
+      const slot = Number(event.key);
+      if (!Number.isInteger(slot) || slot < 1 || slot > GAMES.length) return;
+      setSelectedGameIndex(slot - 1);
+      setTimeout(() => {
+        cabinetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    };
+
+    window.addEventListener("keydown", handleHotkeys);
+    return () => window.removeEventListener("keydown", handleHotkeys);
+  }, []);
 
   const handlePlayInCabinet = (index: number) => {
     setSelectedGameIndex(index);
@@ -487,6 +675,9 @@ export default function ArcadePage() {
       cabinetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 100);
   };
+
+  const featuredGame = GAMES[selectedGameIndex ?? recentGameIndex ?? 0];
+  const recentGame = recentGameIndex !== null ? GAMES[recentGameIndex] : null;
 
   return (
     <>
@@ -531,14 +722,24 @@ export default function ArcadePage() {
               <p className="mt-3 text-white/40 max-w-xl mx-auto text-sm font-mono">
                 Five games. Zero installs. Infinite play. Insert coin to begin.
               </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono">
+                <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-300">Cabinet shortcuts 1-5</span>
+                <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-3 py-1 text-purple-300">Fullscreen CRT mode</span>
+                <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-amber-300">Recent game memory</span>
+              </div>
             </motion.div>
           </div>
         </div>
 
         {/* Arcade Cabinet */}
         <div className="px-4 sm:px-6 pb-8" ref={cabinetRef}>
-          <div className="max-w-[1200px] mx-auto">
-            <ArcadeCabinet selectedGameIndex={selectedGameIndex} setSelectedGameIndex={setSelectedGameIndex} />
+          <div className="max-w-[1200px] mx-auto grid gap-6 lg:grid-cols-[1.45fr_0.9fr] items-start">
+            <ArcadeCabinet
+              selectedGameIndex={selectedGameIndex}
+              setSelectedGameIndex={setSelectedGameIndex}
+              quickStartIndex={recentGameIndex ?? 0}
+            />
+            <ArcadeSidebar currentGame={featuredGame} recentGame={recentGame} onPlayInCabinet={handlePlayInCabinet} />
           </div>
         </div>
 
@@ -572,8 +773,8 @@ export default function ArcadePage() {
                   <p className="text-rose-400 font-bold">READY</p>
                 </div>
                 <div>
-                  <p className="text-green-400/70">STATUS</p>
-                  <p className="text-green-400 font-bold">ON-LINE</p>
+                  <p className="text-green-400/70">LAST LOAD</p>
+                  <p className="text-green-400 font-bold">{recentGame ? recentGame.title.split(" ")[0].toUpperCase() : "READY"}</p>
                 </div>
               </div>
             </motion.div>
