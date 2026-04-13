@@ -178,3 +178,14 @@ export interface RainViewerFrame {
   path: string;
   time: number;
 }
+
+export interface ServiceStatus {
+  name: string;
+  category: "cloud" | "social" | "streaming" | "gaming" | "ai";
+  status: "operational" | "degraded" | "outage" | "unknown";
+  responseTime: number | null;
+  statusMessage: string;
+  url: string;
+  icon: string;
+  lastChecked: string;
+}

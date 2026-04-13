@@ -57,6 +57,7 @@ export const defaultNavLinks: NavLink[] = [
   { href: "/weather", label: "Weather" },
   { href: "/news", label: "News" },
   { href: "/blog", label: "Blog" },
+  { href: "/status", label: "Status" },
   { href: "/play", label: "Arcade" },
   { href: "/contact", label: "Contact" },
 ];
@@ -69,6 +70,7 @@ export const homeNavLinks: NavLink[] = [
   { href: "/weather", label: "Weather" },
   { href: "/news", label: "News" },
   { href: "/blog", label: "Blog" },
+  { href: "/status", label: "Status" },
   { href: "/play", label: "Arcade" },
   { href: "#contact", label: "Contact", hash: true },
 ];
@@ -79,6 +81,7 @@ export const footerNavLinks: NavLink[] = [
   { href: "/tools", label: "Tools" },
   { href: "/space", label: "Space" },
   { href: "/blog", label: "Blog" },
+  { href: "/status", label: "Status" },
   { href: "/play", label: "Arcade" },
   { href: "#contact", label: "Contact", hash: true },
 ];
