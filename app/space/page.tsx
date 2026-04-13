@@ -592,17 +592,18 @@ function LiveFromSpace() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const streams = [
-    { id: "earth" as const, label: "HD Earth View", icon: "🌍", desc: "Live camera from the International Space Station", color: "#22c55e" },
-    { id: "iss" as const, label: "ISS Live Feed", icon: "🛰️", desc: "NASA's official ISS live stream", color: "#06b6d4" },
-    { id: "tracker" as const, label: "ISS Tracker", icon: "📍", desc: "Real-time ISS position over Earth", color: "#a855f7" },
+    { id: "earth" as const, label: "HD Earth View", icon: "🌍", desc: "NASA ISS HD Earth Viewing Experiment — IBM Video", color: "#22c55e" },
+    { id: "iss" as const, label: "ISS Live", icon: "🛰️", desc: "NASA ISS live camera feed — UStream", color: "#06b6d4" },
+    { id: "tracker" as const, label: "ISS Tracker", icon: "📍", desc: "Real-time ISS position over Earth — ESA", color: "#a855f7" },
   ];
 
+  /* NASA's official ISS streams hosted on IBM Video (formerly UStream) — these are persistent channel IDs, not YouTube videos */
   const getStreamSrc = () => {
     switch (activeStream) {
       case "earth":
-        return "https://www.youtube.com/embed/P9C25Un7xaM?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0";
+        return "https://video.ibm.com/embed/17074538?autoplay&volume=0";
       case "iss":
-        return "https://www.youtube.com/embed/xRPjKQtRXR8?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0";
+        return "https://video.ibm.com/embed/9408562?autoplay&volume=0";
       case "tracker":
         return "https://isstracker.spaceflight.esa.int/";
     }
@@ -676,7 +677,7 @@ function LiveFromSpace() {
 
       {/* Info bar */}
       <div className="px-4 sm:px-5 py-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-white/30">
-        <span>Source: {activeStream === "tracker" ? "ESA ISS Tracker" : "NASA / YouTube Live"}</span>
+        <span>Source: {activeStream === "tracker" ? "ESA ISS Tracker" : "NASA / IBM Video (UStream)"}</span>
         <span>The ISS orbits Earth every ~92 minutes at 28,000 km/h</span>
         <span>Dark periods = ISS is on the night side of Earth</span>
       </div>
