@@ -55,6 +55,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
       <body className={inter.className}>
+        <a href="#main-content" className="skip-link">
+          Skip to Content
+        </a>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -63,7 +66,9 @@ export default function RootLayout({
         <KonamiCode />
         <ConsoleGreeting />
         <CursorSparkle />
-        <PageTransition>{children}</PageTransition>
+        <div id="main-content" tabIndex={-1}>
+          <PageTransition>{children}</PageTransition>
+        </div>
       </body>
     </html>
   );

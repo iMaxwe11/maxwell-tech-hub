@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useReducedMotion } from "framer-motion";
 
 export function GrokStarfield() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -20,15 +22,15 @@ export function GrokStarfield() {
     canvas.height = window.innerHeight;
 
     // Stars - larger and more visible, positioned AFTER canvas is sized
-    const stars = Array.from({ length: 150 }, () => ({
+    const stars = Array.from({ length: shouldReduceMotion ? 90 : 150 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       size: Math.random() * 3 + 1.5, // Bigger stars (1.5-4.5px)
       opacity: Math.random() * 0.4 + 0.5, // Brighter (0.5-0.9)
-      twinkleSpeed: Math.random() * 0.003 + 0.001, // MUCH slower (was 0.02)
+      twinkleSpeed: shouldReduceMotion ? 0 : Math.random() * 0.003 + 0.001, // MUCH slower (was 0.02)
       twinkleOffset: Math.random() * Math.PI * 2,
-      shouldTwinkle: Math.random() < 0.4,
-      rotationSpeed: Math.random() * 0.00005 + 0.00002,
+      shouldTwinkle: !shouldReduceMotion && Math.random() < 0.4,
+      rotationSpeed: shouldReduceMotion ? 0 : Math.random() * 0.00005 + 0.00002,
     }));
 
     let shootingStar: {
@@ -40,7 +42,7 @@ export function GrokStarfield() {
       maxLife: number;
     } | null = null;
 
-    let shootingStarTimer = Math.random() * 8000 + 8000;
+    let shootingStarTimer = shouldReduceMotion ? Number.POSITIVE_INFINITY : Math.random() * 8000 + 8000;
 
     // Resize handler
     const resize = () => {
@@ -164,11 +166,11 @@ export function GrokStarfield() {
             shootingStar.x < -100 || shootingStar.x > canvas.width + 100 ||
             shootingStar.y < -100 || shootingStar.y > canvas.height + 100) {
           shootingStar = null;
-          shootingStarTimer = Math.random() * 10000 + 10000; // Longer wait
+          shootingStarTimer = shouldReduceMotion ? Number.POSITIVE_INFINITY : Math.random() * 10000 + 10000; // Longer wait
         } else {
           drawShootingStar(shootingStar);
         }
-      } else {
+      } else if (!shouldReduceMotion) {
         shootingStarTimer -= 16;
         if (shootingStarTimer <= 0 && Math.random() < 0.7) {
           const side = Math.floor(Math.random() * 4);
@@ -204,7 +206,9 @@ export function GrokStarfield() {
         }
       }
 
-      animationFrameId = requestAnimationFrame(animate);
+      if (!shouldReduceMotion) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
     };
 
     animationFrameId = requestAnimationFrame(animate);
@@ -213,7 +217,7 @@ export function GrokStarfield() {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [shouldReduceMotion]);
 
   return (
     <canvas

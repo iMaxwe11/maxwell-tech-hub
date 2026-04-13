@@ -19,7 +19,7 @@ interface NavbarProps {
 function DesktopNavLink({ link, pathname }: { link: NavLink; pathname: string }) {
   const isHashLink = Boolean(link.hash);
   const isActive = !isHashLink && (link.href === "/" ? pathname === "/" : pathname.startsWith(link.href));
-  const className = `px-3 py-1.5 text-[11px] font-medium tracking-wider uppercase font-mono rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+  const className = `px-3 py-1.5 text-[11px] font-medium tracking-wider uppercase font-mono rounded-md transition-colors transition-shadow touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] ${
     isActive
       ? "text-white bg-white/[0.06]"
       : "text-white/50 hover:text-white hover:bg-white/[0.03]"
@@ -64,7 +64,10 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
     >
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo + breadcrumb */}
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link
+          href="/"
+          className="flex items-center gap-3 group rounded-lg touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
+        >
           <div className="relative w-8 h-8">
             <motion.div
               animate={{ rotate: [0, 360] }}
@@ -101,7 +104,7 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
           <div className="ml-3 flex items-center gap-1 pl-3 border-l border-white/10">
             {socialLinks.map((social) => (
               <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer"
-                className="text-white/30 hover:text-cyan-400 transition-colors p-1.5" aria-label={social.name}>
+                className="text-white/30 hover:text-cyan-400 transition-colors p-1.5 rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]" aria-label={social.name}>
                 <SocialIcon name={social.name} />
               </a>
             ))}
@@ -111,7 +114,7 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-white/70 hover:text-white p-2"
+          className="md:hidden text-white/70 hover:text-white p-2 rounded-md touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
         >
@@ -136,7 +139,7 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block py-3 text-sm font-medium tracking-wider uppercase font-mono border-b border-white/5 last:border-0 transition-colors text-white/60 hover:text-white"
+                  className="block py-3 text-sm font-medium tracking-wider uppercase font-mono border-b border-white/5 last:border-0 transition-colors text-white/60 hover:text-white rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
                 >
                   {link.label}
                 </a>
@@ -145,7 +148,7 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`block py-3 text-sm font-medium tracking-wider uppercase font-mono border-b border-white/5 last:border-0 transition-colors ${
+                  className={`block py-3 text-sm font-medium tracking-wider uppercase font-mono border-b border-white/5 last:border-0 transition-colors rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] ${
                     link.href === "/" ? pathname === "/" : pathname.startsWith(link.href)
                       ? "text-cyan-400"
                       : "text-white/60 hover:text-white"
@@ -158,7 +161,7 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
             <div className="flex gap-4 pt-3">
               {socialLinks.map((social) => (
                 <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer"
-                  className="text-white/40 hover:text-cyan-400 transition-colors"
+                  className="text-white/40 hover:text-cyan-400 transition-colors rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
                   aria-label={social.name}
                 >
                   <SocialIcon name={social.name} />

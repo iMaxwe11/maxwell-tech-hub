@@ -17,6 +17,8 @@ interface ServiceStatus {
   activeIncidents?: { name: string; impact: string; status: string; updatedAt: string }[];
 }
 
+type UptimeSegment = Exclude<ServiceStatus["status"], "unknown">;
+
 const STATUS_COLORS = {
   operational: { dot: "#22c55e", text: "text-green-400", label: "Operational" },
   degraded: { dot: "#f59e0b", text: "text-amber-400", label: "Degraded" },
@@ -40,13 +42,40 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   ai: "from-amber-500 to-orange-400",
 };
 
+const UPTIME_24H: UptimeSegment[] = [
+  "operational",
+  "operational",
+  "degraded",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "outage",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+  "operational",
+];
+
 export default function StatusPage() {
   const [services, setServices] = useState<ServiceStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshCountdown, setRefreshCountdown] = useState(90);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState("--:--:--");
   const [isFetching, setIsFetching] = useState(false);
   const countdownRef = useRef<NodeJS.Timeout>();
   const timeRef = useRef<NodeJS.Timeout>();
@@ -57,11 +86,12 @@ export default function StatusPage() {
       const res = await fetch("/api/status");
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setServices(data);
+      setServices(Array.isArray(data) ? data : []);
       setRefreshCountdown(90);
     } catch (error) {
       console.error("Status fetch error:", error);
     } finally {
+      setLoading(false);
       setIsFetching(false);
     }
   }, []);
@@ -82,8 +112,16 @@ export default function StatusPage() {
 
   useEffect(() => {
     if (timeRef.current) clearInterval(timeRef.current);
+    const updateTime = () =>
+      setCurrentTime(
+        new Date().toLocaleTimeString("en-US", {
+          hour12: false,
+          timeZone: "UTC",
+        })
+      );
+    updateTime();
     timeRef.current = setInterval(() => {
-      setCurrentTime(new Date());
+      updateTime();
     }, 1000);
     return () => clearInterval(timeRef.current);
   }, []);
@@ -163,19 +201,6 @@ export default function StatusPage() {
     return `${Math.floor(diffHours / 24)}d ago`;
   };
 
-  const generateUptime24h = (): string[] => {
-    const segments = [];
-    for (let i = 0; i < 24; i++) {
-      const rand = Math.random();
-      if (rand > 0.97) segments.push("outage");
-      else if (rand > 0.93) segments.push("degraded");
-      else segments.push("operational");
-    }
-    return segments;
-  };
-
-  const uptime24h = useMemo(() => generateUptime24h(), []);
-
   return (
     <div className="min-h-screen bg-[#020204] text-white overflow-hidden">
       <GrokStarfield />
@@ -193,12 +218,12 @@ export default function StatusPage() {
               <p className="text-sm sm:text-base text-gray-300 mb-6 max-w-2xl">
                 Real-time health monitoring for {stats.total}+ cloud, social, streaming, gaming, and AI services.
               </p>
-              <div className="flex items-center gap-4 text-sm font-mono text-gray-400">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                  UTC: {currentTime.toLocaleTimeString("en-US", { hour12: false })}
+                <div className="flex items-center gap-4 text-sm font-mono text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                    UTC: {currentTime}
+                  </div>
                 </div>
-              </div>
             </div>
             {/* Uptime Ring */}
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="flex justify-center lg:justify-end">
@@ -552,7 +577,11 @@ export default function StatusPage() {
             </div>
             {filteredServices.length === 0 && !loading && (
               <div className="text-center py-16">
-                <p className="text-gray-400 text-sm">No services match your search</p>
+                <p className="text-gray-400 text-sm">
+                  {searchQuery
+                    ? "No services match your search."
+                    : "Live status data is temporarily unavailable. Try refreshing in a moment."}
+                </p>
               </div>
             )}
           </div>
@@ -714,7 +743,7 @@ export default function StatusPage() {
                 <span className="text-xs text-gray-600">ℹ️</span>
               </div>
               <div className="flex gap-0.5">
-                {uptime24h.map((status, idx) => {
+                {UPTIME_24H.map((status, idx) => {
                   const color =
                     status === "operational" ? "#22c55e" : status === "degraded" ? "#f59e0b" : "#ef4444";
                   return (
@@ -730,7 +759,10 @@ export default function StatusPage() {
                   );
                 })}
               </div>
-              <div className="mt-4 grid grid-cols-24 gap-px text-xs text-gray-600 text-center">
+              <div
+                className="mt-4 grid gap-px text-xs text-gray-600 text-center"
+                style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
+              >
                 {Array(24).fill(0).map((_, i) => (
                   <div key={i}>{String(i).padStart(2, "0")}</div>
                 ))}

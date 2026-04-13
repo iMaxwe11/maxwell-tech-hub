@@ -8,17 +8,22 @@ import { SocialIcon } from "@/components/SocialIcon";
 import { siteConfig, socialLinks } from "@/lib/site-config";
 
 export default function ContactPage() {
-  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
 
-  const copyEmail = () => {
-    navigator.clipboard.writeText(siteConfig.email);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2000);
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(siteConfig.email);
+      setCopyState("success");
+    } catch {
+      setCopyState("error");
+    } finally {
+      window.setTimeout(() => setCopyState("idle"), 2000);
+    }
   };
 
   const quickFacts = [
     { label: "Location", value: siteConfig.location, icon: "📍" },
-    { label: "Timezone", value: "EST (UTC-5)", icon: "🕐" },
+    { label: "Timezone", value: "ET (America/New_York)", icon: "🕐" },
     { label: "Response Time", value: "Within 24h", icon: "⚡" },
     { label: "Availability", value: "Open to projects", icon: "✅" },
   ];
@@ -83,16 +88,31 @@ export default function ContactPage() {
                 </div>
                 
                 <div className="flex gap-3">
+                  <span className="sr-only" aria-live="polite">
+                    {copyState === "success"
+                      ? "Email copied to clipboard."
+                      : copyState === "error"
+                      ? "Unable to copy email. Please copy it manually."
+                      : ""}
+                  </span>
                   <button
                     onClick={copyEmail}
-                    className="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-all flex items-center gap-2"
+                    type="button"
+                    className="px-6 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors transition-shadow touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] flex items-center gap-2"
                   >
-                    {copiedEmail ? (
+                    {copyState === "success" ? (
                       <>
                         <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         <span className="text-green-400">Copied!</span>
+                      </>
+                    ) : copyState === "error" ? (
+                      <>
+                        <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M5.07 19h13.86a2 2 0 001.73-3l-6.93-12a2 2 0 00-3.46 0l-6.93 12a2 2 0 001.73 3z" />
+                        </svg>
+                        <span className="text-amber-300">Copy Failed</span>
                       </>
                     ) : (
                       <>
@@ -106,7 +126,7 @@ export default function ContactPage() {
                   
                   <a
                     href={`mailto:${siteConfig.email}`}
-                    className="px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-medium hover:from-cyan-400 hover:to-purple-500 transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-medium hover:from-cyan-400 hover:to-purple-500 transition-[transform,box-shadow,filter] duration-300 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] flex items-center gap-2"
                   >
                     <span>Send Email</span>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +153,7 @@ export default function ContactPage() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="glass-card p-6 flex items-center gap-4 hover:scale-[1.02] transition-all group"
+                  className="glass-card p-6 flex items-center gap-4 hover:scale-[1.02] transition-[transform,border-color,background-color] group rounded-2xl touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
                 >
                   <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white ${
                     social.name === "GitHub" ? "bg-gradient-to-br from-gray-600 to-gray-800" : "bg-gradient-to-br from-blue-600 to-blue-800"
@@ -144,7 +164,7 @@ export default function ContactPage() {
                     <div className="text-sm text-white/50 mb-1">{social.name}</div>
                     <div className="text-lg font-semibold text-white">{social.label}</div>
                   </div>
-                  <svg className="w-5 h-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-[color,transform]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </a>

@@ -111,7 +111,16 @@ function uvLabel(uv: number): { text: string; color: string } {
 
 /* ═══ Animated Background Gradient ═══ */
 function WeatherBackground({ code }: { code: number }) {
-  const isNight = new Date().getHours() >= 20 || new Date().getHours() < 6;
+  const [hour, setHour] = useState<number | null>(null);
+
+  useEffect(() => {
+    const syncHour = () => setHour(new Date().getHours());
+    syncHour();
+    const interval = window.setInterval(syncHour, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const isNight = hour === null ? false : hour >= 20 || hour < 6;
   let gradient = "from-sky-900/20 via-transparent to-transparent";
   if (code === 0 && !isNight) gradient = "from-amber-900/10 via-sky-900/10 to-transparent";
   if (code === 0 && isNight) gradient = "from-indigo-900/20 via-transparent to-transparent";

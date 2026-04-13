@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { useReducedMotion } from "framer-motion";
 
 interface Sparkle {
   id: string;
@@ -10,6 +11,8 @@ interface Sparkle {
 }
 
 export function CursorSparkle() {
+  const shouldReduceMotion = useReducedMotion();
+
   useEffect(() => {
     // Don't run on mobile/touch devices
     const isTouchDevice = () => {
@@ -21,7 +24,7 @@ export function CursorSparkle() {
       );
     };
 
-    if (isTouchDevice()) return;
+    if (isTouchDevice() || shouldReduceMotion) return;
 
     const sparkles: Sparkle[] = [];
     const maxSparkles = 15;
@@ -88,7 +91,7 @@ export function CursorSparkle() {
         sparkle.element.remove();
       });
     };
-  }, []);
+  }, [shouldReduceMotion]);
 
   return null;
 }
