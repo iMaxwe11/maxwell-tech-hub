@@ -1,81 +1,9 @@
 import { NextResponse } from "next/server";
 
-interface NewsItem {
-  title: string;
-  url: string;
-  source: string;
-  time: string;
-  category: string;
-  image?: string;
-}
+import type { NewsItem } from "@/lib/types";
 
-// In-memory cache per category
 const cache: Record<string, { data: NewsItem[]; ts: number }> = {};
-const CACHE_TTL = 15 * 60_000; // 15 min cache
-
-// Parse RSS XML simply (no external deps)
-function parseRSS(xml: string, source: string, category: string, limit = 12): NewsItem[] {
-  const items: NewsItem[] = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  let match;
-  while ((match = itemRegex.exec(xml)) !== null && items.length < limit) {
-    const block = match[1];
-    const title = block.match(/<title><!\[CDATA\[(.*?)\]\]>|<title>(.*?)<\/title>/)?.[1] || block.match(/<title>(.*?)<\/title>/)?.[1] || "";
-    const link = block.match(/<link>(.*?)<\/link>/)?.[1] || "";
-    const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || "";
-    const media = block.match(/<media:content[^>]*url="([^"]*)"/) || block.match(/<enclosure[^>]*url="([^"]*)"/);
-    const imgTag = block.match(/<img[^>]*src="([^"]*)"/);
-    const image = media?.[1] || imgTag?.[1] || undefined;
-
-    if (title && link) {
-      items.push({
-        title: title.replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim(),
-        url: link.trim(),
-        source,
-        time: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-        category,
-        image,
-      });
-    }
-  }
-  return items;
-}
-
-// Parse Atom feeds
-function parseAtom(xml: string, source: string, category: string, limit = 12): NewsItem[] {
-  const items: NewsItem[] = [];
-  const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-  let match;
-  while ((match = entryRegex.exec(xml)) !== null && items.length < limit) {
-    const block = match[1];
-    const title = block.match(/<title[^>]*>(.*?)<\/title>/)?.[1] || "";
-    const link = block.match(/<link[^>]*href="([^"]*)"/)?.[1] || "";
-    const updated = block.match(/<updated>(.*?)<\/updated>|<published>(.*?)<\/published>/)?.[1] || "";
-
-    if (title && link) {
-      items.push({
-        title: title.replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").trim(),
-        url: link.trim(),
-        source,
-        time: updated ? new Date(updated).toISOString() : new Date().toISOString(),
-        category,
-      });
-    }
-  }
-  return items;
-}
-
-async function fetchFeed(url: string, source: string, category: string, format: "rss" | "atom" = "rss"): Promise<NewsItem[]> {
-  try {
-    const res = await fetch(url, { next: { revalidate: 900 } });
-    if (!res.ok) return [];
-    const xml = await res.text();
-    return format === "atom" ? parseAtom(xml, source, category) : parseRSS(xml, source, category);
-  } catch (e) {
-    console.error(`Feed error [${source}]:`, e);
-    return [];
-  }
-}
+const CACHE_TTL = 15 * 60_000;
 
 const FEEDS: Record<string, Array<{ url: string; source: string; format?: "rss" | "atom" }>> = {
   tech: [
@@ -95,29 +23,145 @@ const FEEDS: Record<string, Array<{ url: string; source: string; format?: "rss" 
   ],
 };
 
+function decodeHtml(value: string) {
+  return value
+    .replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
+}
+
+function safeIsoDate(value?: string) {
+  if (!value) return new Date().toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+}
+
+function parseRSS(xml: string, source: string, category: string, limit = 12): NewsItem[] {
+  const items: NewsItem[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = itemRegex.exec(xml)) !== null && items.length < limit) {
+    try {
+      const block = match[1];
+      const titleMatch =
+        block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+        block.match(/<title>(.*?)<\/title>/);
+      const title = decodeHtml(titleMatch?.[1] || "");
+      const link = block.match(/<link>(.*?)<\/link>/)?.[1]?.trim() || "";
+      const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1];
+      const media =
+        block.match(/<media:content[^>]*url="([^"]*)"/)?.[1] ||
+        block.match(/<enclosure[^>]*url="([^"]*)"/)?.[1];
+      const image = media || block.match(/<img[^>]*src="([^"]*)"/)?.[1];
+
+      if (!title || !link) {
+        continue;
+      }
+
+      items.push({
+        title,
+        url: link,
+        source,
+        time: safeIsoDate(pubDate),
+        category,
+        image,
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return items;
+}
+
+function parseAtom(xml: string, source: string, category: string, limit = 12): NewsItem[] {
+  const items: NewsItem[] = [];
+  const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = entryRegex.exec(xml)) !== null && items.length < limit) {
+    try {
+      const block = match[1];
+      const title = decodeHtml(block.match(/<title[^>]*>(.*?)<\/title>/)?.[1] || "");
+      const link = block.match(/<link[^>]*href="([^"]*)"/)?.[1]?.trim() || "";
+      const updated =
+        block.match(/<updated>(.*?)<\/updated>/)?.[1] ||
+        block.match(/<published>(.*?)<\/published>/)?.[1];
+
+      if (!title || !link) {
+        continue;
+      }
+
+      items.push({
+        title,
+        url: link,
+        source,
+        time: safeIsoDate(updated),
+        category,
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return items;
+}
+
+async function fetchFeed(
+  url: string,
+  source: string,
+  category: string,
+  format: "rss" | "atom" = "rss"
+): Promise<NewsItem[]> {
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 900 },
+      signal: AbortSignal.timeout(12_000),
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const xml = await response.text();
+    return format === "atom" ? parseAtom(xml, source, category) : parseRSS(xml, source, category);
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category") || "tech";
 
-  // Check cache
   if (cache[category] && Date.now() - cache[category].ts < CACHE_TTL) {
     return NextResponse.json(cache[category].data, {
-      headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=1800" },
+      headers: {
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=1800",
+        "X-Cache": "HIT",
+      },
     });
   }
 
   const feeds = FEEDS[category] || FEEDS.tech;
   const results = await Promise.all(
-    feeds.map(f => fetchFeed(f.url, f.source, category, f.format || "rss"))
+    feeds.map((feed) => fetchFeed(feed.url, feed.source, category, feed.format || "rss"))
   );
 
-  // Merge, deduplicate by title, sort by time
   const seen = new Set<string>();
   const all = results
     .flat()
-    .filter(item => {
-      const key = item.title.toLowerCase().slice(0, 60);
-      if (seen.has(key)) return false;
+    .filter((item) => {
+      const key = `${item.source}:${item.title.toLowerCase().slice(0, 80)}`;
+      if (seen.has(key)) {
+        return false;
+      }
       seen.add(key);
       return true;
     })
@@ -127,6 +171,9 @@ export async function GET(request: Request) {
   cache[category] = { data: all, ts: Date.now() };
 
   return NextResponse.json(all, {
-    headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=1800" },
+    headers: {
+      "Cache-Control": "public, s-maxage=900, stale-while-revalidate=1800",
+      "X-Cache": "MISS",
+    },
   });
 }

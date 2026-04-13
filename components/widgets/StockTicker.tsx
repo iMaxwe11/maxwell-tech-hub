@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+import type { StockApiQuote } from "@/lib/types";
 
 interface StockData {
   symbol: string;
@@ -73,22 +75,23 @@ export function StockTicker() {
   const [error, setError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const stocksRef = useRef<StockData[]>([]);
 
   const fetchStocks = useCallback(async () => {
     try {
       const res = await fetch("/api/stocks", { signal: AbortSignal.timeout(12000) });
       if (!res.ok) throw new Error("fetch failed");
-      const data = await res.json();
+      const data = (await res.json()) as StockApiQuote[];
       if (!Array.isArray(data) || data.length === 0) throw new Error("empty");
 
       const mapped: StockData[] = data
-        .filter((s: any) => s.price > 0)
-        .map((s: any) => ({
+        .filter((s) => s.price > 0)
+        .map((s) => ({
           symbol: String(s.symbol),
           name: META[String(s.symbol)]?.name || String(s.name || s.symbol),
           price: +s.price,
-          change: +(s.change ?? s.changesPercentage != null ? ((+s.changesPercentage / 100) * (+s.previousClose || +s.price)) : 0),
-          changePercent: +(s.changesPercentage ?? 0),
+          change: +s.change,
+          changePercent: +s.changePercent,
           dayHigh: +(s.dayHigh ?? 0),
           dayLow: +(s.dayLow ?? 0),
           previousClose: +(s.previousClose ?? 0),
@@ -99,9 +102,12 @@ export function StockTicker() {
       if (mapped.length > 0) {
         setPrevPrices((prev) => {
           const next = { ...prev };
-          stocks.forEach((s) => (next[s.symbol] = s.price));
+          stocksRef.current.forEach((stock) => {
+            next[stock.symbol] = stock.price;
+          });
           return next;
         });
+        stocksRef.current = mapped;
         setStocks(mapped);
         setError(false);
         setLastUpdated(
@@ -113,7 +119,7 @@ export function StockTicker() {
     } finally {
       setLoading(false);
     }
-  }, [stocks]);
+  }, []);
 
   useEffect(() => {
     fetchStocks();

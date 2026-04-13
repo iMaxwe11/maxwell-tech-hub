@@ -456,15 +456,14 @@ function GameCard({ game, index, onPlayInCabinet }: { game: typeof GAMES[0]; ind
             >
               PLAY IN CABINET
             </motion.button>
-            <Link href={game.href} className="block">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-2 rounded-lg font-mono font-bold text-sm transition-all duration-300 border text-white/60 border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5"
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href={game.href}
+                className="block w-full py-2 rounded-lg font-mono font-bold text-sm transition-all duration-300 border text-white/60 border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5 text-center"
               >
                 Full Page
-              </motion.button>
-            </Link>
+              </Link>
+            </motion.div>
           </div>
         </div>
 

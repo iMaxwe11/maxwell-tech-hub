@@ -366,14 +366,14 @@ export default function PlayPage() {
                   >
                     Play Again
                   </motion.button>
-                  <Link href="/play">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      className="px-8 py-3 rounded-xl border border-cyan-400/50 text-cyan-400 font-mono font-bold text-sm uppercase tracking-wider hover:bg-cyan-400/10"
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link
+                      href="/play"
+                      className="block px-8 py-3 rounded-xl border border-cyan-400/50 text-cyan-400 font-mono font-bold text-sm uppercase tracking-wider hover:bg-cyan-400/10 text-center"
                     >
                       Back
-                    </motion.button>
-                  </Link>
+                    </Link>
+                  </motion.div>
                 </div>
               </motion.div>
             )}

@@ -7,6 +7,16 @@ import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import { ISSTracker } from "@/components/widgets/ISSTracker";
 import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
+import type {
+  DonkiFlareEvent,
+  DonkiGeomagneticStormEvent,
+  LaunchItem,
+  LaunchResponse,
+  MarsPhoto,
+  NasaNeoFeedResponse,
+  NasaNeoObject,
+  PeopleInSpaceResponse,
+} from "@/lib/types";
 
 /* ═══ Section Wrapper ═══ */
 function Sec({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -96,17 +106,19 @@ function useCountdown(targetDate: string | null) {
 
 /* ═══ LAUNCH SCHEDULE — Full Launch Library 2 ═══ */
 function LaunchSchedule() {
-  const [launches, setLaunches] = useState<any[]>([]);
-  const [pastLaunches, setPastLaunches] = useState<any[]>([]);
+  const [launches, setLaunches] = useState<LaunchItem[]>([]);
+  const [pastLaunches, setPastLaunches] = useState<LaunchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"upcoming" | "recent">("upcoming");
 
   useEffect(() => {
     Promise.all([
-      fetch("https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=12&mode=list")
-        .then(r => r.json()).catch(() => ({ results: [] })),
-      fetch("https://ll.thespacedevs.com/2.2.0/launch/previous/?limit=8&mode=list")
-        .then(r => r.json()).catch(() => ({ results: [] })),
+      fetch("/api/launches?kind=upcoming&limit=12")
+        .then((response) => response.json() as Promise<LaunchResponse>)
+        .catch(() => ({ results: [] })),
+      fetch("/api/launches?kind=previous&limit=8")
+        .then((response) => response.json() as Promise<LaunchResponse>)
+        .catch(() => ({ results: [] })),
     ]).then(([upcoming, recent]) => {
       setLaunches(upcoming.results || []);
       setPastLaunches(recent.results || []);
@@ -149,7 +161,7 @@ function LaunchSchedule() {
           className="space-y-3">
           {items.length === 0 ? (
             <p className="text-white/40 text-sm text-center py-8">No launch data available.</p>
-          ) : items.map((launch: any, i: number) => (
+          ) : items.map((launch, i) => (
             <LaunchCard key={launch.id || i} launch={launch} index={i} isPast={tab === "recent"} />
           ))}
         </motion.div>
@@ -158,8 +170,8 @@ function LaunchSchedule() {
   );
 }
 
-function LaunchCard({ launch, index, isPast }: { launch: any; index: number; isPast: boolean }) {
-  const countdown = useCountdown(isPast ? null : launch.net);
+function LaunchCard({ launch, index, isPast }: { launch: LaunchItem; index: number; isPast: boolean }) {
+  const countdown = useCountdown(isPast ? null : launch.net ?? null);
   const date = launch.net ? new Date(launch.net) : null;
   const statusColor = launch.status?.abbrev === "Go"
     ? "text-green-400 bg-green-500/10 border-green-500/20"
@@ -236,20 +248,20 @@ function LaunchCard({ launch, index, isPast }: { launch: any; index: number; isP
 
 /* ═══ NEO Widget ═══ */
 function NEOWidget() {
-  const [neos, setNeos] = useState<any[]>([]);
+  const [neos, setNeos] = useState<NasaNeoObject[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetch("/api/nasa?endpoint=neo").then(r => r.json()).then(data => {
+    fetch("/api/nasa?endpoint=neo").then(r => r.json()).then((data: NasaNeoFeedResponse) => {
       if (data?.near_earth_objects) {
         const today = new Date().toISOString().split("T")[0];
         const objects = data.near_earth_objects[today] || Object.values(data.near_earth_objects).flat();
-        setNeos((objects as any[]).slice(0, 8));
+        setNeos(objects.slice(0, 8));
       }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
   if (loading) return <div className="glass-card p-6 animate-pulse"><div className="h-48 bg-white/5 rounded" /></div>;
-  const hazardous = neos.filter((n: any) => n.is_potentially_hazardous_asteroid).length;
+  const hazardous = neos.filter((neo) => neo.is_potentially_hazardous_asteroid).length;
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
       <div className="flex items-center justify-between mb-4">
@@ -276,7 +288,7 @@ function NEOWidget() {
         <p className="text-white/40 text-sm">No NEO data available.</p>
       ) : (
         <div className="space-y-2">
-          {neos.map((neo: any, i: number) => {
+          {neos.map((neo, i: number) => {
             const dist = neo.close_approach_data?.[0]?.miss_distance?.kilometers;
             const velocity = neo.close_approach_data?.[0]?.relative_velocity?.kilometers_per_hour;
             const diameter = neo.estimated_diameter?.meters?.estimated_diameter_max;
@@ -309,24 +321,34 @@ function NEOWidget() {
 
 /* ═══ Space Weather ═══ */
 function SpaceWeather() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<{
+    flares: DonkiFlareEvent[];
+    storms: DonkiGeomagneticStormEvent[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const end = new Date().toISOString().split("T")[0];
     const start = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
     Promise.all([
-      fetch(`https://api.nasa.gov/DONKI/FLR?startDate=${start}&endDate=${end}&api_key=DEMO_KEY`).then(r => r.json()).catch(() => []),
-      fetch(`https://api.nasa.gov/DONKI/GST?startDate=${start}&endDate=${end}&api_key=DEMO_KEY`).then(r => r.json()).catch(() => []),
+      fetch(`/api/nasa?endpoint=donki&type=FLR&startDate=${start}&endDate=${end}`)
+        .then((response) => response.json() as Promise<DonkiFlareEvent[]>)
+        .catch(() => []),
+      fetch(`/api/nasa?endpoint=donki&type=GST&startDate=${start}&endDate=${end}`)
+        .then((response) => response.json() as Promise<DonkiGeomagneticStormEvent[]>)
+        .catch(() => []),
     ]).then(([flares, storms]) => {
       setData({ flares: Array.isArray(flares) ? flares : [], storms: Array.isArray(storms) ? storms : [] });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
   if (loading) return <div className="glass-card p-6 animate-pulse"><div className="h-32 bg-white/5 rounded" /></div>;
-  const flareCount = data?.flares?.length || 0;
-  const stormCount = data?.storms?.length || 0;
-  const latestFlare = data?.flares?.[data.flares.length - 1];
-  const kpIndex = data?.storms?.[data.storms.length - 1]?.allKpIndex?.[0]?.kpIndex;
+  const flares = data?.flares || [];
+  const storms = data?.storms || [];
+  const flareCount = flares.length;
+  const stormCount = storms.length;
+  const latestFlare = flareCount > 0 ? flares[flareCount - 1] : undefined;
+  const latestStorm = stormCount > 0 ? storms[stormCount - 1] : undefined;
+  const kpIndex = latestStorm?.allKpIndex?.[0]?.kpIndex;
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
       <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
@@ -347,7 +369,9 @@ function SpaceWeather() {
         <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 mb-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-amber-400 font-mono font-semibold">Latest Flare: {latestFlare.classType}</span>
-            <span className="text-[10px] text-white/30 font-mono">{new Date(latestFlare.beginTime).toLocaleDateString()}</span>
+            <span className="text-[10px] text-white/30 font-mono">
+              {latestFlare.beginTime ? new Date(latestFlare.beginTime).toLocaleDateString() : "Unknown"}
+            </span>
           </div>
         </div>
       )}
@@ -394,12 +418,12 @@ function ISSMap() {
 
 /* ═══ Mars Rover Photos ═══ */
 function MarsRoverPhotos() {
-  const [photos, setPhotos] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<MarsPhoto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<MarsPhoto | null>(null);
   useEffect(() => {
-    fetch("https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/latest_photos?api_key=DEMO_KEY")
-      .then(r => r.json()).then(data => {
+    fetch("/api/nasa?endpoint=mars-latest&rover=curiosity")
+      .then(r => r.json()).then((data: { latest_photos?: MarsPhoto[] }) => {
         if (data?.latest_photos) setPhotos(data.latest_photos.slice(0, 9));
         setLoading(false);
       }).catch(() => setLoading(false));
@@ -457,16 +481,16 @@ function MarsRoverPhotos() {
 
 /* ═══ People in Space Right Now ═══ */
 function PeopleInSpace() {
-  const [people, setPeople] = useState<any[]>([]);
+  const [people, setPeople] = useState<PeopleInSpaceResponse["people"]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetch("/api/astros")
       .then(r => r.json())
-      .then(data => { setPeople(data?.people || []); setLoading(false); })
+      .then((data: PeopleInSpaceResponse) => { setPeople(data?.people || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
   if (loading) return <div className="glass-card p-6 animate-pulse"><div className="h-32 bg-white/5 rounded" /></div>;
-  const byCraft = people.reduce((acc: Record<string, string[]>, p: any) => {
+  const byCraft = people.reduce((acc: Record<string, string[]>, p) => {
     (acc[p.craft] = acc[p.craft] || []).push(p.name);
     return acc;
   }, {});

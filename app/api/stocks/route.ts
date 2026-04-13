@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import type { StockApiQuote } from "@/lib/types";
+
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META"];
 
-async function fetchYahooChart(symbol: string): Promise<any | null> {
+async function fetchYahooChart(symbol: string): Promise<StockApiQuote | null> {
   try {
     const res = await fetch(
       `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`,
@@ -38,7 +40,7 @@ async function fetchYahooChart(symbol: string): Promise<any | null> {
       name: meta.shortName || meta.longName || symbol,
       price,
       change: +change.toFixed(2),
-      changesPercentage: +changePercent.toFixed(2),
+      changePercent: +changePercent.toFixed(2),
       dayHigh: meta.regularMarketDayHigh ?? 0,
       dayLow: meta.regularMarketDayLow ?? 0,
       previousClose: prevClose,
@@ -50,7 +52,7 @@ async function fetchYahooChart(symbol: string): Promise<any | null> {
 }
 
 // In-memory cache
-let cache: { data: any[]; ts: number } = { data: [], ts: 0 };
+let cache: { data: StockApiQuote[]; ts: number } = { data: [], ts: 0 };
 const CACHE_MS = 90_000; // 90 seconds
 
 export async function GET() {
@@ -68,7 +70,7 @@ export async function GET() {
   const results = await Promise.allSettled(SYMBOLS.map(fetchYahooChart));
   const data = results
     .filter(
-      (r): r is PromiseFulfilledResult<any> =>
+      (r): r is PromiseFulfilledResult<StockApiQuote> =>
         r.status === "fulfilled" && r.value !== null && r.value.price > 0
     )
     .map((r) => r.value);

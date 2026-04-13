@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 interface CoinData {
@@ -24,33 +24,43 @@ export function CryptoTicker() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("");
+  const hasLoadedDataRef = useRef(false);
+
+  const fetchCrypto = useCallback(async (forceLoading = false) => {
+    if (forceLoading || !hasLoadedDataRef.current) {
+      setLoading(true);
+    }
+
+    try {
+      const res = await fetch("/api/crypto");
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const data = await res.json();
+
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("Empty response");
+      }
+
+      setCrypto(data);
+      hasLoadedDataRef.current = true;
+      setLastUpdated(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
+      setError(false);
+    } catch (e) {
+      console.error("Crypto error:", e);
+      if (!hasLoadedDataRef.current) {
+        setError(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchCrypto = async () => {
-      try {
-        const res = await fetch("/api/crypto");
-        if (!res.ok) throw new Error(`API ${res.status}`);
-        const data = await res.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          setCrypto(data);
-          setLastUpdated(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
-          setError(false);
-        } else {
-          throw new Error("Empty response");
-        }
-      } catch (e) {
-        console.error("Crypto error:", e);
-        if (crypto.length === 0) setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCrypto();
-    const interval = setInterval(fetchCrypto, 60000);
+    void fetchCrypto();
+    const interval = setInterval(() => {
+      void fetchCrypto();
+    }, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchCrypto]);
 
   if (loading) {
     return (
@@ -79,10 +89,10 @@ export function CryptoTicker() {
 
   if (error || crypto.length === 0) {
     return (
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-bold text-white mb-4">📈 Top Crypto</h3>
-        <p className="text-white/40 text-sm">Market data temporarily unavailable.</p>
-        <button onClick={() => { setLoading(true); setError(false); }}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-bold text-white mb-4">📈 Top Crypto</h3>
+          <p className="text-white/40 text-sm">Market data temporarily unavailable.</p>
+        <button onClick={() => void fetchCrypto(true)}
           className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 font-mono">Retry</button>
       </div>
     );

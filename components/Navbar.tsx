@@ -109,7 +109,12 @@ export function Navbar({ breadcrumb, accent = "#06b6d4" }: NavbarProps = {}) {
         </div>
 
         {/* Mobile hamburger */}
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-white/70 hover:text-white p-2">
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="md:hidden text-white/70 hover:text-white p-2"
+          aria-expanded={mobileOpen}
+          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             {mobileOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
           </svg>
@@ -136,7 +141,9 @@ export function Navbar({ breadcrumb, accent = "#06b6d4" }: NavbarProps = {}) {
             <div className="flex gap-4 pt-3">
               {SOCIALS.map(s => (
                 <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer"
-                  className="text-white/40 hover:text-cyan-400 transition-colors">
+                  className="text-white/40 hover:text-cyan-400 transition-colors"
+                  aria-label={s.name}
+                >
                   {s.icon}
                 </a>
               ))}
