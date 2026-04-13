@@ -3,19 +3,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
-
-interface ServiceStatus {
-  name: string;
-  category: "cloud" | "social" | "streaming" | "gaming" | "ai";
-  status: "operational" | "degraded" | "outage" | "unknown";
-  responseTime: number | null;
-  statusMessage: string;
-  url: string;
-  icon: string;
-  lastChecked: string;
-  components?: { name: string; status: string }[];
-  activeIncidents?: { name: string; impact: string; status: string; updatedAt: string }[];
-}
+import type { ServiceCategory, ServiceStatus } from "@/lib/types";
 
 type UptimeSegment = Exclude<ServiceStatus["status"], "unknown">;
 
@@ -28,14 +16,16 @@ const STATUS_COLORS = {
 
 const CATEGORY_ICONS = {
   cloud: "☁️",
+  msp: "🧰",
   social: "💬",
   streaming: "🎬",
   gaming: "🎮",
   ai: "🤖",
 };
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
+const CATEGORY_GRADIENTS: Record<ServiceCategory, string> = {
   cloud: "from-blue-500 to-cyan-400",
+  msp: "from-amber-500 to-orange-400",
   social: "from-pink-500 to-rose-400",
   streaming: "from-purple-500 to-pink-400",
   gaming: "from-violet-500 to-purple-400",
@@ -79,6 +69,7 @@ export default function StatusPage() {
   const [isFetching, setIsFetching] = useState(false);
   const countdownRef = useRef<NodeJS.Timeout>();
   const timeRef = useRef<NodeJS.Timeout>();
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const fetchServices = useCallback(async () => {
     setIsFetching(true);
@@ -126,6 +117,17 @@ export default function StatusPage() {
     return () => clearInterval(timeRef.current);
   }, []);
 
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
       const matchesCategory = !selectedCategory || s.category === selectedCategory;
@@ -158,7 +160,7 @@ export default function StatusPage() {
   }, [services]);
 
   const categories = useMemo(() => {
-    return Object.keys(CATEGORY_ICONS).map((cat) => {
+    return (Object.keys(CATEGORY_ICONS) as ServiceCategory[]).map((cat) => {
       const catServices = services.filter((s) => s.category === cat);
       const worstStatus = catServices.length > 0
         ? catServices.reduce((prev, curr) => {
@@ -216,7 +218,7 @@ export default function StatusPage() {
                 Service <span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Monitor</span>
               </h1>
               <p className="text-sm sm:text-base text-gray-300 mb-6 max-w-2xl">
-                Real-time health monitoring for {stats.total}+ cloud, social, streaming, gaming, and AI services.
+                Real-time health monitoring for {stats.total}+ cloud, MSP, social, streaming, gaming, and AI platforms.
               </p>
                 <div className="flex items-center gap-4 text-sm font-mono text-gray-400">
                   <div className="flex items-center gap-2">
@@ -435,14 +437,15 @@ export default function StatusPage() {
         <div className="max-w-7xl mx-auto">
           <div className="relative">
             <input
+              ref={searchRef}
               type="text"
-              placeholder="Search services..."
+              placeholder="Search services or vendors... (Ctrl+K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-3 pl-10 rounded-lg bg-white/[0.02] border border-white/[0.05] text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all"
             />
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-600 bg-white/5 px-2 py-1 rounded">Ctrl+F</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-600 bg-white/5 px-2 py-1 rounded">Ctrl+K</span>
             {filteredServices.length > 0 && <span className="absolute right-16 top-1/2 -translate-y-1/2 text-xs text-gray-400">Showing {filteredServices.length} of {stats.total}</span>}
           </div>
         </div>
@@ -646,10 +649,10 @@ export default function StatusPage() {
         <section className="relative z-10 px-4 sm:px-6 lg:px-8 mb-16">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-xl font-bold mb-6 text-white">Category Health</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
               {categories.map((cat, catIdx) => {
                 const percentage = cat.count > 0 ? Math.round((cat.operational / cat.count) * 100) : 0;
-                const gradient = CATEGORY_GRADIENTS[cat.name as keyof typeof CATEGORY_GRADIENTS];
+                const gradient = CATEGORY_GRADIENTS[cat.name];
 
                 return (
                   <motion.div

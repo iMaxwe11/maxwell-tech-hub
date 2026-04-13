@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { ServiceStatus, ComponentStatus, ActiveIncident } from "@/lib/types";
+import type {
+  ActiveIncident,
+  ComponentStatus,
+  ServiceCategory,
+  ServiceStatus,
+} from "@/lib/types";
 
 // Service configuration
 interface ServiceConfig {
   name: string;
-  category: "cloud" | "social" | "streaming" | "gaming" | "ai";
+  category: ServiceCategory;
   url: string;
   icon: string;
   apiUrl: string;
@@ -91,6 +96,88 @@ const SERVICES: ServiceConfig[] = [
     icon: "🚆",
     apiUrl: "https://railway.app",
     type: "head-check",
+  },
+
+  // MSP & IT Ops
+  {
+    name: "ConnectWise",
+    category: "msp",
+    url: "https://www.connectwise.com",
+    icon: "🧰",
+    apiUrl: "https://status.connectwise.com",
+    type: "head-check",
+  },
+  {
+    name: "NinjaOne",
+    category: "msp",
+    url: "https://www.ninjaone.com",
+    icon: "🥷",
+    apiUrl: "https://status.ninjaone.com/api/v2/status.json",
+    statuspageBase: "https://status.ninjaone.com",
+    type: "statuspage",
+  },
+  {
+    name: "Atera",
+    category: "msp",
+    url: "https://www.atera.com",
+    icon: "🛰️",
+    apiUrl: "https://status.atera.com/api/v2/status.json",
+    statuspageBase: "https://status.atera.com",
+    type: "statuspage",
+  },
+  {
+    name: "Datto",
+    category: "msp",
+    url: "https://www.datto.com",
+    icon: "💽",
+    apiUrl: "https://status.datto.com/api/v2/status.json",
+    statuspageBase: "https://status.datto.com",
+    type: "statuspage",
+  },
+  {
+    name: "Pax8",
+    category: "msp",
+    url: "https://www.pax8.com",
+    icon: "📦",
+    apiUrl: "https://status.pax8.com/api/v2/status.json",
+    statuspageBase: "https://status.pax8.com",
+    type: "statuspage",
+  },
+  {
+    name: "Addigy",
+    category: "msp",
+    url: "https://addigy.com",
+    icon: "🍎",
+    apiUrl: "https://status.addigy.com/api/v2/status.json",
+    statuspageBase: "https://status.addigy.com",
+    type: "statuspage",
+  },
+  {
+    name: "Syncro",
+    category: "msp",
+    url: "https://syncromsp.com",
+    icon: "🔄",
+    apiUrl: "https://status.syncromsp.com/api/v2/status.json",
+    statuspageBase: "https://status.syncromsp.com",
+    type: "statuspage",
+  },
+  {
+    name: "SuperOps",
+    category: "msp",
+    url: "https://superops.com",
+    icon: "🚀",
+    apiUrl: "https://status.superops.ai/api/v2/status.json",
+    statuspageBase: "https://status.superops.ai",
+    type: "statuspage",
+  },
+  {
+    name: "TeamViewer",
+    category: "msp",
+    url: "https://www.teamviewer.com",
+    icon: "🖥️",
+    apiUrl: "https://status.teamviewer.com/api/v2/status.json",
+    statuspageBase: "https://status.teamviewer.com",
+    type: "statuspage",
   },
 
   // Social & Communication (6 original + 3 new)
@@ -632,7 +719,14 @@ async function checkAllServices(): Promise<ServiceStatus[]> {
     .sort((a, b) => {
       // Sort by category first, then by name
       if (a.category !== b.category) {
-        const categoryOrder = { cloud: 0, social: 1, streaming: 2, gaming: 3, ai: 4 };
+        const categoryOrder = {
+          cloud: 0,
+          msp: 1,
+          social: 2,
+          streaming: 3,
+          gaming: 4,
+          ai: 5,
+        } satisfies Record<ServiceCategory, number>;
         return categoryOrder[a.category] - categoryOrder[b.category];
       }
       return a.name.localeCompare(b.name);

@@ -17,6 +17,8 @@ import type {
   NasaNeoFeedResponse,
   NasaNeoObject,
   PeopleInSpaceResponse,
+  SpaceFeedItem,
+  SpaceFeedResponse,
 } from "@/lib/types";
 
 /* ═══ Section Wrapper ═══ */
@@ -109,6 +111,8 @@ function useCountdown(targetDate: string | null) {
 function LaunchSchedule() {
   const [launches, setLaunches] = useState<LaunchItem[]>([]);
   const [pastLaunches, setPastLaunches] = useState<LaunchItem[]>([]);
+  const [upcomingFeed, setUpcomingFeed] = useState<LaunchResponse | null>(null);
+  const [recentFeed, setRecentFeed] = useState<LaunchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"upcoming" | "recent">("upcoming");
 
@@ -123,6 +127,8 @@ function LaunchSchedule() {
     ]).then(([upcoming, recent]) => {
       setLaunches(upcoming.results || []);
       setPastLaunches(recent.results || []);
+      setUpcomingFeed(upcoming);
+      setRecentFeed(recent);
       setLoading(false);
     });
   }, []);
@@ -135,6 +141,7 @@ function LaunchSchedule() {
   );
 
   const items = tab === "upcoming" ? launches : pastLaunches;
+  const activeFeed = tab === "upcoming" ? upcomingFeed : recentFeed;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
@@ -144,6 +151,22 @@ function LaunchSchedule() {
             <span className="text-xl">🚀</span> Launch Schedule
           </h3>
           <p className="text-xs text-white/40 font-mono mt-1">All providers — SpaceX, NASA, ULA, Rocket Lab, ISRO & more</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              className={`px-2 py-1 rounded-full text-[10px] font-mono border ${
+                activeFeed?.isFallback
+                  ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                  : "border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
+              }`}
+            >
+              {activeFeed?.source ?? "Feed unavailable"}
+            </span>
+            {activeFeed?.updatedAt && (
+              <span className="text-[10px] text-white/30 font-mono">
+                Updated {new Date(activeFeed.updatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex gap-1">
           {(["upcoming", "recent"] as const).map(t => (
@@ -161,12 +184,24 @@ function LaunchSchedule() {
         <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
           className="space-y-3">
           {items.length === 0 ? (
-            <p className="text-white/40 text-sm text-center py-8">No launch data available.</p>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+              <p className="text-white/70 text-sm">No launch data available right now.</p>
+              {activeFeed?.fallbackReason && (
+                <p className="mt-2 text-xs text-white/35 font-mono">{activeFeed.fallbackReason}</p>
+              )}
+            </div>
           ) : items.map((launch, i) => (
             <LaunchCard key={launch.id || i} launch={launch} index={i} isPast={tab === "recent"} />
           ))}
         </motion.div>
       </AnimatePresence>
+      {activeFeed?.isFallback && activeFeed.fallbackReason && (
+        <div className="mt-4 rounded-xl border border-amber-500/15 bg-amber-500/5 px-4 py-3">
+          <p className="text-[11px] text-amber-200/90 font-mono">
+            Backup feed active: {activeFeed.fallbackReason}
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -243,6 +278,104 @@ function LaunchCard({ launch, index, isPast }: { launch: LaunchItem; index: numb
           </a>
         )}
       </div>
+    </motion.div>
+  );
+}
+
+function MissionDispatch() {
+  const [items, setItems] = useState<SpaceFeedItem[]>([]);
+  const [feed, setFeed] = useState<SpaceFeedResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/space-feed?limit=6")
+      .then((response) => response.json() as Promise<SpaceFeedResponse>)
+      .then((data) => {
+        setItems(Array.isArray(data.items) ? data.items : []);
+        setFeed(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="glass-card p-6">
+        <div className="h-8 w-44 bg-white/5 rounded animate-pulse mb-5" />
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {[1, 2, 3].map((card) => (
+            <div key={card} className="h-36 rounded-xl bg-white/[0.03] animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+        <div>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <span className="text-xl">📰</span> Mission Dispatch
+          </h3>
+          <p className="text-xs text-white/40 font-mono mt-1">
+            Fresh space headlines when launch telemetry gets quiet
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-2 py-1 rounded-full text-[10px] font-mono border ${
+              feed?.isFallback
+                ? "border-purple-500/20 bg-purple-500/10 text-purple-300"
+                : "border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
+            }`}
+          >
+            {feed?.source ?? "Unavailable"}
+          </span>
+        </div>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-white/50 text-sm">Space headlines are temporarily offline.</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {items.map((item, index) => (
+            <motion.a
+              key={item.id}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 hover:border-cyan-400/20 hover:bg-white/[0.03] transition-all group"
+            >
+              <div className="flex items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-[0.18em]">
+                <span className="text-cyan-300/80">{item.source}</span>
+                <span className="text-white/30">
+                  {new Date(item.publishedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+              <h4 className="mt-3 text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors line-clamp-2">
+                {item.title}
+              </h4>
+              {item.summary && (
+                <p className="mt-2 text-[11px] text-white/35 line-clamp-3">
+                  {item.summary}
+                </p>
+              )}
+              <div className="mt-4 text-[11px] font-mono text-white/30 group-hover:text-white/55 transition-colors">
+                Open briefing ↗
+              </div>
+            </motion.a>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -757,6 +890,14 @@ export default function SpacePage() {
               <h2 className="text-xs font-mono uppercase tracking-[0.3em] text-purple-400/70">Launch Schedule</h2>
             </div>
             <LaunchSchedule />
+          </Sec>
+
+          <Sec delay={0.07}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-0.5 bg-gradient-to-r from-cyan-400 to-transparent" />
+              <h2 className="text-xs font-mono uppercase tracking-[0.3em] text-cyan-400/70">Mission Dispatch</h2>
+            </div>
+            <MissionDispatch />
           </Sec>
 
           {/* ISS Section */}

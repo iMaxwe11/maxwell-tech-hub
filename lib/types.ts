@@ -124,6 +124,10 @@ export interface LaunchItem {
 
 export interface LaunchResponse {
   results?: LaunchItem[];
+  source?: string;
+  isFallback?: boolean;
+  fallbackReason?: string;
+  updatedAt?: string;
 }
 
 export interface StockApiQuote {
@@ -179,6 +183,30 @@ export interface RainViewerFrame {
   time: number;
 }
 
+export interface SpaceFeedItem {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+  summary?: string;
+}
+
+export interface SpaceFeedResponse {
+  items: SpaceFeedItem[];
+  source: string;
+  isFallback?: boolean;
+  updatedAt?: string;
+}
+
+export type ServiceCategory =
+  | "cloud"
+  | "social"
+  | "streaming"
+  | "gaming"
+  | "ai"
+  | "msp";
+
 export interface ComponentStatus {
   name: string;
   status: string;
@@ -199,7 +227,7 @@ export interface ActiveIncident {
 
 export interface ServiceStatus {
   name: string;
-  category: "cloud" | "social" | "streaming" | "gaming" | "ai";
+  category: ServiceCategory;
   status: "operational" | "degraded" | "outage" | "unknown";
   responseTime: number | null;
   statusMessage: string;
