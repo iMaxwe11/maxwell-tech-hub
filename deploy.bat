@@ -1,6 +1,6 @@
 @echo off
 cd /d C:\Projects\maxwell-tech-hub
 git add -A
-git commit -m "Round 4: Fix PeopleInSpace proxy, weather radar overlays, playable arcade cabinet, game overhauls, news page with videos"
+git commit -m "Round 5: Page transitions, blog with AI shorts, live space view, Easter eggs, 404 page, credits page"
 git push origin main
 del "%~f0"

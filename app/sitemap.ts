@@ -7,6 +7,7 @@ const routes = [
   "/space",
   "/weather",
   "/news",
+  "/blog",
   "/play",
   "/play/snake",
   "/play/pong",

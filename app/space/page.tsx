@@ -586,6 +586,104 @@ function StatCard({ label, value, icon, color, sub }: { label: string; value: st
   );
 }
 
+/* ═══ Live From Space — ISS HD Earth View ═══ */
+function LiveFromSpace() {
+  const [activeStream, setActiveStream] = useState<"earth" | "iss" | "tracker">("earth");
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const streams = [
+    { id: "earth" as const, label: "HD Earth View", icon: "🌍", desc: "Live camera from the International Space Station", color: "#22c55e" },
+    { id: "iss" as const, label: "ISS Live Feed", icon: "🛰️", desc: "NASA's official ISS live stream", color: "#06b6d4" },
+    { id: "tracker" as const, label: "ISS Tracker", icon: "📍", desc: "Real-time ISS position over Earth", color: "#a855f7" },
+  ];
+
+  const getStreamSrc = () => {
+    switch (activeStream) {
+      case "earth":
+        return "https://www.youtube.com/embed/P9C25Un7xaM?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0";
+      case "iss":
+        return "https://www.youtube.com/embed/xRPjKQtRXR8?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0";
+      case "tracker":
+        return "https://isstracker.spaceflight.esa.int/";
+    }
+  };
+
+  const current = streams.find(s => s.id === activeStream)!;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
+      {/* Stream header */}
+      <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <span className="text-xl">{current.icon}</span> {current.label}
+          </h3>
+          <p className="text-xs text-white/40 font-mono mt-1">{current.desc}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-white/50 hover:text-white/80 transition-colors"
+          >
+            {isExpanded ? "Collapse ↑" : "Expand ↓"}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Stream selector tabs */}
+      <div className="px-4 sm:px-5 pb-3 flex gap-2 overflow-x-auto">
+        {streams.map(s => (
+          <button
+            key={s.id}
+            onClick={() => setActiveStream(s.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all border ${
+              activeStream === s.id
+                ? "border-opacity-30 text-white"
+                : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
+            }`}
+            style={activeStream === s.id ? {
+              backgroundColor: `${s.color}15`,
+              borderColor: `${s.color}40`,
+              color: s.color,
+            } : undefined}
+          >
+            <span>{s.icon}</span>
+            <span>{s.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Stream viewport */}
+      <div className="relative transition-all duration-500" style={{ height: isExpanded ? 600 : 400 }}>
+        {/* Live pulse indicator */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-red-500/30">
+          <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1, repeat: Infinity }}
+            className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-[10px] font-mono text-red-400">LIVE</span>
+        </div>
+
+        <iframe
+          key={activeStream}
+          src={getStreamSrc()}
+          style={{ width: "100%", height: "100%", border: "none" }}
+          title={current.label}
+          loading="lazy"
+          allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
+      </div>
+
+      {/* Info bar */}
+      <div className="px-4 sm:px-5 py-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-white/30">
+        <span>Source: {activeStream === "tracker" ? "ESA ISS Tracker" : "NASA / YouTube Live"}</span>
+        <span>The ISS orbits Earth every ~92 minutes at 28,000 km/h</span>
+        <span>Dark periods = ISS is on the night side of Earth</span>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ═══ SPACE PAGE ═══ */
 export default function SpacePage() {
   const heroRef = useRef(null);
@@ -630,6 +728,20 @@ export default function SpacePage() {
           <StatCard label="ISS Altitude" value="408" icon="📡" color="#a855f7" sub="km above Earth" />
           <StatCard label="Known NEOs" value="34,000+" icon="☄️" color="#f59e0b" sub="tracked objects" />
           <StatCard label="Mars Rovers" value="2 Active" icon="🔴" color="#ef4444" sub="Curiosity & Perseverance" />
+        </div>
+      </Sec>
+
+      {/* ═══ LIVE FROM SPACE ═══ */}
+      <Sec className="px-4 sm:px-6 mt-10 relative z-20" delay={0.03}>
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-0.5 bg-gradient-to-r from-green-400 to-transparent" />
+            <h2 className="text-xs font-mono uppercase tracking-[0.3em] text-green-400/70">Live From Space</h2>
+            <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
+              className="w-2 h-2 rounded-full bg-red-500 ml-1" />
+            <span className="text-[10px] font-mono text-red-400/60">LIVE</span>
+          </div>
+          <LiveFromSpace />
         </div>
       </Sec>
 

@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { GlobalCommandPalette } from "@/components/GlobalCommandPalette";
+import { PageTransition } from "@/components/PageTransition";
+import { KonamiCode } from "@/components/KonamiCode";
+import { ConsoleGreeting } from "@/components/ConsoleGreeting";
+import { CursorSparkle } from "@/components/CursorSparkle";
 import { rootMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
@@ -56,7 +60,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <GlobalCommandPalette />
-        {children}
+        <KonamiCode />
+        <ConsoleGreeting />
+        <CursorSparkle />
+        <PageTransition>{children}</PageTransition>
       </body>
     </html>
   );
