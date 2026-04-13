@@ -1,7 +1,36 @@
 import { NextResponse } from "next/server";
 
 // Server-side proxy with caching to avoid client-side rate limits
-let cache: { data: any; ts: number } | null = null;
+interface CryptoAssetQuote {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change24h: number;
+  marketCap: number;
+  image: string | null;
+}
+
+interface CoinGeckoAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  current_price: number;
+  price_change_percentage_24h?: number;
+  market_cap: number;
+  image: string;
+}
+
+interface CoinCapAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  priceUsd: string;
+  changePercent24Hr?: string;
+  marketCapUsd: string;
+}
+
+let cache: { data: CryptoAssetQuote[]; ts: number } | null = null;
 const CACHE_TTL = 60_000; // 60s cache
 
 export async function GET() {
@@ -19,9 +48,9 @@ export async function GET() {
       { next: { revalidate: 60 } }
     );
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as CoinGeckoAsset[];
       if (Array.isArray(data) && data.length > 0) {
-        const mapped = data.map((c: any) => ({
+        const mapped: CryptoAssetQuote[] = data.map((c) => ({
           id: c.id,
           symbol: c.symbol,
           name: c.name,
@@ -46,14 +75,14 @@ export async function GET() {
       next: { revalidate: 60 },
     });
     if (res.ok) {
-      const json = await res.json();
+      const json = (await res.json()) as { data?: CoinCapAsset[] };
       if (json.data && Array.isArray(json.data)) {
-        const mapped = json.data.map((c: any) => ({
+        const mapped: CryptoAssetQuote[] = json.data.map((c) => ({
           id: c.id,
           symbol: c.symbol.toLowerCase(),
           name: c.name,
           price: parseFloat(c.priceUsd),
-          change24h: parseFloat(c.changePercent24Hr) || 0,
+          change24h: parseFloat(c.changePercent24Hr ?? "0") || 0,
           marketCap: parseFloat(c.marketCapUsd),
           image: null,
         }));

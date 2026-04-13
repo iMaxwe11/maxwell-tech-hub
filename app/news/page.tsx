@@ -1,25 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
-
-interface NewsItem {
-  title: string;
-  url: string;
-  source: string;
-  time: string;
-  category: string;
-  image?: string;
-}
-
-interface Video {
-  id: string;
-  channel: string;
-  title: string;
-}
+import type { NewsItem, VideoFeedItem } from "@/lib/types";
 
 /* ═══ Section Wrapper ═══ */
 function Sec({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -199,54 +186,84 @@ function NewsTicker({ items }: { items: NewsItem[] }) {
 }
 
 /* ═══ Video Card ═══ */
-function VideoCard({ video, index }: { video: Video; index: number }) {
+function VideoCard({ video, index }: { video: VideoFeedItem; index: number }) {
   return (
-    <motion.div
+    <motion.a
+      href={video.url}
+      target="_blank"
+      rel="noopener noreferrer"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08 }}
       className="flex-shrink-0 w-80 group"
     >
       <div className="relative overflow-hidden rounded-2xl bg-black border border-white/10 hover:border-cyan-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-400/20">
-        {/* YouTube Embed */}
         <div className="relative w-full aspect-video bg-black overflow-hidden">
-          <iframe
-            className="w-full h-full"
-            src={`https://www.youtube.com/embed/${video.id}?modestbranding=1&rel=0&controls=1`}
-            title={video.title}
-            allowFullScreen
-            loading="lazy"
-            style={{ border: "none" }}
+          <Image
+            src={video.thumbnail}
+            alt={video.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(min-width: 1024px) 320px, 80vw"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-black/60 border border-white/15 flex items-center justify-center shadow-[0_0_24px_rgba(6,182,212,0.25)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="text-cyan-300 ml-1">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
         </div>
 
-        {/* Info overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-          <p className="text-white text-sm font-semibold line-clamp-2">{video.title}</p>
-          <p className="text-cyan-400 text-xs font-mono mt-1">{video.channel}</p>
-        </div>
-
-        {/* Channel badge */}
         <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[10px] font-mono text-white/70">
           {video.channel}
         </div>
+
+        <div className="p-4">
+          <p className="text-white text-sm font-semibold line-clamp-2 group-hover:text-cyan-100 transition-colors">
+            {video.title}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-3 text-[10px] font-mono text-white/35">
+            <span>{video.topic || "Channel update"}</span>
+            <span>{timeAgo(video.publishedAt)}</span>
+          </div>
+        </div>
       </div>
-    </motion.div>
+    </motion.a>
   );
 }
 
 /* ═══ Trending Videos Section ═══ */
 function TrendingVideos() {
-  const CURATED_VIDEOS: Video[] = [
-    { id: "jNQXAC9IVRw", channel: "MKBHD", title: "Latest Tech Innovations & Reviews" },
-    { id: "dQw4w9WgXcQ", channel: "Linus Tech Tips", title: "PC Hardware Deep Dive" },
-    { id: "9bZkp7q19f0", channel: "The Verge", title: "Tech News & Industry Updates" },
-    { id: "kJQP7kiw5Fk", channel: "GameSpot", title: "Gaming Reviews & Coverage" },
-    { id: "RgKAFK5djSk", channel: "Tech News Daily", title: "Breaking Tech News" },
-    { id: "JGwWNGJdvx8", channel: "Channel", title: "Recent Popular Videos" },
-  ];
-
+  const [videos, setVideos] = useState<VideoFeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      setLoading(true);
+      setError(false);
+
+      try {
+        const response = await fetch("/api/videos");
+        if (!response.ok) {
+          throw new Error(`Video feed request failed with ${response.status}`);
+        }
+
+        const data = (await response.json()) as VideoFeedItem[];
+        setVideos(data);
+      } catch (fetchError) {
+        console.error(fetchError);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchVideos();
+  }, []);
 
   const scroll = (dir: "left" | "right") => {
     if (scrollContainerRef.current) {
@@ -257,6 +274,8 @@ function TrendingVideos() {
     }
   };
 
+  const showFallback = !loading && (error || videos.length === 0);
+
   return (
     <Sec className="mt-12 relative">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
@@ -266,41 +285,59 @@ function TrendingVideos() {
           <span className="text-xs font-mono uppercase tracking-[0.3em] text-purple-400/80">
             Trending Videos
           </span>
-          <span className="text-xs text-white/20 font-mono">— Tech & Gaming Channels</span>
+          <span className="text-xs text-white/20 font-mono">— Live from keyless channel feeds</span>
         </div>
 
-        {/* Videos Grid */}
-        <div className="relative">
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {CURATED_VIDEOS.map((video, i) => (
-              <VideoCard key={video.id} video={video} index={i} />
+        {loading ? (
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="flex-shrink-0 w-80 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden animate-pulse">
+                <div className="aspect-video bg-white/5" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-white/5 rounded" />
+                  <div className="h-4 bg-white/5 rounded w-3/4" />
+                  <div className="h-3 bg-white/5 rounded w-1/2" />
+                </div>
+              </div>
             ))}
           </div>
+        ) : showFallback ? (
+          <div className="glass-card p-6">
+            <p className="text-white/70 text-sm">Video highlights are temporarily unavailable.</p>
+            <p className="text-white/30 text-xs font-mono mt-2">The news feed still works normally while YouTube channel feeds recover.</p>
+          </div>
+        ) : (
+          <div className="relative">
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {videos.map((video, i) => (
+                <VideoCard key={`${video.id}-${video.publishedAt}`} video={video} index={i} />
+              ))}
+            </div>
 
-          {/* Scroll buttons */}
-          <button
-            onClick={() => scroll("left")}
-            className="absolute left-0 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 text-white transition-all"
-            aria-label="Scroll left"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            className="absolute right-0 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 text-white transition-all"
-            aria-label="Scroll right"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 19l7-7-7-7" />
-            </svg>
-          </button>
-        </div>
+            <button
+              onClick={() => scroll("left")}
+              className="absolute left-0 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 text-white transition-all"
+              aria-label="Scroll left"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="absolute right-0 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 text-white transition-all"
+              aria-label="Scroll right"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 19l7-7-7-7" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </Sec>
   );
@@ -341,33 +378,50 @@ function QuickStats({ allItems }: { allItems: NewsItem[] }) {
 export default function NewsPage() {
   const [activeCat, setActiveCat] = useState("tech");
   const [news, setNews] = useState<Record<string, NewsItem[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(CATEGORIES.map((category) => [category.id, true])),
+  );
+  const [categoryErrors, setCategoryErrors] = useState<Record<string, string>>({});
   const [lastUpdated, setLastUpdated] = useState("");
 
   const fetchCategory = useCallback(async (cat: string) => {
+    setLoadingCategories((prev) => ({ ...prev, [cat]: true }));
+
     try {
       const res = await fetch(`/api/news?category=${cat}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(`News request failed with ${res.status}`);
+      }
+
+      const data = (await res.json()) as NewsItem[];
       setNews(prev => ({ ...prev, [cat]: data }));
-    } catch (e) {
-      console.error(`News fetch error [${cat}]:`, e);
+      setCategoryErrors((prev) => ({ ...prev, [cat]: "" }));
+      setLastUpdated(new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error(`News fetch error [${cat}]:`, error);
+      setCategoryErrors((prev) => ({ ...prev, [cat]: message }));
+    } finally {
+      setLoadingCategories((prev) => ({ ...prev, [cat]: false }));
     }
   }, []);
 
   // Fetch all categories on mount
   useEffect(() => {
-    setLoading(true);
-    Promise.all(CATEGORIES.map(c => fetchCategory(c.id)))
-      .then(() => {
-        setLoading(false);
-        setLastUpdated(new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
-      });
+    CATEGORIES.forEach((category) => {
+      void fetchCategory(category.id);
+    });
   }, [fetchCategory]);
 
+  const loading = Object.values(loadingCategories).some(Boolean);
   const currentItems = news[activeCat] || [];
   const currentCat = CATEGORIES.find(c => c.id === activeCat)!;
-  const allItems = Object.values(news).flat().sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  const activeLoading = loadingCategories[activeCat];
+  const activeError = categoryErrors[activeCat];
+  const allItems = useMemo(
+    () => Object.values(news).flat().sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()),
+    [news],
+  );
 
   return (
     <>
@@ -437,7 +491,7 @@ export default function NewsPage() {
                 className={`w-2 h-2 rounded-full ${loading ? "bg-amber-400" : "bg-green-500"}`}
               />
               <span className="text-[10px] text-white/30 font-mono hidden sm:inline">
-                {loading ? "Fetching..." : "Live"}
+                {loading ? "Syncing..." : "Live"}
               </span>
             </div>
           </div>
@@ -453,7 +507,7 @@ export default function NewsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main content column */}
             <div className="lg:col-span-3">
-              {loading && currentItems.length === 0 ? (
+              {activeLoading && currentItems.length === 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="glass-card p-5 animate-pulse">
@@ -467,6 +521,18 @@ export default function NewsPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : activeError && currentItems.length === 0 ? (
+                <div className="glass-card p-6 text-center">
+                  <span className="text-4xl mb-4 block">⚠️</span>
+                  <p className="text-white/60 text-sm">{currentCat.label} headlines are temporarily unavailable.</p>
+                  <p className="text-white/30 text-xs font-mono mt-2">{activeError}</p>
+                  <button
+                    onClick={() => void fetchCategory(activeCat)}
+                    className="mt-4 px-4 py-2 rounded-lg border border-cyan-400/20 bg-cyan-400/10 text-cyan-300 text-xs font-mono hover:bg-cyan-400/15 transition-colors"
+                  >
+                    Retry feed
+                  </button>
                 </div>
               ) : currentItems.length === 0 ? (
                 <div className="text-center py-20">

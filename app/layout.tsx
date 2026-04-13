@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { GlobalCommandPalette } from "@/components/GlobalCommandPalette";
+import { rootMetadata } from "@/lib/metadata";
+import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -11,56 +14,50 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export const metadata: Metadata = {
-  title: {
-    default: "Maxwell Nixon | IT Systems & DevOps Portfolio",
-    template: "%s | Maxwell Nixon",
-  },
-  description:
-    "Cloud-savvy IT technician and full-stack developer building automation tools, managing infrastructure, and engineering premium software experiences.",
-  keywords: [
-    "Maxwell Nixon",
-    "IT Systems",
-    "DevOps",
-    "Full-Stack Developer",
-    "Next.js",
-    "React",
-    "TypeScript",
-    "Cloud Infrastructure",
-    "Portfolio",
-  ],
-  authors: [{ name: "Maxwell Nixon" }],
-  creator: "Maxwell Nixon",
-  metadataBase: new URL("https://maxwellnixon.com"),
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://maxwellnixon.com",
-    siteName: "Maxwell Nixon",
-    title: "Maxwell Nixon | IT Systems & DevOps Portfolio",
-    description:
-      "Cloud-savvy IT technician and full-stack developer building automation tools, managing infrastructure, and engineering premium software experiences.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Maxwell Nixon | IT Systems & DevOps Portfolio",
-    description:
-      "Cloud-savvy IT technician and full-stack developer building automation tools, managing infrastructure, and engineering premium software experiences.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+export const metadata: Metadata = rootMetadata;
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        name: siteConfig.name,
+        url: siteConfig.url,
+        email: siteConfig.email,
+        sameAs: [
+          `https://github.com/${siteConfig.githubUsername}`,
+          "https://linkedin.com/in/maxwell-nixon-90351627a",
+        ],
+        jobTitle: "IT Systems Technician & Full-Stack Developer",
+        homeLocation: {
+          "@type": "Place",
+          name: siteConfig.location,
+        },
+      },
+      {
+        "@type": "WebSite",
+        name: siteConfig.domain,
+        url: siteConfig.url,
+        description: siteConfig.description,
+      },
+    ],
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <GlobalCommandPalette />
+        {children}
+      </body>
     </html>
   );
 }

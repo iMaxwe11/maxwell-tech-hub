@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import type { IssPosition } from "@/lib/types";
 
 export function ISSTracker() {
-  const [iss, setIss] = useState<any>(null);
+  const [iss, setIss] = useState<IssPosition | null>(null);
 
   useEffect(() => {
     const fetchISS = async () => {
       try {
         const res = await fetch("/api/iss");
-        const data = await res.json();
+        const data = (await res.json()) as IssPosition;
         setIss(data);
       } catch (e) {
         console.error("ISS error:", e);

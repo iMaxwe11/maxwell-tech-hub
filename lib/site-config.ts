@@ -17,6 +17,7 @@ export const siteConfig = {
   name: "Maxwell Nixon",
   domain: "maxwellnixon.com",
   url: "https://maxwellnixon.com",
+  githubUsername: "iMaxwe11",
   email: "mnixon112@outlook.com",
   phone: "609-923-9437",
   location: "Southampton, NJ",

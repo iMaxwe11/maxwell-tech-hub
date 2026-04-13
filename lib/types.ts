@@ -137,3 +137,44 @@ export interface StockApiQuote {
   previousClose: number;
   sparkline: number[];
 }
+
+export interface VideoFeedItem {
+  id: string;
+  channel: string;
+  title: string;
+  url: string;
+  thumbnail: string;
+  publishedAt: string;
+  topic?: string;
+}
+
+export interface GitHubActivityItem {
+  id: string;
+  type: string;
+  repo: string;
+  action: string;
+  url: string;
+  createdAt: string;
+  icon: string;
+  detail?: string;
+}
+
+export interface GitHubProfileSummary {
+  login: string;
+  publicRepos: number;
+  followers: number;
+  following: number;
+  htmlUrl: string;
+}
+
+export interface IssPosition {
+  latitude: number;
+  longitude: number;
+  velocity: number;
+  altitude: number;
+}
+
+export interface RainViewerFrame {
+  path: string;
+  time: number;
+}

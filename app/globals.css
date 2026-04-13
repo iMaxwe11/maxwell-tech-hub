@@ -11,12 +11,13 @@
   --text-primary: rgba(255, 255, 255, 0.95);
   --text-secondary: rgba(255, 255, 255, 0.8);
   --text-muted: rgba(255, 255, 255, 0.6);
-  --font-heading: system-ui, -apple-system, sans-serif;
-  --font-mono: 'Courier New', monospace;
+  --font-heading: var(--font-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-code), 'Courier New', monospace;
 }
 
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 * {
@@ -58,7 +59,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-heading);
   overflow-x: hidden;
 }
 

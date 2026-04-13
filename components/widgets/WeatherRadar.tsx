@@ -2,11 +2,27 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
+import type { RainViewerFrame } from "@/lib/types";
+
+interface RadarWeatherResponse {
+  current: {
+    temperature_2m: number;
+    relative_humidity_2m: number;
+    apparent_temperature: number;
+    weather_code: number;
+    wind_speed_10m: number;
+    precipitation: number;
+  };
+  hourly: {
+    precipitation_probability: number[];
+    precipitation: number[];
+  };
+}
 
 export function WeatherRadar() {
-  const [weather, setWeather] = useState<any>(null);
+  const [weather, setWeather] = useState<RadarWeatherResponse | null>(null);
   const [showRadar, setShowRadar] = useState(false);
-  const [radarTimestamps, setRadarTimestamps] = useState<any[]>([]);
+  const [radarTimestamps, setRadarTimestamps] = useState<RainViewerFrame[]>([]);
   const [radarFrame, setRadarFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -18,7 +34,7 @@ export function WeatherRadar() {
         const res = await fetch(
           "https://api.open-meteo.com/v1/forecast?latitude=39.7526&longitude=-74.9749&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&hourly=precipitation_probability,precipitation&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America/New_York&forecast_days=1"
         );
-        const data = await res.json();
+        const data = (await res.json()) as RadarWeatherResponse;
         setWeather(data);
       } catch (e) {
         console.error("Weather error:", e);
@@ -36,7 +52,7 @@ export function WeatherRadar() {
         const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
         const data = await res.json();
         if (data?.radar?.past) {
-          setRadarTimestamps(data.radar.past);
+          setRadarTimestamps(data.radar.past as RainViewerFrame[]);
           setRadarFrame(data.radar.past.length - 1);
         }
       } catch (e) {
