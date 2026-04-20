@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,6 +20,145 @@ interface NavbarProps {
 // Shared focus ring — uses theme-primary-rgb so it follows the active theme.
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--theme-primary-rgb),0.6)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]";
+
+// Secondary routes for the Explore dropdown — pages that are real, but sit
+// below the primary nav. Icons are inline SVG for zero-flicker server render.
+const EXPLORE_ITEMS: { href: string; label: string; desc: string; icon: string }[] = [
+  { href: "/projects", label: "Projects", desc: "Live, open-source, and pro work", icon: "🗂️" },
+  { href: "/now", label: "Now", desc: "What I’m working on this week", icon: "⏱️" },
+  { href: "/space", label: "Space", desc: "ISS, launches, Mars photos", icon: "🚀" },
+  { href: "/weather", label: "Weather", desc: "Local forecast & radar", icon: "🌦️" },
+  { href: "/news", label: "News", desc: "Tech + world headlines", icon: "📰" },
+  { href: "/blog", label: "Blog", desc: "Notes, ideas, writeups", icon: "✍️" },
+  { href: "/status", label: "Status", desc: "Live uptime dashboard", icon: "📡" },
+  { href: "/analytics", label: "Analytics", desc: "Site traffic & stats", icon: "📊" },
+];
+
+/**
+ * Desktop “Explore” dropdown. Surfaces the secondary routes that are not in
+ * the primary nav so people don’t have to dig through the footer to find them.
+ */
+function ExploreDropdown() {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  // Close on route change, outside click, or Escape
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onMouse = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", onMouse);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onMouse);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  // Active if the current route matches any secondary route
+  const isActive = EXPLORE_ITEMS.some((item) => pathname.startsWith(item.href));
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={`px-3 py-1.5 text-[11px] font-medium tracking-wider uppercase font-mono rounded-md
+                    inline-flex items-center gap-1.5 transition-colors transition-shadow touch-manipulation
+                    ${FOCUS_RING}
+                    ${
+                      isActive || open
+                        ? "text-white bg-white/[0.06]"
+                        : "text-white/50 hover:text-white hover:bg-white/[0.03]"
+                    }`}
+      >
+        Explore
+        <motion.svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="opacity-70"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </motion.svg>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.16 }}
+            role="menu"
+            aria-label="Explore the rest of the site"
+            className="absolute right-0 mt-3 w-80 rounded-xl overflow-hidden z-[100]
+                       bg-[#0a0a0a]/98 backdrop-blur-2xl border border-white/10
+                       shadow-[0_20px_60px_rgba(0,0,0,0.55)] p-2"
+          >
+            <p className="px-2.5 py-1.5 mb-1 border-b border-white/5 text-[10px] font-mono uppercase tracking-wider text-white/40">
+              Everything else
+            </p>
+            <div className="grid grid-cols-2 gap-1">
+              {EXPLORE_ITEMS.map((item) => {
+                const itemActive = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    className={`group flex items-start gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-left ${FOCUS_RING} ${
+                      itemActive
+                        ? "bg-[rgba(var(--theme-primary-rgb),0.08)] text-[color:var(--theme-primary)]"
+                        : "hover:bg-white/[0.04] text-white/70 hover:text-white"
+                    }`}
+                  >
+                    <span className="text-base leading-none mt-0.5 shrink-0" aria-hidden>
+                      {item.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium leading-tight">{item.label}</p>
+                      <p className="text-[10px] font-mono text-white/35 mt-0.5 leading-tight truncate">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="border-t border-white/5 mt-1 pt-1.5 px-2.5">
+              <p className="text-[9px] font-mono text-white/25">
+                Or press{" "}
+                <kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/10 text-white/55">
+                  ⌘K
+                </kbd>{" "}
+                to search everything
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function DesktopNavLink({ link, pathname }: { link: NavLink; pathname: string }) {
   const isHashLink = Boolean(link.hash);
@@ -139,6 +278,7 @@ export function Navbar({ breadcrumb, accent, links = defaultNavLinks }: NavbarPr
           {links.map((link) => (
             <DesktopNavLink key={link.href} link={link} pathname={pathname} />
           ))}
+          <ExploreDropdown />
           <div className="ml-3 flex items-center gap-2 pl-3 border-l border-white/10">
             <ThemeSwitcher />
             <div className="flex items-center gap-1">

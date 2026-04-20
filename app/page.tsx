@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { SocialIcon } from "@/components/SocialIcon";
@@ -12,6 +12,7 @@ import { StockTicker } from "@/components/widgets/StockTicker";
 import { GitHubActivity } from "@/components/widgets/GitHubActivity";
 import { CopyButton } from "@/components/CopyButton";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
+import { useAccent } from "@/lib/use-accent";
 
 /* ═══ SECTION WRAPPER ═══ */
 function Sec({ children, className = "", delay = 0, id }: { children: React.ReactNode; className?: string; delay?: number; id?: string }) {
@@ -81,178 +82,6 @@ interface ProjectCard {
   liveUrl?: string;
 }
 
-/* ═══ ACCENT PICKER (subtle) ═══ */
-type AccentMode = "off" | "sweep" | "pulse" | "pick";
-const ACCENT_STORAGE_KEY = "hero-accent";
-
-function useAccent() {
-  const [mode, setMode] = useState<AccentMode>("off");
-  const [color, setColor] = useState("#06b6d4");
-
-  // Hydrate from localStorage once on mount
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(ACCENT_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { mode?: AccentMode; color?: string };
-      if (parsed.mode) setMode(parsed.mode);
-      if (parsed.color) setColor(parsed.color);
-    } catch {
-      /* ignore corrupt storage */
-    }
-  }, []);
-
-  const persist = useCallback((nextMode: AccentMode, nextColor: string) => {
-    try {
-      window.localStorage.setItem(
-        ACCENT_STORAGE_KEY,
-        JSON.stringify({ mode: nextMode, color: nextColor }),
-      );
-    } catch {
-      /* noop */
-    }
-  }, []);
-
-  const updateMode = useCallback(
-    (next: AccentMode) => {
-      setMode(next);
-      persist(next, color);
-    },
-    [color, persist],
-  );
-
-  const updateColor = useCallback(
-    (next: string) => {
-      setColor(next);
-      persist("pick", next);
-      setMode("pick");
-    },
-    [persist],
-  );
-
-  return { mode, color, setMode: updateMode, setColor: updateColor };
-}
-
-function AccentPicker({
-  mode,
-  color,
-  onMode,
-  onColor,
-}: {
-  mode: AccentMode;
-  color: string;
-  onMode: (m: AccentMode) => void;
-  onColor: (c: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  const MODES: { key: AccentMode; label: string }[] = [
-    { key: "off", label: "Default" },
-    { key: "sweep", label: "Sweep" },
-    { key: "pulse", label: "Pulse" },
-    { key: "pick", label: "Custom" },
-  ];
-
-  return (
-    <div className="relative inline-flex">
-      <button
-        type="button"
-        aria-label="Customize accent gradient"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className={`w-7 h-7 rounded-full flex items-center justify-center
-                    border transition-all duration-200
-                    ${
-                      mode !== "off"
-                        ? "border-cyan-400/50 bg-cyan-400/[0.08] shadow-[0_0_14px_rgba(6,182,212,0.25)]"
-                        : "border-white/15 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
-                    }`}
-      >
-        <span className="text-[11px] opacity-80 group-hover:opacity-100" aria-hidden>
-          🎨
-        </span>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Click-outside swallower */}
-            <button
-              aria-hidden
-              tabIndex={-1}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-40 cursor-default bg-transparent"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 6, scale: 0.96 }}
-              transition={{ duration: 0.16 }}
-              className="absolute z-50 top-full left-0 mt-2 w-52 rounded-xl
-                         bg-[#0b0b10]/98 backdrop-blur-xl border border-white/10
-                         shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-2.5"
-              role="dialog"
-              aria-label="Accent gradient picker"
-            >
-              <p className="text-[10px] font-mono uppercase tracking-wider text-white/35 px-1.5 pb-1.5">
-                Name gradient
-              </p>
-              <div className="grid grid-cols-2 gap-1">
-                {MODES.map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => onMode(m.key)}
-                    className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono tracking-wide
-                                transition-[color,background-color,border-color] border
-                                ${
-                                  mode === m.key
-                                    ? "bg-cyan-400/10 text-cyan-300 border-cyan-400/30"
-                                    : "bg-white/[0.03] text-white/60 border-white/[0.08] hover:bg-white/[0.06] hover:text-white/90"
-                                }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-2">
-                  <label
-                    htmlFor="accent-color-picker"
-                    className="text-[10px] font-mono uppercase tracking-wider text-white/35 flex-1 cursor-pointer"
-                  >
-                    Custom color
-                  </label>
-                  <div
-                    className="relative w-6 h-6 rounded-md border border-white/20 overflow-hidden shrink-0"
-                    style={{ background: color }}
-                  >
-                    <input
-                      id="accent-color-picker"
-                      type="color"
-                      value={color}
-                      onChange={(e) => onColor(e.target.value)}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      aria-label="Pick a custom accent color"
-                    />
-                  </div>
-                </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 /* ═══ TYPEWRITER (role line) ═══ */
 const TAGLINES = [
   "IT Systems · Cloud · DevOps",
@@ -301,7 +130,7 @@ function HeroSection() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
   const heroY = useTransform(scrollYProgress, [0, 0.25], [0, -60]);
 
-  const { mode, color, setMode, setColor } = useAccent();
+  const { mode, color } = useAccent();
   const typed = useTypewriter(TAGLINES);
 
   useEffect(() => {
@@ -399,42 +228,31 @@ function HeroSection() {
           </span>
         </motion.div>
 
-        {/* Name + subtle accent picker */}
-        <div className="flex items-start gap-3 flex-wrap">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              ...(bgAnim ? bgAnim : {}),
-            }}
-            transition={{
-              opacity: { duration: 1.1, delay: 0.4 },
-              y: { duration: 1.1, delay: 0.4 },
-              ...(bgAnimTrans ? { backgroundPosition: bgAnimTrans } : {}),
-            }}
-            className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight"
-            style={{
-              backgroundImage: gradient,
-              backgroundSize: bgSize,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              display: "inline-block",
-              willChange: mode !== "off" ? "background-position" : "auto",
-            }}
-          >
-            Maxwell Nixon
-          </motion.h1>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1.2 }}
-            className="pt-3"
-          >
-            <AccentPicker mode={mode} color={color} onMode={setMode} onColor={setColor} />
-          </motion.div>
-        </div>
+        {/* Name (customize the gradient from the theme circle in the navbar) */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            ...(bgAnim ? bgAnim : {}),
+          }}
+          transition={{
+            opacity: { duration: 1.1, delay: 0.4 },
+            y: { duration: 1.1, delay: 0.4 },
+            ...(bgAnimTrans ? { backgroundPosition: bgAnimTrans } : {}),
+          }}
+          className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight inline-block"
+          style={{
+            backgroundImage: gradient,
+            backgroundSize: bgSize,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            willChange: mode !== "off" ? "background-position" : "auto",
+          }}
+        >
+          Maxwell Nixon
+        </motion.h1>
 
         {/* Role line with typewriter */}
         <motion.div

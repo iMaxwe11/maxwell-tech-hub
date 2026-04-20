@@ -2,810 +2,867 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
-import { useState, useEffect, useRef } from "react";
+
+/* ═══════════════════════════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════════════════════════ */
 
 interface ArcadeGame {
+  id: string;
   title: string;
-  desc: string;
+  tagline: string;
   href: string;
   icon: string;
-  color: string;
-  colorName: string;
+  accent: string;
   genre: string;
-  difficulty: string;
   controls: string;
-  hook: string;
+  time: string;
 }
 
 const GAMES: ArcadeGame[] = [
   {
+    id: "snake",
     title: "Neon Snake",
-    desc: "Classic snake reimagined with neon glow, wall-wrapping, and buttery controls.",
+    tagline: "Glow, grow, don't eat yourself.",
     href: "/play/snake",
     icon: "🐍",
-    color: "#06b6d4",
-    colorName: "cyan",
-    genre: "Arcade Classic",
-    difficulty: "Easy to Learn",
+    accent: "#06b6d4",
+    genre: "Classic",
     controls: "Arrow keys / WASD",
-    hook: "Perfect for short neon speed runs.",
+    time: "~2 min",
   },
   {
+    id: "pong",
     title: "Neon Pong",
-    desc: "Beat the AI in this fast-paced pong duel with particle trails and adaptive difficulty.",
+    tagline: "Rally hard. Score harder.",
     href: "/play/pong",
     icon: "🏓",
-    color: "#a855f7",
-    colorName: "purple",
-    genre: "Versus Duel",
-    difficulty: "Medium",
+    accent: "#a855f7",
+    genre: "Versus",
     controls: "Arrow keys / W S",
-    hook: "Momentum swings fast once rallies heat up.",
+    time: "~3 min",
   },
   {
+    id: "memory",
     title: "Memory Matrix",
-    desc: "Watch the pattern, then recall it from memory. How far can your brain go?",
+    tagline: "Watch the pattern. Repeat it back.",
     href: "/play/memory",
     icon: "🧠",
-    color: "#f59e0b",
-    colorName: "amber",
-    genre: "Brain Burner",
-    difficulty: "Scaling",
+    accent: "#f59e0b",
+    genre: "Puzzle",
     controls: "Mouse / Tap",
-    hook: "Clean, focused rounds that punish overconfidence.",
+    time: "~2 min",
   },
   {
+    id: "reaction",
     title: "Reaction Time",
-    desc: "Test your reflexes. Wait for the signal, then click as fast as you can.",
+    tagline: "Wait. Green. Click.",
     href: "/play/reaction",
     icon: "⚡",
-    color: "#10b981",
-    colorName: "green",
-    genre: "Reflex Lab",
-    difficulty: "Quick Hits",
+    accent: "#10b981",
+    genre: "Reflex",
     controls: "Mouse / Tap",
-    hook: "Ideal for rapid-fire leaderboard attempts.",
+    time: "~30 sec",
   },
   {
+    id: "typing",
     title: "Type Racer",
-    desc: "Race against the clock typing real sentences. Track your WPM and accuracy in real time.",
+    tagline: "Type faster than you think.",
     href: "/play/typing",
     icon: "⌨️",
-    color: "#f43f5e",
-    colorName: "rose",
-    genre: "Skill Trial",
-    difficulty: "Medium",
+    accent: "#f43f5e",
+    genre: "Skill",
     controls: "Keyboard",
-    hook: "A cleaner way to flex speed and accuracy.",
+    time: "~1 min",
   },
 ];
 
-function ArcadeCabinet({
-  selectedGameIndex,
-  setSelectedGameIndex,
-  quickStartIndex,
-}: {
-  selectedGameIndex: number | null;
-  setSelectedGameIndex: (index: number | null) => void;
-  quickStartIndex: number;
-}) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+/* ═══════════════════════════════════════════════════════════════
+   PLAY-COUNT TRACKING (localStorage)
+   ═══════════════════════════════════════════════════════════════ */
 
-  const currentGame = selectedGameIndex !== null ? GAMES[selectedGameIndex] : null;
-
-  if (isFullscreen && currentGame) {
-    return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col">
-        <div className="absolute top-4 right-4 z-50 flex gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsFullscreen(false)}
-            className="px-4 py-2 bg-cyan-500/20 border border-cyan-400 rounded-lg text-cyan-400 font-mono text-sm hover:bg-cyan-500/30"
-          >
-            Exit Fullscreen
-          </motion.button>
-        </div>
-        <iframe
-          ref={iframeRef}
-          src={currentGame.href}
-          className="w-full h-full border-0"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative mx-auto w-full max-w-2xl mb-12">
-      <style>{`
-        @keyframes scanlines {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(10px); }
-        }
-        @keyframes flicker {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.95; }
-        }
-        @keyframes neon-glow {
-          0%, 100% {
-            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
-          }
-          50% {
-            text-shadow: 0 0 15px currentColor, 0 0 30px currentColor, 0 0 45px currentColor;
-          }
-        }
-        @keyframes button-pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(0.95); }
-        }
-        .scanline-overlay {
-          animation: scanlines 0.15s linear infinite;
-          pointer-events: none;
-        }
-        .crt-flicker {
-          animation: flicker 0.15s infinite;
-        }
-        .neon-arcade-text {
-          animation: neon-glow 2s ease-in-out infinite;
-        }
-        .arcade-button:hover {
-          animation: button-pulse 0.5s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Cabinet Container */}
-      <div className="relative rounded-3xl overflow-hidden border-8 border-black/80 bg-gradient-to-b from-slate-900 via-black to-slate-950 shadow-2xl"
-        style={{
-          boxShadow: `0 0 80px rgba(6, 182, 212, 0.3), 0 0 120px rgba(168, 85, 247, 0.2), inset 0 0 40px rgba(0, 0, 0, 0.8)`
-        }}>
-
-        {/* Cabinet Top - Marquee */}
-        <div className="h-20 bg-gradient-to-r from-black via-slate-900 to-black border-b-4 border-yellow-500/30 flex items-center justify-center px-4 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/5 to-transparent" />
-          <motion.h2
-            className="text-4xl font-black tracking-widest text-yellow-500 neon-arcade-text font-mono"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            ARCADE
-          </motion.h2>
-        </div>
-
-        {/* Main Screen */}
-        <div className="p-8 bg-gradient-to-b from-slate-950 to-black">
-          {/* CRT Screen with rounded edges */}
-          <div className="relative rounded-2xl overflow-hidden bg-black border-4 border-cyan-500/30 aspect-video flex flex-col items-center justify-center"
-            style={{
-              boxShadow: `inset 0 0 40px rgba(0, 0, 0, 0.9), 0 0 60px rgba(6, 182, 212, 0.2)`,
-              perspective: "1000px",
-            }}>
-
-            {/* Screen content */}
-            <div className="absolute inset-0 bg-gradient-to-b from-cyan-950/20 via-transparent to-purple-950/20 crt-flicker" />
-
-            {/* Scanlines */}
-            <div
-              className="absolute inset-0 opacity-10 pointer-events-none"
-              style={{
-                backgroundImage: "repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0px, rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px)",
-              }}
-            />
-
-            {/* Game display or game selector */}
-            <AnimatePresence mode="wait">
-              {selectedGameIndex === null ? (
-                // Game Selector Menu
-                <motion.div
-                  key="menu"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="relative z-10 w-full h-full flex flex-col items-center justify-center gap-4 p-4"
-                >
-                  <div className="text-4xl mb-2">GAME SELECT</div>
-                  <div className="grid grid-cols-2 gap-3 w-full">
-                    {GAMES.map((game, i) => (
-                      <motion.button
-                        key={i}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedGameIndex(i)}
-                        className="px-3 py-2 rounded border text-xs font-mono font-bold uppercase tracking-wider transition-all"
-                        style={{
-                          backgroundColor: `${game.color}20`,
-                          borderColor: game.color,
-                          color: game.color,
-                        }}
-                      >
-                        {game.title}
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              ) : currentGame ? (
-                // Game Playing
-                <motion.div
-                  key="game"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="relative z-10 w-full h-full flex items-center justify-center"
-                >
-                  <iframe
-                    ref={iframeRef}
-                    src={currentGame.href}
-                    className="w-full h-full border-0 rounded-lg"
-                    style={{ maxWidth: "100%", maxHeight: "100%" }}
-                  />
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-
-            {/* Game indicator dots */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-              {GAMES.map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="w-2 h-2 rounded-full"
-                  animate={{
-                    backgroundColor: i === selectedGameIndex ? (currentGame?.color || "#fff") : "rgba(255, 255, 255, 0.2)",
-                    boxShadow: i === selectedGameIndex ? `0 0 10px ${currentGame?.color || "#fff"}` : "none",
-                  }}
-                  transition={{ duration: 0.3 }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Bezel area with controls */}
-          <div className="mt-6 grid grid-cols-3 gap-4">
-            {/* Joystick (left) */}
-            <div className="flex justify-center">
-              <div className="relative w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg border-2 border-gray-600 flex items-center justify-center"
-                style={{ boxShadow: "inset 0 4px 8px rgba(0, 0, 0, 0.6)" }}>
-                <motion.div
-                  className="w-12 h-12 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full flex items-center justify-center text-gray-400 text-xl"
-                  animate={{
-                    rotateX: [0, 5, -5, 0],
-                    rotateY: [0, -5, 5, 0],
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  ⬆️
-                </motion.div>
-              </div>
-            </div>
-
-            {/* Center info */}
-            <div className="flex flex-col items-center justify-center gap-1 text-center">
-              <div className="text-xs font-mono text-cyan-400/80">CREDITS</div>
-              <div className="text-lg font-mono font-bold text-cyan-400">∞</div>
-            </div>
-
-            {/* Action buttons (right) */}
-            <div className="flex justify-center gap-2 flex-col items-center">
-              {selectedGameIndex !== null ? (
-                <>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setSelectedGameIndex(null)}
-                    className="arcade-button w-20 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-cyan-900 border-2 border-cyan-400 text-xs font-bold text-white font-mono"
-                    style={{
-                      boxShadow: "0 0 15px rgba(6, 182, 212, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2)"
-                    }}
-                  >
-                    MENU
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsFullscreen(true)}
-                    className="arcade-button w-20 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-900 border-2 border-purple-400 text-xs font-bold text-white font-mono"
-                    style={{
-                      boxShadow: "0 0 15px rgba(168, 85, 247, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2)"
-                    }}
-                  >
-                    FULL
-                  </motion.button>
-                </>
-              ) : (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedGameIndex(quickStartIndex)}
-                  className="arcade-button w-16 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-900 border-2 border-purple-400 text-xs font-bold text-white font-mono"
-                  style={{
-                    boxShadow: "0 0 15px rgba(168, 85, 247, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2)"
-                  }}
-                >
-                  START
-                </motion.button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Cabinet bottom - Stats */}
-        <div className="px-8 py-4 bg-gradient-to-r from-black via-slate-950 to-black border-t border-cyan-500/20 flex justify-between text-xs font-mono text-cyan-300/60">
-          <span>GAMES: {GAMES.length}</span>
-          <span>TOKENS: ∞</span>
-          <span>PLAYER: 1</span>
-        </div>
-      </div>
-    </div>
-  );
+interface PlayStats {
+  [gameId: string]: { plays: number; lastPlayedAt: number };
 }
 
-function GameCard({ game, index, onPlayInCabinet }: { game: ArcadeGame; index: number; onPlayInCabinet: (index: number) => void }) {
-  const [isHovering, setIsHovering] = useState(false);
+const STATS_KEY = "arcade:stats-v2";
 
-  const renderGamePreview = () => {
-    switch (game.title) {
-      case "Neon Snake":
-        return (
-          <div className="w-full h-full flex items-center justify-center">
-            <svg viewBox="0 0 100 100" className="w-24 h-24">
-              <style>
-                {`
-                  @keyframes snake-move { 0% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 100% { transform: translateX(-5px); } }
-                  .snake-segment { animation: snake-move 2s ease-in-out infinite; }
-                `}
-              </style>
-              <circle cx="50" cy="30" r="3" fill="${game.color}" />
-              <circle cx="40" cy="30" r="2.5" fill="${game.color}" opacity="0.7" />
-              <circle cx="30" cy="30" r="2" fill="${game.color}" opacity="0.4" />
-              <circle cx="70" cy="70" r="3" fill="${game.color}" opacity="0.6" />
-            </svg>
-          </div>
-        );
-      case "Neon Pong":
-        return (
-          <div className="w-full h-full flex items-center justify-center">
-            <svg viewBox="0 0 100 100" className="w-24 h-24">
-              <rect x="10" y="30" width="4" height="20" fill="${game.color}" />
-              <rect x="86" y="35" width="4" height="15" fill="${game.color}" />
-              <circle cx="50" cy="50" r="3" fill="${game.color}" opacity="0.8" />
-              <circle cx="48" cy="48" r="2" fill="${game.color}" opacity="0.3" />
-            </svg>
-          </div>
-        );
-      case "Memory Matrix":
-        return (
-          <div className="w-full h-full flex items-center justify-center gap-2">
-            <div className="grid grid-cols-2 gap-1.5">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="w-6 h-6 rounded border-2" style={{ borderColor: game.color, backgroundColor: `${game.color}20` }} />
-              ))}
-            </div>
-          </div>
-        );
-      case "Reaction Time":
-        return (
-          <div className="w-full h-full flex items-center justify-center">
-            <motion.div
-              animate={{ scale: [0.8, 1.2, 0.8] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-16 h-16 rounded-full border-4"
-              style={{ borderColor: game.color, boxShadow: `0 0 20px ${game.color}` }}
+function readStats(): PlayStats {
+  try {
+    const raw = window.localStorage.getItem(STATS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as PlayStats;
+  } catch {
+    return {};
+  }
+}
+
+function writeStats(stats: PlayStats) {
+  try {
+    window.localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  } catch {
+    /* noop */
+  }
+}
+
+function recordPlay(gameId: string): PlayStats {
+  const stats = readStats();
+  const prev = stats[gameId] ?? { plays: 0, lastPlayedAt: 0 };
+  const next: PlayStats = {
+    ...stats,
+    [gameId]: { plays: prev.plays + 1, lastPlayedAt: Date.now() },
+  };
+  writeStats(next);
+  return next;
+}
+
+function relativeTime(ts: number): string {
+  if (!ts) return "—";
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day}d ago`;
+  return new Date(ts).toLocaleDateString();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATED CABINET PREVIEWS
+   ═══════════════════════════════════════════════════════════════ */
+
+function Preview({ id, accent }: { id: string; accent: string }) {
+  switch (id) {
+    case "snake":
+      return (
+        <svg viewBox="0 0 120 80" className="w-full h-full">
+          <defs>
+            <filter id={`glow-${id}`}>
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {/* Grid */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <line
+              key={`h-${i}`}
+              x1="0"
+              y1={i * 10}
+              x2="120"
+              y2={i * 10}
+              stroke={accent}
+              strokeOpacity="0.08"
             />
-          </div>
-        );
-      case "Type Racer":
-        return (
-          <div className="w-full h-full flex items-center justify-center gap-1">
-            {["T", "Y", "P", "E"].map((char, i) => (
-              <motion.div
+          ))}
+          {Array.from({ length: 12 }).map((_, i) => (
+            <line
+              key={`v-${i}`}
+              x1={i * 10}
+              y1="0"
+              x2={i * 10}
+              y2="80"
+              stroke={accent}
+              strokeOpacity="0.08"
+            />
+          ))}
+          {/* Snake segments */}
+          {[0, 1, 2, 3, 4].map((i) => (
+            <motion.rect
+              key={i}
+              width="8"
+              height="8"
+              fill={accent}
+              filter={`url(#glow-${id})`}
+              initial={{ x: 10 + i * 10, y: 30, opacity: 1 - i * 0.13 }}
+              animate={{
+                x: [10 + i * 10, 60 + i * 10, 60 + i * 10, 10 + i * 10, 10 + i * 10],
+                y: [30, 30, 50, 50, 30],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.08,
+              }}
+            />
+          ))}
+          {/* Food */}
+          <motion.circle
+            cx="90"
+            cy="20"
+            r="3"
+            fill="#fff"
+            animate={{ opacity: [1, 0.35, 1] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+          />
+        </svg>
+      );
+    case "pong":
+      return (
+        <svg viewBox="0 0 120 80" className="w-full h-full">
+          {/* Center dashed line */}
+          <line
+            x1="60"
+            y1="5"
+            x2="60"
+            y2="75"
+            stroke={accent}
+            strokeOpacity="0.3"
+            strokeDasharray="3 3"
+          />
+          {/* Left paddle */}
+          <motion.rect
+            x="8"
+            width="3"
+            height="16"
+            fill={accent}
+            animate={{ y: [20, 45, 20] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Right paddle */}
+          <motion.rect
+            x="109"
+            width="3"
+            height="16"
+            fill={accent}
+            animate={{ y: [40, 15, 40] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Ball */}
+          <motion.circle
+            r="2.5"
+            fill="#fff"
+            animate={{
+              cx: [15, 105, 15],
+              cy: [25, 55, 25],
+            }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+          />
+        </svg>
+      );
+    case "memory":
+      return (
+        <div className="w-full h-full p-3 grid grid-cols-3 gap-1.5">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="rounded-md border"
+              style={{ borderColor: `${accent}60` }}
+              animate={{
+                backgroundColor: [
+                  "rgba(0,0,0,0)",
+                  `${accent}30`,
+                  "rgba(0,0,0,0)",
+                ],
+                boxShadow: [
+                  `0 0 0 ${accent}00`,
+                  `0 0 10px ${accent}80`,
+                  `0 0 0 ${accent}00`,
+                ],
+              }}
+              transition={{
+                duration: 0.6,
+                repeat: Infinity,
+                repeatDelay: 4,
+                delay: (i * 0.22) % 3.5,
+              }}
+            />
+          ))}
+        </div>
+      );
+    case "reaction":
+      return (
+        <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0"
+            animate={{
+              backgroundColor: [
+                "rgba(239, 68, 68, 0.15)",
+                "rgba(239, 68, 68, 0.15)",
+                `${accent}30`,
+                "rgba(239, 68, 68, 0.15)",
+              ],
+            }}
+            transition={{ duration: 3, repeat: Infinity, times: [0, 0.6, 0.7, 1] }}
+          />
+          <motion.div
+            className="relative w-16 h-16 rounded-full border-4 flex items-center justify-center font-mono font-bold text-xs"
+            style={{ borderColor: accent, color: accent }}
+            animate={{
+              scale: [1, 1, 1.2, 1],
+              boxShadow: [
+                `0 0 0 ${accent}00`,
+                `0 0 0 ${accent}00`,
+                `0 0 30px ${accent}`,
+                `0 0 0 ${accent}00`,
+              ],
+            }}
+            transition={{ duration: 3, repeat: Infinity, times: [0, 0.6, 0.7, 1] }}
+          >
+            GO
+          </motion.div>
+        </div>
+      );
+    case "typing": {
+      const letters = ["T", "Y", "P", "E", " ", "F", "A", "S", "T"];
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-2 font-mono">
+          <div className="flex gap-0.5">
+            {letters.map((l, i) => (
+              <motion.span
                 key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, repeat: Infinity, repeatDelay: 1 }}
-                className="text-2xl font-bold"
-                style={{ color: game.color }}
+                className="text-lg font-bold inline-block w-[0.7em] text-center"
+                style={{ color: accent }}
+                initial={{ opacity: 0.2 }}
+                animate={{ opacity: [0.2, 1, 1, 0.2] }}
+                transition={{
+                  duration: 2.4,
+                  repeat: Infinity,
+                  times: [0, 0.15, 0.75, 1],
+                  delay: i * 0.1,
+                }}
               >
-                {char}
-              </motion.div>
+                {l === " " ? "\u00A0" : l}
+              </motion.span>
             ))}
           </div>
-        );
-      default:
-        return <div className="text-5xl">{game.icon}</div>;
+          <motion.span
+            className="inline-block w-[0.1em] h-4 -mb-1"
+            style={{ background: accent }}
+            animate={{ opacity: [1, 0, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          />
+        </div>
+      );
     }
-  };
+    default:
+      return null;
+  }
+}
 
+/* ═══════════════════════════════════════════════════════════════
+   CABINET CARD
+   ═══════════════════════════════════════════════════════════════ */
+
+function Cabinet({
+  game,
+  index,
+  isFocused,
+  stats,
+  onSelect,
+  onQuickLaunch,
+}: {
+  game: ArcadeGame;
+  index: number;
+  isFocused: boolean;
+  stats: { plays: number; lastPlayedAt: number };
+  onSelect: () => void;
+  onQuickLaunch: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 + index * 0.1, duration: 0.6 }}
+      transition={{ delay: 0.15 + index * 0.07, duration: 0.6 }}
+      whileHover={{ y: -6 }}
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`group relative flex flex-col rounded-2xl border overflow-hidden cursor-pointer
+                  transition-[transform,box-shadow,border-color] duration-300 focus-visible:outline-none
+                  ${
+                    isFocused
+                      ? "scale-[1.02]"
+                      : ""
+                  }`}
+      style={{
+        background: `linear-gradient(180deg, rgba(10,10,18,0.9), rgba(4,4,8,0.95))`,
+        borderColor: isFocused ? `${game.accent}80` : "rgba(255,255,255,0.08)",
+        boxShadow: isFocused
+          ? `0 0 40px ${game.accent}40, inset 0 0 20px ${game.accent}10`
+          : `0 4px 20px rgba(0,0,0,0.3)`,
+      }}
     >
-      <div
-        className="relative group h-full rounded-2xl overflow-hidden border border-white/10 transition-all duration-300"
-        style={{
-          background: "linear-gradient(135deg, rgba(15, 23, 42, 0.4) 0%, rgba(10, 10, 20, 0.6) 100%)",
-          backdropFilter: "blur(10px)",
-        }}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+      {/* Keyboard slot number */}
+      <span
+        className="absolute top-2 right-2 z-10 w-5 h-5 rounded-md
+                   bg-black/50 border border-white/20 backdrop-blur-sm
+                   text-[10px] font-mono font-bold flex items-center justify-center"
+        style={{ color: game.accent }}
       >
-        {/* Animated inner border glow */}
+        {index + 1}
+      </span>
+
+      {/* Preview screen — CRT style */}
+      <div
+        className="relative h-40 sm:h-44 overflow-hidden border-b border-white/5"
+        style={{
+          background: `radial-gradient(ellipse at center, ${game.accent}12, rgba(0,0,0,0.95) 75%)`,
+        }}
+      >
+        {/* Scanlines */}
         <div
-          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          className="absolute inset-0 pointer-events-none opacity-40"
           style={{
-            boxShadow: `inset 0 0 40px ${game.color}20, 0 0 40px ${game.color}15`,
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)",
           }}
         />
+        {/* Vignette */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            boxShadow: "inset 0 0 40px rgba(0,0,0,0.7)",
+          }}
+        />
+        <Preview id={game.id} accent={game.accent} />
 
-        {/* Content */}
-        <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-          {/* Game preview area */}
-          <div className="mb-4 relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-black to-slate-900 flex items-center justify-center border border-white/5"
-            style={{
-              boxShadow: isHovering ? `0 0 30px ${game.color}30` : "none",
-              background: `linear-gradient(135deg, ${game.color}10, ${game.color}05)`,
-            }}>
+        {/* Genre tag top-left */}
+        <span
+          className="absolute top-2 left-2 text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded
+                     bg-black/60 backdrop-blur-sm border"
+          style={{ borderColor: `${game.accent}40`, color: game.accent }}
+        >
+          {game.genre}
+        </span>
+      </div>
 
-            {/* Scanline effect on preview */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none"
-              style={{
-                backgroundImage: "repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0px, rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px)",
-              }} />
-
-            {/* Game preview animation */}
-            <motion.div
-              className="relative z-10"
-              animate={isHovering ? { y: [-3, 3, -3] } : { y: 0 }}
-              transition={{ duration: 2, repeat: Infinity }}
+      {/* Title + meta */}
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex items-start gap-2 mb-1">
+          <span className="text-2xl leading-none shrink-0">{game.icon}</span>
+          <div className="min-w-0">
+            <h3
+              className="text-base font-bold font-mono uppercase tracking-wide leading-tight transition-colors"
+              style={{ color: isFocused ? game.accent : "#fff" }}
             >
-              {renderGamePreview()}
-            </motion.div>
-          </div>
-
-          {/* Game title */}
-          <div className="mb-3">
-            <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors font-mono">
-              {game.title.toUpperCase()}
+              {game.title}
             </h3>
-            <p className="text-white/40 text-xs font-mono mt-1">{game.desc}</p>
-          </div>
-
-          {/* Meta area */}
-          <div className="mb-4 grid grid-cols-3 gap-2">
-            {[
-              ["Genre", game.genre],
-              ["Difficulty", game.difficulty],
-              ["Controls", game.controls],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded border border-white/5 bg-black/40 px-2 py-2 text-center">
-                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider">{label}</p>
-                <p className="mt-1 text-[11px] font-mono text-white/70">{value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-2 flex-col">
-            <motion.button
-              onClick={(e) => {
-                e.preventDefault();
-                onPlayInCabinet(index);
-              }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-2 rounded-lg font-mono font-bold text-sm transition-all duration-300 border"
-              style={{
-                backgroundColor: `${game.color}30`,
-                color: game.color,
-                borderColor: game.color,
-                boxShadow: isHovering ? `0 0 20px ${game.color}60` : `0 0 10px ${game.color}20`,
-              }}
-            >
-              PLAY IN CABINET
-            </motion.button>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                href={game.href}
-                className="block w-full py-2 rounded-lg font-mono font-bold text-sm transition-all duration-300 border text-white/60 border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5 text-center"
-              >
-                Full Page
-              </Link>
-            </motion.div>
+            <p className="text-[11px] text-white/40 leading-snug mt-0.5">{game.tagline}</p>
           </div>
         </div>
 
-        {/* Corner accent lights */}
-        <div className="absolute top-2 right-2 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ backgroundColor: game.color, boxShadow: `0 0 10px ${game.color}` }} />
-        <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ backgroundColor: game.color, boxShadow: `0 0 10px ${game.color}` }} />
+        {/* Personal stats */}
+        <div className="mt-3 grid grid-cols-2 gap-1.5 text-center">
+          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1.5 py-1.5">
+            <p className="text-[8px] font-mono uppercase tracking-wider text-white/35">Plays</p>
+            <p
+              className="text-sm font-mono font-bold mt-0.5"
+              style={{ color: stats.plays > 0 ? game.accent : "rgba(255,255,255,0.3)" }}
+            >
+              {stats.plays || "—"}
+            </p>
+          </div>
+          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1.5 py-1.5">
+            <p className="text-[8px] font-mono uppercase tracking-wider text-white/35">Last</p>
+            <p className="text-[10px] font-mono font-semibold text-white/70 mt-1 truncate">
+              {relativeTime(stats.lastPlayedAt)}
+            </p>
+          </div>
+        </div>
+
+        {/* Launch buttons */}
+        <div className="mt-4 flex gap-2">
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuickLaunch();
+            }}
+            className="flex-1 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider
+                       border transition-[background-color,box-shadow]"
+            style={{
+              borderColor: `${game.accent}50`,
+              backgroundColor: `${game.accent}15`,
+              color: game.accent,
+              boxShadow: isFocused ? `0 0 15px ${game.accent}60` : `0 0 8px ${game.accent}20`,
+            }}
+          >
+            Play
+          </motion.button>
+          <Link
+            href={game.href}
+            onClick={(e) => e.stopPropagation()}
+            className="py-2 px-3 rounded-lg text-xs font-mono text-white/50 hover:text-white
+                       bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20
+                       transition-colors"
+          >
+            ↗
+          </Link>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function ArcadeSidebar({
-  currentGame,
-  recentGame,
-  onPlayInCabinet,
+/* ═══════════════════════════════════════════════════════════════
+   NOW PLAYING MODAL
+   ═══════════════════════════════════════════════════════════════ */
+
+function NowPlayingModal({
+  game,
+  onClose,
 }: {
-  currentGame: ArcadeGame;
-  recentGame: ArcadeGame | null;
-  onPlayInCabinet: (index: number) => void;
+  game: ArcadeGame | null;
+  onClose: () => void;
 }) {
-  const currentIndex = GAMES.findIndex((game) => game.title === currentGame.title);
-  const recentIndex = recentGame ? GAMES.findIndex((game) => game.title === recentGame.title) : -1;
+  useEffect(() => {
+    if (!game) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [game, onClose]);
 
   return (
-    <div className="space-y-4">
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-sm"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-cyan-400/60">Now Highlighted</p>
-            <h2 className="mt-3 text-2xl font-black text-white">{currentGame.title}</h2>
-            <p className="mt-3 text-sm text-white/45">{currentGame.hook}</p>
-          </div>
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl"
-            style={{ borderColor: `${currentGame.color}50`, backgroundColor: `${currentGame.color}15` }}
+    <AnimatePresence>
+      {game && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[80] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ duration: 0.25 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-4xl rounded-2xl border-2 overflow-hidden
+                       bg-[#050508] shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
+            style={{ borderColor: `${game.accent}60` }}
           >
-            {currentGame.icon}
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          {[
-            ["Genre", currentGame.genre],
-            ["Difficulty", currentGame.difficulty],
-            ["Controls", currentGame.controls],
-            ["Accent", currentGame.colorName],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-white/5 bg-black/30 px-3 py-3">
-              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/35">{label}</p>
-              <p className="mt-2 text-sm text-white/75">{value}</p>
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-3 border-b border-white/10"
+              style={{
+                background: `linear-gradient(90deg, ${game.accent}15, transparent)`,
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{game.icon}</span>
+                <div>
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-white/40">
+                    Now Playing
+                  </p>
+                  <h2
+                    className="text-sm font-mono font-bold uppercase tracking-wide"
+                    style={{ color: game.accent }}
+                  >
+                    {game.title}
+                  </h2>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={game.href}
+                  className="text-[10px] font-mono px-2.5 py-1.5 rounded-md
+                             bg-white/[0.04] hover:bg-white/[0.08] border border-white/10
+                             text-white/60 hover:text-white transition-colors"
+                >
+                  Full Page
+                </Link>
+                <button
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="w-7 h-7 rounded-md bg-white/[0.04] hover:bg-white/[0.1] border border-white/10
+                             text-white/70 hover:text-white transition-colors flex items-center justify-center"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="mt-5 flex flex-col gap-2">
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onPlayInCabinet(currentIndex)}
-            className="rounded-xl border px-4 py-3 text-sm font-bold font-mono"
-            style={{
-              borderColor: `${currentGame.color}70`,
-              color: currentGame.color,
-              backgroundColor: `${currentGame.color}18`,
-            }}
-          >
-            Launch In Cabinet
-          </motion.button>
-          <Link
-            href={currentGame.href}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-sm font-bold font-mono text-white/65 transition-colors hover:text-white hover:border-white/20"
-          >
-            Open Standalone
-          </Link>
-        </div>
-      </motion.div>
+            {/* Game iframe */}
+            <iframe
+              src={game.href}
+              title={game.title}
+              className="w-full h-[72vh] border-0 bg-black"
+              allow="fullscreen"
+            />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-sm">
-          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-purple-400/60">Cabinet Hotkeys</p>
-          <div className="mt-4 space-y-3 text-sm text-white/65">
-            <p><span className="text-cyan-300">1-5</span> jump straight into a cabinet slot.</p>
-            <p><span className="text-cyan-300">Escape</span> clears the current selection.</p>
-            <p><span className="text-cyan-300">Fullscreen</span> gives the game a clean CRT-style stage.</p>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-sm">
-          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-amber-400/60">Recent Slot</p>
-          {recentGame && recentIndex >= 0 ? (
-            <div className="mt-4">
-              <p className="text-lg font-semibold text-white">{recentGame.title}</p>
-              <p className="mt-2 text-sm text-white/45">{recentGame.desc}</p>
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onPlayInCabinet(recentIndex)}
-                className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold font-mono text-amber-300"
-              >
-                Reload Recent Game
-              </motion.button>
+            {/* Footer hint */}
+            <div className="px-5 py-2.5 border-t border-white/5 text-[10px] font-mono text-white/35 text-center">
+              Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-white/60">Esc</kbd> to exit
             </div>
-          ) : (
-            <p className="mt-4 text-sm text-white/45">Start a game and the cabinet will keep your last pick ready here.</p>
-          )}
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
-export default function ArcadePage() {
-  const cabinetRef = useRef<HTMLDivElement>(null);
-  const [selectedGameIndex, setSelectedGameIndex] = useState<number | null>(null);
-  const [recentGameIndex, setRecentGameIndex] = useState<number | null>(null);
+/* ═══════════════════════════════════════════════════════════════
+   PAGE
+   ═══════════════════════════════════════════════════════════════ */
 
+export default function ArcadePage() {
+  const [focusedIdx, setFocusedIdx] = useState(0);
+  const [playing, setPlaying] = useState<ArcadeGame | null>(null);
+  const [stats, setStats] = useState<PlayStats>({});
+
+  // Load stats on mount
   useEffect(() => {
-    const stored = window.localStorage.getItem("arcade:last-game");
-    if (!stored) return;
-    const parsed = Number(stored);
-    if (Number.isInteger(parsed) && parsed >= 0 && parsed < GAMES.length) {
-      setRecentGameIndex(parsed);
-    }
+    setStats(readStats());
   }, []);
 
-  useEffect(() => {
-    if (selectedGameIndex === null) return;
-    setRecentGameIndex(selectedGameIndex);
-    window.localStorage.setItem("arcade:last-game", String(selectedGameIndex));
-  }, [selectedGameIndex]);
+  const launch = useCallback((game: ArcadeGame) => {
+    const next = recordPlay(game.id);
+    setStats(next);
+    setPlaying(game);
+  }, []);
 
+  // Keyboard shortcuts: 1-5 launches, arrows navigate focus
   useEffect(() => {
-    const handleHotkeys = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelectedGameIndex(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (playing) return; // modal owns keys when open
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || (e.target as HTMLElement)?.isContentEditable) return;
+
+      const num = Number(e.key);
+      if (Number.isInteger(num) && num >= 1 && num <= GAMES.length) {
+        e.preventDefault();
+        launch(GAMES[num - 1]);
         return;
       }
-
-      const slot = Number(event.key);
-      if (!Number.isInteger(slot) || slot < 1 || slot > GAMES.length) return;
-      setSelectedGameIndex(slot - 1);
-      setTimeout(() => {
-        cabinetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
+      if (e.key === "ArrowRight" || e.key === "l") {
+        setFocusedIdx((i) => (i + 1) % GAMES.length);
+        e.preventDefault();
+      } else if (e.key === "ArrowLeft" || e.key === "h") {
+        setFocusedIdx((i) => (i - 1 + GAMES.length) % GAMES.length);
+        e.preventDefault();
+      } else if (e.key === "Enter") {
+        launch(GAMES[focusedIdx]);
+        e.preventDefault();
+      }
     };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focusedIdx, launch, playing]);
 
-    window.addEventListener("keydown", handleHotkeys);
-    return () => window.removeEventListener("keydown", handleHotkeys);
-  }, []);
-
-  const handlePlayInCabinet = (index: number) => {
-    setSelectedGameIndex(index);
-    setTimeout(() => {
-      cabinetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
-  };
-
-  const featuredGame = GAMES[selectedGameIndex ?? recentGameIndex ?? 0];
-  const recentGame = recentGameIndex !== null ? GAMES[recentGameIndex] : null;
+  // Aggregate stats for the footer
+  const totalPlays = Object.values(stats).reduce((sum, s) => sum + s.plays, 0);
+  const mostPlayedEntry = Object.entries(stats).sort((a, b) => b[1].plays - a[1].plays)[0];
+  const mostPlayedGame = mostPlayedEntry
+    ? GAMES.find((g) => g.id === mostPlayedEntry[0]) ?? null
+    : null;
+  const lastPlayedEntry = Object.entries(stats).sort((a, b) => b[1].lastPlayedAt - a[1].lastPlayedAt)[0];
+  const lastPlayedGame = lastPlayedEntry
+    ? GAMES.find((g) => g.id === lastPlayedEntry[0]) ?? null
+    : null;
 
   return (
     <>
       <GrokStarfield />
-      <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
+      <div className="aurora-bg">
+        <div className="aurora-band" />
+        <div className="aurora-band" />
+      </div>
+      <Navbar breadcrumb={["arcade"]} />
 
-      {/* Page-wide scanline overlay */}
-      <style>{`
-        @keyframes page-scanlines {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 10px; }
-        }
-        .scanline-bg {
-          animation: page-scanlines 0.15s linear infinite;
-          background-image: repeating-linear-gradient(
-            0deg,
-            rgba(6, 182, 212, 0.03) 0px,
-            rgba(6, 182, 212, 0.03) 1px,
-            transparent 1px,
-            transparent 2px
-          );
-        }
-      `}</style>
+      {/* Page-wide CRT scanlines (subtle) */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[2] opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)",
+        }}
+      />
 
-      <Navbar breadcrumb={["arcade"]} accent="#a855f7" />
-
-      <div className="scanline-bg relative">
-        {/* Hero Section */}
-        <div className="pt-24 pb-8 px-4 sm:px-6">
-          <div className="max-w-[1200px] mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <span className="terminal-prompt font-mono text-sm text-cyan-400/60">$ arcade_hub --init</span>
-              <h1 className="mt-4 font-black text-4xl sm:text-5xl md:text-6xl leading-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-amber-500">
-                  RETRO ARCADE
-                </span>
-              </h1>
-              <p className="mt-3 text-white/40 max-w-xl mx-auto text-sm font-mono">
-                Five games. Zero installs. Infinite play. Insert coin to begin.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono">
-                <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-300">Cabinet shortcuts 1-5</span>
-                <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-3 py-1 text-purple-300">Fullscreen CRT mode</span>
-                <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-amber-300">Recent game memory</span>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Arcade Cabinet */}
-        <div className="px-4 sm:px-6 pb-8" ref={cabinetRef}>
-          <div className="max-w-[1200px] mx-auto grid gap-6 lg:grid-cols-[1.45fr_0.9fr] items-start">
-            <ArcadeCabinet
-              selectedGameIndex={selectedGameIndex}
-              setSelectedGameIndex={setSelectedGameIndex}
-              quickStartIndex={recentGameIndex ?? 0}
-            />
-            <ArcadeSidebar currentGame={featuredGame} recentGame={recentGame} onPlayInCabinet={handlePlayInCabinet} />
-          </div>
-        </div>
-
-        {/* Player Stats Bar */}
-        <div className="px-4 sm:px-6 pb-8">
-          <div className="max-w-[1200px] mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="rounded-xl border border-cyan-500/20 p-4 backdrop-blur-sm"
+      <main className="relative pt-24 pb-24 px-4 sm:px-6">
+        <div className="max-w-[1300px] mx-auto">
+          {/* Hero */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="mb-10 sm:mb-14"
+          >
+            <span className="terminal-prompt font-mono text-sm text-white/70">/ arcade</span>
+            <h1
+              className="mt-4 font-black text-[clamp(2.5rem,7vw,5rem)] leading-[0.95] tracking-tight"
               style={{
-                background: "linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)",
+                backgroundImage:
+                  "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary) 50%, #f59e0b)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                display: "inline-block",
               }}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center text-xs font-mono">
-                <div>
-                  <p className="text-cyan-400/70">GAMES</p>
-                  <p className="text-cyan-400 font-bold">5</p>
-                </div>
-                <div>
-                  <p className="text-purple-400/70">AVAILABLE</p>
-                  <p className="text-purple-400 font-bold">24/7</p>
-                </div>
-                <div>
-                  <p className="text-amber-400/70">TOKENS</p>
-                  <p className="text-amber-400 font-bold">∞</p>
-                </div>
-                <div>
-                  <p className="text-rose-400/70">CREDITS</p>
-                  <p className="text-rose-400 font-bold">READY</p>
-                </div>
-                <div>
-                  <p className="text-green-400/70">LAST LOAD</p>
-                  <p className="text-green-400 font-bold">{recentGame ? recentGame.title.split(" ")[0].toUpperCase() : "READY"}</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
+              The Arcade
+            </h1>
+            <p className="mt-4 max-w-xl text-white/60 text-base sm:text-lg leading-relaxed">
+              Five browser games, zero installs, unlimited credits. Pick a cabinet
+              and hit play — or press a number key.
+            </p>
 
-        {/* Game Cards Grid */}
-        <main className="px-4 sm:px-6 pb-24">
-          <div className="max-w-[1200px] mx-auto grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Shortcut pills */}
+            <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-mono">
+              {[
+                { k: "1 – 5", label: "Launch a game" },
+                { k: "← →", label: "Navigate" },
+                { k: "Enter", label: "Play focused" },
+                { k: "Esc", label: "Exit" },
+              ].map((s) => (
+                <span
+                  key={s.k}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                             bg-white/[0.03] border border-white/10 text-white/50"
+                >
+                  <kbd className="font-bold text-white/80">{s.k}</kbd>
+                  <span className="opacity-60">·</span>
+                  <span>{s.label}</span>
+                </span>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Cabinet row */}
+          <div
+            role="listbox"
+            aria-label="Arcade games"
+            aria-activedescendant={`game-${GAMES[focusedIdx].id}`}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+          >
             {GAMES.map((game, i) => (
-              <GameCard key={game.title} game={game} index={i} onPlayInCabinet={handlePlayInCabinet} />
+              <Cabinet
+                key={game.id}
+                game={game}
+                index={i}
+                isFocused={i === focusedIdx}
+                stats={stats[game.id] ?? { plays: 0, lastPlayedAt: 0 }}
+                onSelect={() => setFocusedIdx(i)}
+                onQuickLaunch={() => launch(game)}
+              />
             ))}
           </div>
-        </main>
 
-        {/* Footer */}
-        <footer className="py-8 px-4 sm:px-6 border-t border-cyan-500/10">
-          <div className="max-w-[1200px] mx-auto">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono">
-              <p className="text-white/25">&copy; {new Date().getFullYear()} Maxwell Nixon • Obsidian Luxe Arcade</p>
-              <div className="flex gap-6 text-white/30 hover:text-cyan-400 transition-colors">
-                <Link href="/" className="hover:text-cyan-400 transition-colors">Home</Link>
-                <Link href="/tools" className="hover:text-cyan-400 transition-colors">Tools</Link>
-                <Link href="/space" className="hover:text-cyan-400 transition-colors">Space</Link>
-                <Link href="/news" className="hover:text-cyan-400 transition-colors">News</Link>
-                <Link href="/weather" className="hover:text-cyan-400 transition-colors">Weather</Link>
+          {/* Arcade Record strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-10 sm:mt-14 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  Your Arcade Record
+                </p>
+                <p className="text-sm text-white/80 font-mono mt-0.5">
+                  Saved locally · Never leaves your browser
+                </p>
+              </div>
+              {totalPlays > 0 && (
+                <button
+                  onClick={() => {
+                    writeStats({});
+                    setStats({});
+                  }}
+                  className="text-[10px] font-mono text-white/35 hover:text-red-400 transition-colors px-2 py-1 rounded border border-white/5"
+                  aria-label="Reset arcade stats"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/5">
+              <div className="px-5 py-4">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  Total plays
+                </p>
+                <p
+                  className="text-2xl font-mono font-bold mt-1"
+                  style={{ color: "var(--theme-primary)" }}
+                >
+                  {totalPlays}
+                </p>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  Games tried
+                </p>
+                <p className="text-2xl font-mono font-bold text-white/85 mt-1">
+                  {Object.keys(stats).length} / {GAMES.length}
+                </p>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  Most played
+                </p>
+                <p className="text-sm font-mono font-semibold text-white/85 mt-1.5 truncate">
+                  {mostPlayedGame ? (
+                    <span style={{ color: mostPlayedGame.accent }}>
+                      {mostPlayedGame.icon} {mostPlayedGame.title.replace("Neon ", "")}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </p>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  Last session
+                </p>
+                <p className="text-sm font-mono font-semibold text-white/85 mt-1.5 truncate">
+                  {lastPlayedGame ? (
+                    <>
+                      <span style={{ color: lastPlayedGame.accent }}>{lastPlayedGame.icon}</span>{" "}
+                      {relativeTime(lastPlayedEntry?.[1].lastPlayedAt ?? 0)}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </p>
               </div>
             </div>
-          </div>
-        </footer>
-      </div>
+          </motion.div>
+
+          {/* Secrets hint */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="mt-8 text-center text-[11px] font-mono text-white/25"
+          >
+            Looking for more secrets? The{" "}
+            <Link href="/terminal" className="text-white/50 hover:text-[color:var(--theme-primary)] transition-colors">
+              terminal
+            </Link>{" "}
+            knows things. So does the{" "}
+            <span className="text-white/50">Konami code</span>.
+          </motion.p>
+        </div>
+      </main>
+
+      <NowPlayingModal game={playing} onClose={() => setPlaying(null)} />
     </>
   );
 }
