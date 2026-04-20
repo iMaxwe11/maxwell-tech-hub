@@ -3,15 +3,35 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
-import { defaultNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
+import { defaultNavLinks, footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
+import { THEMES } from "@/components/ThemeSwitcher";
 
 interface CommandItem {
   id: string;
   label: string;
   hint: string;
+  group?: string;
   href?: string;
   external?: boolean;
   action?: () => void;
+}
+
+const THEME_STORAGE_KEY = "mnx-theme";
+
+function applyTheme(themeId: string) {
+  const theme = THEMES.find((t) => t.id === themeId);
+  if (!theme) return;
+  const root = document.documentElement;
+  root.style.setProperty("--theme-primary", theme.primary);
+  root.style.setProperty("--theme-secondary", theme.secondary);
+  root.style.setProperty("--theme-primary-rgb", theme.primaryRgb);
+  root.style.setProperty("--theme-secondary-rgb", theme.secondaryRgb);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, themeId);
+    window.dispatchEvent(new CustomEvent("theme-changed", { detail: themeId }));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function GlobalCommandPalette() {
@@ -22,28 +42,37 @@ export function GlobalCommandPalette() {
   const [query, setQuery] = useState("");
 
   const commands = useMemo<CommandItem[]>(() => {
-    const routeCommands = [
-      ...defaultNavLinks.map((link) => ({
-        id: `route-${link.href}`,
+    // Dedupe by href — default + footer nav cover everything, but overlap.
+    const allRoutes = new Map<string, { label: string; hint: string }>();
+    for (const link of [...defaultNavLinks, ...footerNavLinks]) {
+      if (!allRoutes.has(link.href)) {
+        allRoutes.set(link.href, { label: link.label, hint: link.href });
+      }
+    }
+    const routeCommands: CommandItem[] = Array.from(allRoutes.entries()).map(([href, v]) => ({
+      id: `route-${href}`,
+      label: v.label,
+      hint: v.hint,
+      group: "Navigate",
+      href,
+    }));
+
+    const anchorCommands: CommandItem[] = homeNavLinks
+      .filter((link) => link.hash)
+      .map((link) => ({
+        id: `anchor-${link.href}`,
         label: link.label,
-        hint: link.href,
-        href: link.href,
-      })),
-      ...homeNavLinks
-        .filter((link) => link.hash)
-        .map((link) => ({
-          id: `anchor-${link.href}`,
-          label: link.label,
-          hint: "Jump to section",
-          href: `/${link.href}`,
-        })),
-    ];
+        hint: "Jump to section (home page)",
+        group: "Navigate",
+        href: `/${link.href}`,
+      }));
 
     const actionCommands: CommandItem[] = [
       {
         id: "resume",
         label: "Download Resume",
         hint: "Open the latest resume file",
+        group: "Actions",
         href: siteConfig.resumePath,
         external: true,
       },
@@ -51,6 +80,7 @@ export function GlobalCommandPalette() {
         id: "email",
         label: "Email Maxwell",
         hint: siteConfig.email,
+        group: "Actions",
         href: `mailto:${siteConfig.email}`,
         external: true,
       },
@@ -60,6 +90,7 @@ export function GlobalCommandPalette() {
           id: `social-${social.name.toLowerCase()}`,
           label: social.name,
           hint: social.label,
+          group: "Actions",
           href: social.href,
           external: true,
         })),
@@ -67,11 +98,20 @@ export function GlobalCommandPalette() {
         id: "top",
         label: "Back to Top",
         hint: "Scroll to the top of the page",
+        group: "Actions",
         action: () => window.scrollTo({ top: 0, behavior: "smooth" }),
       },
     ];
 
-    return [...routeCommands, ...actionCommands];
+    const themeCommands: CommandItem[] = THEMES.map((t) => ({
+      id: `theme-${t.id}`,
+      label: `Switch theme → ${t.name}`,
+      hint: t.label,
+      group: "Theme",
+      action: () => applyTheme(t.id),
+    }));
+
+    return [...routeCommands, ...anchorCommands, ...actionCommands, ...themeCommands];
   }, [pathname]);
 
   const filteredCommands = useMemo(() => {
@@ -200,19 +240,26 @@ export function GlobalCommandPalette() {
                   <p className="text-white/60 text-sm">No commands match &quot;{query}&quot;.</p>
                 </div>
               ) : (
-                filteredCommands.slice(0, 10).map((command) => (
+                filteredCommands.slice(0, 15).map((command) => (
                   <button
                     key={command.id}
                     type="button"
                     onClick={() => runCommand(command)}
-                    className="w-full rounded-xl border border-transparent hover:border-cyan-400/15 hover:bg-white/[0.03] focus-visible:border-cyan-400/30 focus-visible:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/20 transition-colors transition-shadow px-3 py-3 text-left"
+                    className="w-full rounded-xl border border-transparent hover:border-[rgba(var(--theme-primary-rgb),0.2)] hover:bg-white/[0.03] focus-visible:border-[rgba(var(--theme-primary-rgb),0.35)] focus-visible:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--theme-primary-rgb),0.25)] transition-colors transition-shadow px-3 py-3 text-left"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm text-white font-medium">{command.label}</p>
-                        <p className="text-[11px] font-mono text-white/35 mt-1">{command.hint}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {command.group && (
+                            <span className="text-[9px] font-mono uppercase tracking-wider text-white/30 shrink-0">
+                              {command.group}
+                            </span>
+                          )}
+                          <p className="text-sm text-white font-medium truncate">{command.label}</p>
+                        </div>
+                        <p className="text-[11px] font-mono text-white/35 mt-1 truncate">{command.hint}</p>
                       </div>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 shrink-0">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                       </svg>
                     </div>

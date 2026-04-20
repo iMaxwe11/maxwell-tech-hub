@@ -547,6 +547,29 @@ function AboutSection() {
           <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl leading-tight text-white">Building bridges between <span className="gradient-text">infrastructure, automation,</span> and <span className="gradient-text-warm">innovation.</span></h2>
           <p className="text-white/70 text-base sm:text-lg leading-relaxed">I&apos;m an IT systems technician and DevOps enthusiast managing real-world infrastructure for businesses — from law firms to landscaping operations. I deploy Windows workstations, configure Active Directory, troubleshoot networking, and maintain servers. But I also build full-stack tools, data pipelines, and self-hosted AI experiments.</p>
           <p className="text-white/70 leading-relaxed">When I&apos;m not shipping code or resolving support tickets, you&apos;ll find me deep in sim racing setups, tinkering with smart home automation, modding FiveM game servers, or tuning custom PC hardware for peak performance.</p>
+
+          {/* Live "what I'm currently doing" pill — links to /now */}
+          <Link
+            href="/now"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                       bg-[rgba(var(--theme-primary-rgb),0.06)]
+                       border border-[rgba(var(--theme-primary-rgb),0.2)]
+                       text-xs font-mono text-[color:var(--theme-primary)]
+                       hover:bg-[rgba(var(--theme-primary-rgb),0.12)]
+                       hover:border-[rgba(var(--theme-primary-rgb),0.35)]
+                       transition-colors w-fit"
+          >
+            <motion.span
+              animate={{ opacity: [1, 0.35, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-1.5 h-1.5 rounded-full bg-[color:var(--theme-primary)]"
+            />
+            <span>Currently working on — see /now</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+
           <div className="flex flex-wrap gap-2 pt-2">{["AWS","Azure","Docker","Python","FastAPI","Kubernetes","Active Directory","GitHub Actions","Next.js","TypeScript"].map(s => <motion.span key={s} whileHover={{ scale: 1.08, y: -2 }} className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-white/70 font-mono cursor-default">{s}</motion.span>)}</div>
         </div>
       </div>
@@ -874,8 +897,23 @@ function ContactSection() {
               <div><label htmlFor="contact-email" className="text-[10px] text-white/40 font-mono uppercase tracking-wider mb-1.5 block">Email</label><input id="contact-email" name="email" type="email" autoComplete="email" spellCheck={false} value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="tool-input neon-input" placeholder="your@email.com…" /></div>
               <div><label htmlFor="contact-message" className="text-[10px] text-white/40 font-mono uppercase tracking-wider mb-1.5 block">Message</label><textarea id="contact-message" name="message" autoComplete="off" value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="tool-input neon-input min-h-[130px] resize-none" placeholder="What’s on your mind?" /></div>
               <span className="sr-only" aria-live="polite">{sent ? "Opening your email client with a pre-filled message." : ""}</span>
-              <motion.button whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }} onClick={submit} disabled={!form.name || !form.email || !form.message}
-                className="w-full py-3 rounded-xl font-mono text-sm font-bold uppercase tracking-wider transition-[box-shadow,transform,filter,opacity] bg-gradient-to-r from-cyan-500 to-purple-600 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={submit}
+                disabled={!form.name || !form.email || !form.message}
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, var(--theme-primary), var(--theme-secondary))",
+                }}
+                className="w-full py-3 rounded-xl font-mono text-sm font-bold uppercase tracking-wider
+                           transition-[box-shadow,transform,filter,opacity] text-white
+                           disabled:opacity-30 disabled:cursor-not-allowed
+                           hover:shadow-[0_0_30px_rgba(var(--theme-primary-rgb),0.35)]
+                           touch-manipulation focus-visible:outline-none focus-visible:ring-2
+                           focus-visible:ring-[rgba(var(--theme-primary-rgb),0.4)]
+                           focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"
+              >
                 {sent ? "✓ Opening Email Client…" : "Send Message"}
               </motion.button>
               <p className="text-[10px] text-white/25 text-center font-mono">Opens your default email client with pre-filled message</p>
@@ -923,14 +961,20 @@ function Footer() {
           <div>
             <Link href="/" className="flex items-center gap-3 group mb-4">
               <div className="relative w-8 h-8">
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30" />
+                <div
+                  className="absolute inset-0 rounded-lg opacity-30"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
+                  }}
+                />
                 <div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center">
                   <span className="text-xs font-bold gradient-text">M</span>
                 </div>
               </div>
               <span className="text-base font-semibold tracking-wide text-white/80">
                 {siteConfig.domain.replace(".com", "")}
-                <span className="text-cyan-400">.</span>com
+                <span style={{ color: "var(--theme-primary)" }}>.</span>com
               </span>
             </Link>
             <p className="text-white/40 text-sm leading-relaxed mb-4">{siteConfig.shortDescription}</p>
