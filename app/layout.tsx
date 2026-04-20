@@ -7,6 +7,8 @@ import { ConsoleGreeting } from "@/components/ConsoleGreeting";
 import { CursorSparkle } from "@/components/CursorSparkle";
 import { AchievementSystem } from "@/components/AchievementSystem";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
+import { ScrollProgress } from "@/components/ScrollProgress";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { rootMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
@@ -70,6 +72,8 @@ export default function RootLayout({
         <AnalyticsTracker />
         <ConsoleGreeting />
         <CursorSparkle />
+        <ScrollProgress />
+        <KeyboardShortcuts />
         <div id="main-content" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>
         </div>

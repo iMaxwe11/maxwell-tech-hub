@@ -17,6 +17,7 @@ const routes = [
   "/play/reaction",
   "/play/typing",
   "/terminal",
+  "/now",
   "/analytics",
   "/contact",
 ];

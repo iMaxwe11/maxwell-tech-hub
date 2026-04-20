@@ -249,7 +249,7 @@ export default function TerminalPage() {
         case "ls":
           appendOutput([
             <div key="ls" className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1 text-sm font-mono max-w-lg">
-              {["home/", "projects/", "tools/", "space/", "weather/", "news/", "blog/", "status/", "play/", "terminal/", "analytics/", "contact/"].map((p) => (
+              {["home/", "projects/", "tools/", "space/", "weather/", "news/", "blog/", "status/", "play/", "terminal/", "now/", "analytics/", "contact/"].map((p) => (
                 <span key={p} className="text-[color:var(--theme-primary)]">
                   {p}
                 </span>
@@ -276,6 +276,7 @@ export default function TerminalPage() {
             experience: "/#experience",
             analytics: "/analytics",
             terminal: "/terminal",
+            now: "/now",
           };
           if (!target) {
             appendError("cd: missing operand. Try 'cd tools' or 'ls'.");

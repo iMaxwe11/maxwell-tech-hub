@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { SocialIcon } from "@/components/SocialIcon";
@@ -10,6 +10,7 @@ import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
 import { StockTicker } from "@/components/widgets/StockTicker";
 import { GitHubActivity } from "@/components/widgets/GitHubActivity";
+import { CopyButton } from "@/components/CopyButton";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 
 /* ═══ SECTION WRAPPER ═══ */
@@ -80,12 +81,227 @@ interface ProjectCard {
   liveUrl?: string;
 }
 
+/* ═══ ACCENT PICKER (subtle) ═══ */
+type AccentMode = "off" | "sweep" | "pulse" | "pick";
+const ACCENT_STORAGE_KEY = "hero-accent";
+
+function useAccent() {
+  const [mode, setMode] = useState<AccentMode>("off");
+  const [color, setColor] = useState("#06b6d4");
+
+  // Hydrate from localStorage once on mount
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(ACCENT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { mode?: AccentMode; color?: string };
+      if (parsed.mode) setMode(parsed.mode);
+      if (parsed.color) setColor(parsed.color);
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }, []);
+
+  const persist = useCallback((nextMode: AccentMode, nextColor: string) => {
+    try {
+      window.localStorage.setItem(
+        ACCENT_STORAGE_KEY,
+        JSON.stringify({ mode: nextMode, color: nextColor }),
+      );
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const updateMode = useCallback(
+    (next: AccentMode) => {
+      setMode(next);
+      persist(next, color);
+    },
+    [color, persist],
+  );
+
+  const updateColor = useCallback(
+    (next: string) => {
+      setColor(next);
+      persist("pick", next);
+      setMode("pick");
+    },
+    [persist],
+  );
+
+  return { mode, color, setMode: updateMode, setColor: updateColor };
+}
+
+function AccentPicker({
+  mode,
+  color,
+  onMode,
+  onColor,
+}: {
+  mode: AccentMode;
+  color: string;
+  onMode: (m: AccentMode) => void;
+  onColor: (c: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const MODES: { key: AccentMode; label: string }[] = [
+    { key: "off", label: "Default" },
+    { key: "sweep", label: "Sweep" },
+    { key: "pulse", label: "Pulse" },
+    { key: "pick", label: "Custom" },
+  ];
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        type="button"
+        aria-label="Customize accent gradient"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`w-7 h-7 rounded-full flex items-center justify-center
+                    border transition-all duration-200
+                    ${
+                      mode !== "off"
+                        ? "border-cyan-400/50 bg-cyan-400/[0.08] shadow-[0_0_14px_rgba(6,182,212,0.25)]"
+                        : "border-white/15 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
+                    }`}
+      >
+        <span className="text-[11px] opacity-80 group-hover:opacity-100" aria-hidden>
+          🎨
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Click-outside swallower */}
+            <button
+              aria-hidden
+              tabIndex={-1}
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 z-40 cursor-default bg-transparent"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.96 }}
+              transition={{ duration: 0.16 }}
+              className="absolute z-50 top-full left-0 mt-2 w-52 rounded-xl
+                         bg-[#0b0b10]/98 backdrop-blur-xl border border-white/10
+                         shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-2.5"
+              role="dialog"
+              aria-label="Accent gradient picker"
+            >
+              <p className="text-[10px] font-mono uppercase tracking-wider text-white/35 px-1.5 pb-1.5">
+                Name gradient
+              </p>
+              <div className="grid grid-cols-2 gap-1">
+                {MODES.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => onMode(m.key)}
+                    className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono tracking-wide
+                                transition-[color,background-color,border-color] border
+                                ${
+                                  mode === m.key
+                                    ? "bg-cyan-400/10 text-cyan-300 border-cyan-400/30"
+                                    : "bg-white/[0.03] text-white/60 border-white/[0.08] hover:bg-white/[0.06] hover:text-white/90"
+                                }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-2">
+                  <label
+                    htmlFor="accent-color-picker"
+                    className="text-[10px] font-mono uppercase tracking-wider text-white/35 flex-1 cursor-pointer"
+                  >
+                    Custom color
+                  </label>
+                  <div
+                    className="relative w-6 h-6 rounded-md border border-white/20 overflow-hidden shrink-0"
+                    style={{ background: color }}
+                  >
+                    <input
+                      id="accent-color-picker"
+                      type="color"
+                      value={color}
+                      onChange={(e) => onColor(e.target.value)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      aria-label="Pick a custom accent color"
+                    />
+                  </div>
+                </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ═══ TYPEWRITER (role line) ═══ */
+const TAGLINES = [
+  "IT Systems · Cloud · DevOps",
+  "Shipping · Automating · Scaling",
+  "Infrastructure · Tools · Pipelines",
+  "Privacy · Reliability · Speed",
+];
+
+function useTypewriter(lines: string[], typeMs = 60, eraseMs = 30, holdMs = 2400) {
+  const [idx, setIdx] = useState(0);
+  const [text, setText] = useState(lines[0] ?? "");
+  const [phase, setPhase] = useState<"typing" | "hold" | "erasing">("hold");
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const current = lines[idx] ?? "";
+
+    if (phase === "hold") {
+      timer = setTimeout(() => setPhase("erasing"), holdMs);
+    } else if (phase === "erasing") {
+      if (text.length === 0) {
+        const nextIdx = (idx + 1) % lines.length;
+        setIdx(nextIdx);
+        setPhase("typing");
+      } else {
+        timer = setTimeout(() => setText(text.slice(0, -1)), eraseMs);
+      }
+    } else if (phase === "typing") {
+      if (text.length < current.length) {
+        timer = setTimeout(() => setText(current.slice(0, text.length + 1)), typeMs);
+      } else {
+        setPhase("hold");
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [idx, phase, text, lines, typeMs, eraseMs, holdMs]);
+
+  return text;
+}
+
 /* ═══ HERO ═══ */
 function HeroSection() {
   const [time, setTime] = useState("");
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
   const heroY = useTransform(scrollYProgress, [0, 0.25], [0, -60]);
+
+  const { mode, color, setMode, setColor } = useAccent();
+  const typed = useTypewriter(TAGLINES);
 
   useEffect(() => {
     const tick = () =>
@@ -102,6 +318,30 @@ function HeroSection() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Compute name gradient from the selected accent mode
+  const gradient =
+    mode === "pick"
+      ? `linear-gradient(135deg, ${color}, ${color}cc)`
+      : mode === "sweep"
+        ? "linear-gradient(90deg,#ff0080 0%,#ff8c00 25%,#40e0d0 50%,#9370db 75%,#ff0080 100%)"
+        : mode === "pulse"
+          ? "linear-gradient(135deg,#ff0080,#40e0d0,#9370db)"
+          : "linear-gradient(135deg,#06b6d4,#8b5cf6)";
+  const bgSize =
+    mode === "sweep" ? "300% 100%" : mode === "pulse" ? "200% 200%" : "100% 100%";
+  const bgAnim =
+    mode === "sweep"
+      ? { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }
+      : mode === "pulse"
+        ? { backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] }
+        : undefined;
+  const bgAnimTrans =
+    mode === "sweep"
+      ? { duration: 3, repeat: Infinity, ease: "linear" as const }
+      : mode === "pulse"
+        ? { duration: 4, repeat: Infinity, ease: "easeInOut" as const }
+        : undefined;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -129,31 +369,58 @@ function HeroSection() {
           </span>
         </motion.div>
 
-        {/* Name */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, delay: 0.4 }}
-          className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight"
-          style={{
-            backgroundImage: "linear-gradient(135deg, #06b6d4, #8b5cf6)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            display: "inline-block",
-          }}
-        >
-          Maxwell Nixon
-        </motion.h1>
+        {/* Name + subtle accent picker */}
+        <div className="flex items-start gap-3 flex-wrap">
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              ...(bgAnim ? bgAnim : {}),
+            }}
+            transition={{
+              opacity: { duration: 1.1, delay: 0.4 },
+              y: { duration: 1.1, delay: 0.4 },
+              ...(bgAnimTrans ? { backgroundPosition: bgAnimTrans } : {}),
+            }}
+            className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight"
+            style={{
+              backgroundImage: gradient,
+              backgroundSize: bgSize,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              display: "inline-block",
+              willChange: mode !== "off" ? "background-position" : "auto",
+            }}
+          >
+            Maxwell Nixon
+          </motion.h1>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 1.2 }}
+            className="pt-3"
+          >
+            <AccentPicker mode={mode} color={color} onMode={setMode} onColor={setColor} />
+          </motion.div>
+        </div>
 
-        {/* Role line */}
+        {/* Role line with typewriter */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, delay: 0.55 }}
-          className="mt-4 font-bold text-[clamp(1.6rem,5vw,3.5rem)] leading-[0.95] tracking-tight text-white/60"
+          className="mt-4 font-bold text-[clamp(1.6rem,5vw,3.5rem)] leading-[0.95] tracking-tight text-white/60 min-h-[1.2em]"
+          aria-live="polite"
         >
-          IT Systems<span className="gradient-text"> · </span>Cloud<span className="gradient-text"> · </span>DevOps
+          <span>{typed}</span>
+          <motion.span
+            aria-hidden
+            animate={{ opacity: [1, 0, 1] }}
+            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-block w-[0.08em] h-[0.85em] ml-1 -mb-1 align-bottom bg-cyan-400/80 rounded-sm"
+          />
         </motion.div>
 
         {/* Tagline */}
@@ -188,6 +455,17 @@ function HeroSection() {
             </svg>
           </a>
         </motion.div>
+
+        {/* Hint for shortcuts */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.4 }}
+          className="mt-8 text-[11px] font-mono text-white/25"
+        >
+          Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/10 text-white/50">?</kbd>{" "}
+          for keyboard shortcuts · <kbd className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/10 text-white/50">⌘K</kbd> for command palette
+        </motion.p>
       </motion.div>
     </section>
   );
@@ -511,8 +789,14 @@ function ContactSection() {
         <div className="grid md:grid-cols-[1fr_1.2fr] gap-10">
           <div className="space-y-6">
             <div className="glass-card p-7 space-y-5">
-              <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-4 group rounded-xl touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Email</p><p className="text-white/90 hover:text-cyan-400 transition-colors text-sm">{siteConfig.email}</p></div></a>
-              <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-4 group rounded-xl touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Phone</p><p className="text-white/90 hover:text-cyan-400 transition-colors text-sm">(609) 923-9437</p></div></a>
+              <div className="flex items-center gap-3">
+                <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-4 group rounded-xl flex-1 min-w-0 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg></div><div className="min-w-0"><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Email</p><p className="text-white/90 group-hover:text-cyan-400 transition-colors text-sm truncate">{siteConfig.email}</p></div></a>
+                <CopyButton value={siteConfig.email} label="Copy email address" size="md" />
+              </div>
+              <div className="flex items-center gap-3">
+                <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-4 group rounded-xl flex-1 min-w-0 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-400/20 transition-colors shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div className="min-w-0"><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Phone</p><p className="text-white/90 group-hover:text-cyan-400 transition-colors text-sm">(609) 923-9437</p></div></a>
+                <CopyButton value="+1-609-923-9437" label="Copy phone number" size="md" />
+              </div>
               <div className="flex items-center gap-4"><div className="w-10 h-10 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><p className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Location</p><p className="text-white/90 text-sm">{siteConfig.location}</p></div></div>
             </div>
             <div className="flex gap-3">{socialLinks.map((social) => <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer" className="glass-card p-3.5 text-white/40 hover:text-cyan-400 hover:border-cyan-400/30 transition-[color,border-color,background-color,transform] flex items-center gap-2 rounded-xl touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]" aria-label={social.name}><SocialIcon name={social.name} className="w-[18px] h-[18px]" /><span className="text-xs font-mono hidden sm:inline">{social.name}</span></a>)}</div>
