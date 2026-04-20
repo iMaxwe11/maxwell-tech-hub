@@ -16,6 +16,12 @@ const SHORTCUTS: { group: string; items: Shortcut[] }[] = [
     ],
   },
   {
+    group: "Appearance",
+    items: [
+      { keys: ["Alt", "T"], label: "Cycle through accent themes" },
+    ],
+  },
+  {
     group: "Terminal (on /terminal)",
     items: [
       { keys: ["↑", "↓"], label: "Command history" },

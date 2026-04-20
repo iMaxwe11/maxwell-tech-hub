@@ -296,6 +296,7 @@ function useTypewriter(lines: string[], typeMs = 60, eraseMs = 30, holdMs = 2400
 /* ═══ HERO ═══ */
 function HeroSection() {
   const [time, setTime] = useState("");
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
   const heroY = useTransform(scrollYProgress, [0, 0.25], [0, -60]);
@@ -317,6 +318,29 @@ function HeroSection() {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Subtle mouse-tracked parallax on the mesh gradient behind the hero.
+  // Disabled when the user prefers reduced motion or on touch-only devices.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const noHover = window.matchMedia("(hover: none)");
+    if (mq.matches || noHover.matches) return;
+
+    let frame = 0;
+    const onMove = (e: MouseEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const nx = (e.clientX / window.innerWidth - 0.5) * 2;
+        const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+        setParallax({ x: nx, y: ny });
+      });
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   // Compute name gradient from the selected accent mode
@@ -345,7 +369,13 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <div className="mesh-gradient-hero" />
+      <div
+        className="mesh-gradient-hero"
+        style={{
+          transform: `translate3d(${parallax.x * 14}px, ${parallax.y * 14}px, 0) scale(1.05)`,
+          transition: "transform 250ms cubic-bezier(0.25, 0.1, 0.25, 1)",
+        }}
+      />
       <motion.div
         style={{ opacity: heroOpacity, y: heroY }}
         className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 w-full"
@@ -756,17 +786,53 @@ function ExperienceSection() {
 /* ═══ TECH STACK ═══ */
 function StackSection() {
   const stack = [
-    { name: "React & Next.js", icon: "⚛️" },{ name: "TypeScript", icon: "📘" },{ name: "Python", icon: "🐍" },{ name: "Docker", icon: "🐳" },{ name: "AWS / Azure", icon: "☁️" },{ name: "Tailwind CSS", icon: "🎨" },{ name: "FastAPI", icon: "⚡" },{ name: "GitHub Actions", icon: "🔄" },{ name: "Windows Server", icon: "🖥️" },{ name: "Active Directory", icon: "🔐" },{ name: "Bash / CLI", icon: "💻" },{ name: "Kubernetes", icon: "☸️" },
+    { name: "React & Next.js", icon: "⚛️", years: 4, kind: "Framework" },
+    { name: "TypeScript", icon: "📘", years: 3, kind: "Language" },
+    { name: "Python", icon: "🐍", years: 5, kind: "Language" },
+    { name: "Docker", icon: "🐳", years: 3, kind: "DevOps" },
+    { name: "AWS / Azure", icon: "☁️", years: 3, kind: "Cloud" },
+    { name: "Tailwind CSS", icon: "🎨", years: 3, kind: "Styling" },
+    { name: "FastAPI", icon: "⚡", years: 2, kind: "Backend" },
+    { name: "GitHub Actions", icon: "🔄", years: 3, kind: "CI/CD" },
+    { name: "Windows Server", icon: "🖥️", years: 6, kind: "Systems" },
+    { name: "Active Directory", icon: "🔐", years: 4, kind: "Systems" },
+    { name: "Bash / PowerShell", icon: "💻", years: 6, kind: "Scripting" },
+    { name: "Kubernetes", icon: "☸️", years: 1, kind: "DevOps" },
   ];
   return (
     <Sec className="relative py-24 sm:py-32 px-4 sm:px-6">
       <div className="max-w-[1200px] mx-auto">
-        <div className="mb-16"><span className="terminal-prompt font-mono text-sm text-white/70">stack</span><h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Tech I Use</h2></div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">{stack.map((t, i) => (
-          <motion.div key={t.name} initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05, type: "spring", stiffness: 200 }} whileHover={{ y: -6, scale: 1.08 }} className="glass-card p-5 text-center cursor-default">
-            <div className="text-3xl mb-2">{t.icon}</div><div className="text-xs text-white/80 font-medium">{t.name}</div>
-          </motion.div>
-        ))}</div>
+        <div className="mb-16">
+          <span className="terminal-prompt font-mono text-sm text-white/70">stack</span>
+          <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Tech I Use</h2>
+          <p className="mt-3 text-white/60 max-w-2xl">
+            Years of real production use — numbers reflect time shipping with the tool, not
+            time spent reading about it.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {stack.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05, type: "spring", stiffness: 200 }}
+              whileHover={{ y: -6, scale: 1.05 }}
+              className="glass-card p-4 text-center cursor-default relative overflow-hidden group"
+            >
+              {/* Kind label top-right */}
+              <span className="absolute top-2 right-2 text-[8px] font-mono uppercase tracking-wider text-white/25 group-hover:text-white/45 transition-colors">
+                {t.kind}
+              </span>
+              <div className="text-3xl mb-2">{t.icon}</div>
+              <div className="text-xs text-white/85 font-semibold leading-tight">{t.name}</div>
+              <div className="mt-1.5 text-[10px] font-mono text-cyan-400/70">
+                {t.years}+ {t.years === 1 ? "year" : "years"}
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </Sec>
   );
@@ -841,6 +907,14 @@ function BackToTop() {
 
 /* ═══ FOOTER ═══ */
 function Footer() {
+  const techStack = [
+    { name: "Next.js", icon: "▲" },
+    { name: "TypeScript", icon: "TS" },
+    { name: "Tailwind", icon: "∼" },
+    { name: "Framer Motion", icon: "⚡" },
+    { name: "Vercel", icon: "▲" },
+  ];
+
   return (
     <footer className="relative py-16 px-4 sm:px-6">
       <div className="section-divider mb-16" />
@@ -848,27 +922,101 @@ function Footer() {
         <div className="grid sm:grid-cols-3 gap-10 mb-12">
           <div>
             <Link href="/" className="flex items-center gap-3 group mb-4">
-              <div className="relative w-8 h-8"><div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30" /><div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center"><span className="text-xs font-bold gradient-text">M</span></div></div>
-              <span className="text-base font-semibold tracking-wide text-white/80">{siteConfig.domain.replace(".com", "")}<span className="text-cyan-400">.</span>com</span>
+              <div className="relative w-8 h-8">
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 opacity-30" />
+                <div className="absolute inset-[2px] rounded-[6px] bg-[#050505] flex items-center justify-center">
+                  <span className="text-xs font-bold gradient-text">M</span>
+                </div>
+              </div>
+              <span className="text-base font-semibold tracking-wide text-white/80">
+                {siteConfig.domain.replace(".com", "")}
+                <span className="text-cyan-400">.</span>com
+              </span>
             </Link>
-            <p className="text-white/40 text-sm leading-relaxed">{siteConfig.shortDescription}</p>
+            <p className="text-white/40 text-sm leading-relaxed mb-4">{siteConfig.shortDescription}</p>
+
+            {/* Live status pill — real data lives on /status */}
+            <Link
+              href="/status"
+              className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full
+                         bg-green-400/[0.08] border border-green-400/25
+                         text-[10px] font-mono text-green-400
+                         hover:bg-green-400/[0.14] transition-colors"
+            >
+              <motion.span
+                animate={{ opacity: [1, 0.4, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-1.5 h-1.5 rounded-full bg-green-400"
+              />
+              All systems operational
+            </Link>
           </div>
           <div>
             <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Explore</h4>
             <div className="grid grid-cols-2 gap-2">
-              {footerNavLinks.map(link => <Link key={link.label} href={link.href} className="text-sm text-white/35 hover:text-cyan-400 transition-colors rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]">{link.label}</Link>)}
+              {footerNavLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm text-white/35 hover:text-cyan-400 transition-colors rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div>
             <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Connect</h4>
             <div className="flex flex-col gap-2">
-              {socialLinks.map((social) => <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer" className="text-sm text-white/35 hover:text-cyan-400 transition-colors flex items-center gap-2 rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"><SocialIcon name={social.name} /><span>{social.name}</span></a>)}
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-white/35 hover:text-cyan-400 transition-colors flex items-center gap-2 rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"
+                >
+                  <SocialIcon name={social.name} />
+                  <span>{social.name}</span>
+                </a>
+              ))}
             </div>
+
+            {/* Keyboard hint */}
+            <p className="mt-5 text-[10px] font-mono text-white/25 leading-relaxed">
+              Press <kbd className="px-1 py-0.5 rounded bg-white/[0.04] border border-white/10 text-white/50">?</kbd>{" "}
+              anywhere for shortcuts
+            </p>
           </div>
         </div>
-        <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-white/25 text-xs font-mono">&copy; {new Date().getFullYear()} Maxwell Nixon. All rights reserved.</p>
-          <p className="text-white/20 text-xs font-mono">Built with Next.js, TypeScript &amp; Framer Motion</p>
+
+        {/* Tech stack badges row */}
+        <div className="pt-8 border-t border-white/5 flex flex-wrap items-center gap-2 justify-center mb-6">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-white/30 mr-1">
+            Built with
+          </span>
+          {techStack.map((t) => (
+            <span
+              key={t.name}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
+                         bg-white/[0.03] border border-white/[0.07]
+                         text-[10px] font-mono text-white/55
+                         hover:text-white/90 hover:border-white/15
+                         transition-colors cursor-default"
+            >
+              <span className="text-[9px] opacity-70">{t.icon}</span>
+              {t.name}
+            </span>
+          ))}
+        </div>
+
+        <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-white/25 text-xs font-mono">
+            &copy; {new Date().getFullYear()} Maxwell Nixon. All rights reserved.
+          </p>
+          <p className="text-white/20 text-xs font-mono">
+            Hosted on Vercel · Updated continuously
+          </p>
         </div>
       </div>
     </footer>

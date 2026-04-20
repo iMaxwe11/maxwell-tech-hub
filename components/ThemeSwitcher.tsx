@@ -88,6 +88,33 @@ export function ThemeSwitcher() {
     }
   }, []);
 
+  // Keyboard shortcut: Alt+T cycles through themes
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.key.toLowerCase() !== "t") return;
+
+      // Ignore when user is typing
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || target?.isContentEditable) return;
+
+      e.preventDefault();
+      const idx = THEMES.findIndex((t) => t.id === activeId);
+      const next = THEMES[(idx + 1) % THEMES.length];
+      applyTheme(next);
+      setActiveId(next.id);
+      try {
+        localStorage.setItem(STORAGE_KEY, next.id);
+        window.dispatchEvent(new CustomEvent("theme-changed", { detail: next.id }));
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeId]);
+
   // Close on click outside
   useEffect(() => {
     if (!open) return;
@@ -181,7 +208,11 @@ export function ThemeSwitcher() {
             })}
             <div className="border-t border-white/5 mt-1 pt-1 px-2">
               <p className="text-[9px] font-mono text-white/25">
-                Theme persists across pages
+                Persists across pages ·{" "}
+                <kbd className="px-1 py-0.5 rounded bg-white/[0.06] border border-white/10 text-white/55 ml-0.5">
+                  Alt+T
+                </kbd>{" "}
+                cycles
               </p>
             </div>
           </motion.div>
