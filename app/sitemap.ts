@@ -3,6 +3,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const routes = [
   "",
+  "/projects",
   "/tools",
   "/space",
   "/weather",
@@ -15,6 +16,8 @@ const routes = [
   "/play/memory",
   "/play/reaction",
   "/play/typing",
+  "/terminal",
+  "/analytics",
   "/contact",
 ];
 
@@ -23,6 +26,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${siteConfig.url}${path}`,
     lastModified: new Date(),
     changeFrequency: path.startsWith("/play/") ? "monthly" : "weekly",
-    priority: path === "" ? 1 : path === "/tools" || path === "/space" || path === "/play" ? 0.9 : 0.7,
+    priority: path === "" ? 1 : path === "/projects" || path === "/tools" || path === "/space" || path === "/play" ? 0.9 : 0.7,
   }));
 }

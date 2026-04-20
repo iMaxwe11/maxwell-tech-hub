@@ -9,10 +9,7 @@ import { Navbar } from "@/components/Navbar";
 import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
 import { StockTicker } from "@/components/widgets/StockTicker";
-import { WeatherRadar } from "@/components/widgets/WeatherRadar";
 import { GitHubActivity } from "@/components/widgets/GitHubActivity";
-import { ISSTracker } from "@/components/widgets/ISSTracker";
-import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 
 /* ═══ SECTION WRAPPER ═══ */
@@ -27,10 +24,8 @@ function ProjectVisual({ gradient, icon, pattern, liveUrl, title }: { gradient: 
   const [showDemo, setShowDemo] = useState(false);
   return (
     <div className="relative mb-5">
-      {/* Browser chrome mockup */}
       <div className={`relative w-full rounded-xl overflow-hidden ${showDemo && liveUrl ? "" : `bg-gradient-to-br ${gradient}`}`}
         style={{ height: showDemo && liveUrl ? 280 : 160 }}>
-        {/* Browser top bar */}
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-3 py-2 bg-black/60 backdrop-blur-sm border-b border-white/5">
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
@@ -52,7 +47,6 @@ function ProjectVisual({ gradient, icon, pattern, liveUrl, title }: { gradient: 
             </button>
           )}
         </div>
-
         {showDemo && liveUrl ? (
           <iframe src={liveUrl} className="w-full h-full border-none pt-8" title={`${title} Demo`} loading="lazy" sandbox="allow-scripts allow-same-origin" />
         ) : (
@@ -89,79 +83,143 @@ interface ProjectCard {
 /* ═══ HERO ═══ */
 function HeroSection() {
   const [time, setTime] = useState("");
-  const [rgbMode, setRgbMode] = useState<"off"|"sweep"|"pulse"|"pick">("off");
-  const [customColor, setCustomColor] = useState("#06b6d4");
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
   const heroY = useTransform(scrollYProgress, [0, 0.25], [0, -60]);
-  useEffect(() => { const tick = () => setTime(new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "America/New_York" }).format(new Date())); tick(); const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
-  const grad = () => rgbMode === "pick" ? `linear-gradient(135deg,${customColor},${customColor}cc)` : rgbMode === "sweep" ? "linear-gradient(90deg,#ff0080 0%,#ff8c00 25%,#40e0d0 50%,#9370db 75%,#ff0080 100%)" : rgbMode === "pulse" ? "linear-gradient(135deg,#ff0080,#40e0d0,#9370db)" : "linear-gradient(135deg,#06b6d4,#8b5cf6)";
-  const bgSize = () => rgbMode === "sweep" ? "300% 100%" : rgbMode === "pulse" ? "200% 200%" : "100% 100%";
-  const anim = () => rgbMode === "sweep" ? { backgroundPosition: ["0% 50%","100% 50%","0% 50%"] } : rgbMode === "pulse" ? { backgroundPosition: ["0% 0%","100% 100%","0% 0%"] } : {};
-  const trans = () => rgbMode === "sweep" ? { duration: 3, repeat: Infinity, ease: "linear" as const } : rgbMode === "pulse" ? { duration: 4, repeat: Infinity, ease: "easeInOut" as const } : {};
+
+  useEffect(() => {
+    const tick = () =>
+      setTime(
+        new Intl.DateTimeFormat("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+          timeZone: "America/New_York",
+        }).format(new Date()),
+      );
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="mesh-gradient-hero" />
-      <motion.div style={{ opacity: heroOpacity, y: heroY }} className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 w-full">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8"><WeatherWidget /></motion.div>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.8 }} className="flex items-center gap-4 mb-8 sm:mb-10">
-          <motion.span animate={{ boxShadow: ["0 0 8px var(--accent-cyan)","0 0 20px var(--accent-cyan)","0 0 8px var(--accent-cyan)"] }} transition={{ duration: 3, repeat: Infinity }} className="status-dot" />
-          <span className="terminal-prompt font-mono text-xs sm:text-sm text-white/80">{time ? `EST ${time}` : "loading..."}<span className="text-white/40 mx-2">·</span>{siteConfig.location}</span>
+      <motion.div
+        style={{ opacity: heroOpacity, y: heroY }}
+        className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 w-full"
+      >
+        {/* Location + time */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+          className="flex items-center gap-4 mb-10"
+        >
+          <motion.span
+            animate={{ boxShadow: ["0 0 8px var(--accent-cyan)", "0 0 20px var(--accent-cyan)", "0 0 8px var(--accent-cyan)"] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            className="status-dot"
+          />
+          <span className="terminal-prompt font-mono text-xs sm:text-sm text-white/80">
+            {time ? `EST ${time}` : "loading..."}
+            <span className="text-white/40 mx-2">·</span>
+            {siteConfig.location}
+          </span>
         </motion.div>
-        <div className="space-y-4">
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0, ...(rgbMode !== "off" ? anim() : {}) }} transition={{ opacity: { duration: 1.1, delay: 0.5 }, y: { duration: 1.1, delay: 0.5 }, ...(rgbMode !== "off" ? { backgroundPosition: trans() } : {}) }}
-            className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight w-fit"
-            style={{ backgroundImage: grad(), backgroundSize: bgSize(), WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", display: "inline-block", willChange: rgbMode !== "off" ? "background-position" : "auto" }}>
-            Maxwell Nixon
-          </motion.h1>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="flex items-center gap-2 flex-wrap">
-            {(["sweep","pulse","pick"] as const).map(m => (
-              <button key={m} onClick={() => setRgbMode(rgbMode === m ? "off" : m)}
-                className={`px-3 py-1 text-[10px] font-bold tracking-wider uppercase border rounded-md transition-all ${rgbMode === m ? (m === "sweep" ? "bg-gradient-to-r from-red-500 to-blue-500 border-transparent text-white" : m === "pulse" ? "bg-gradient-to-r from-purple-500 to-pink-500 border-transparent text-white" : "border-transparent text-white") : "bg-white/5 hover:bg-white/10 border-white/20 hover:border-white/40 text-white/70 hover:text-white"}`}
-                style={rgbMode === "pick" && m === "pick" ? { background: customColor } : {}}>
-                {m === "pick" ? <span className="relative">PICK<input type="color" value={customColor} onChange={e => { setCustomColor(e.target.value); setRgbMode("pick"); }} className="absolute inset-0 opacity-0 cursor-pointer" /></span> : m.toUpperCase()}
-              </button>
-            ))}
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, delay: 0.65 }}
-            className="font-bold text-[clamp(1.8rem,6vw,4.5rem)] leading-[0.95] tracking-tight text-white/60">
-            IT Systems<span className="gradient-text"> · </span>Cloud<span className="gradient-text"> · </span>DevOps
-          </motion.div>
-        </div>
-        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.85 }} className="mt-8 max-w-xl text-white/70 text-base sm:text-lg leading-relaxed">
-          Cloud-savvy IT technician building full-stack automation tools, managing infrastructure, and engineering premium software experiences. Passionate about reliability, privacy, and self-hosted development.
+
+        {/* Name */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.1, delay: 0.4 }}
+          className="font-bold text-[clamp(2.2rem,8vw,6rem)] leading-[0.95] tracking-tight"
+          style={{
+            backgroundImage: "linear-gradient(135deg, #06b6d4, #8b5cf6)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            display: "inline-block",
+          }}
+        >
+          Maxwell Nixon
+        </motion.h1>
+
+        {/* Role line */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.1, delay: 0.55 }}
+          className="mt-4 font-bold text-[clamp(1.6rem,5vw,3.5rem)] leading-[0.95] tracking-tight text-white/60"
+        >
+          IT Systems<span className="gradient-text"> · </span>Cloud<span className="gradient-text"> · </span>DevOps
+        </motion.div>
+
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.75 }}
+          className="mt-8 max-w-xl text-white/70 text-base sm:text-lg leading-relaxed"
+        >
+          Cloud-savvy IT technician building full-stack automation tools, managing infrastructure, and
+          engineering premium software experiences. Passionate about reliability, privacy, and self-hosted
+          development.
         </motion.p>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 1.0 }} className="mt-10 flex flex-wrap gap-4">
-          <a href="#projects" className="glow-btn glow-btn-filled"><span>View Projects</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-          <a href={siteConfig.resumePath} download="Maxwell_Nixon_Resume.docx" className="glow-btn"><span>Download Resume</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
-          <a href="#contact" className="glow-btn"><span>Get in Touch</span></a>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.9 }}
+          className="mt-10 flex flex-wrap gap-4"
+        >
+          <a href="#projects" className="glow-btn glow-btn-filled">
+            <span>View Projects</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+          <a href={siteConfig.resumePath} download="Maxwell_Nixon_Resume.docx" className="glow-btn">
+            <span>Download Resume</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+            </svg>
+          </a>
         </motion.div>
       </motion.div>
     </section>
   );
 }
 
-/* ═══ LIVE DATA — Weather + Crypto + Stocks ═══ */
+/* ═══ LIVE DATA — Compact 3-widget strip ═══ */
 function LiveDataSection() {
   return (
     <Sec className="relative py-24 sm:py-32 px-4 sm:px-6">
       <div className="max-w-[1400px] mx-auto">
-        <div className="mb-16">
-          <span className="terminal-prompt font-mono text-sm text-white/70">live_data</span>
-          <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Real-Time Intelligence</h2>
-          <p className="mt-4 text-white/60 max-w-2xl">Live weather, cryptocurrency, and stock market data — updated automatically.</p>
+        <div className="mb-12 flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <span className="terminal-prompt font-mono text-sm text-white/70">live_data</span>
+            <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Real-Time Intelligence</h2>
+            <p className="mt-3 text-white/60 max-w-2xl">
+              Live weather, cryptocurrency, and stock market data — all self-hosted, updated automatically.
+            </p>
+          </div>
+          <Link
+            href="/projects"
+            className="text-xs font-mono text-white/50 hover:text-cyan-400 transition-colors flex items-center gap-1.5"
+          >
+            <span>See more live data</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           <WeatherWidget />
           <CryptoTicker />
           <StockTicker />
-        </div>
-        <div className="mt-6 grid md:grid-cols-2 gap-6">
-          <ISSTracker />
-          <NASAAPODCard />
-        </div>
-        <div className="mt-6">
-          <WeatherRadar />
         </div>
       </div>
     </Sec>
@@ -188,39 +246,157 @@ function AboutSection() {
   );
 }
 
-/* ═══ PROJECTS ═══ */
+/* ═══ PROJECTS — 6 Featured + See All ═══ */
 function ProjectsSection() {
   const projects: ProjectCard[] = [
-    { title: "Smart Data Pipeline", desc: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.", tags: ["FastAPI","Python","Docker","Streamlit","CI/CD"], gradient: "from-cyan-500 to-blue-600", icon: "🔄", github: "https://github.com/iMaxwe11/smart-data-pipeline", metrics: "End-to-end ETL · Docker Compose · CI/CD pipeline", pattern: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)" },
-    { title: "Developer Tools Hub", desc: "27 client-side developer utilities — JSON formatter, regex tester, hash generator, magic 8-ball, color guessing game, and more. Zero tracking, fully private.", tags: ["Next.js","TypeScript","Tailwind","Framer Motion"], gradient: "from-purple-500 to-pink-500", icon: "🛠️", link: "/tools", liveUrl: "https://maxwellnixon.com/tools", metrics: "27 tools · 100% client-side · Zero tracking", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
-    { title: "Space & Launch Tracker", desc: "Real-time space dashboard with ISS tracking, NASA imagery, full launch schedule from all providers, Mars rover photos, asteroid monitoring, and solar weather.", tags: ["Next.js","NASA API","Real-time","Space Devs API"], gradient: "from-indigo-500 to-purple-600", icon: "🚀", link: "/space", liveUrl: "https://maxwellnixon.com/space", metrics: "Live launches · ISS tracking · Mars photos · NEO monitoring", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
-    { title: "News Feed Hub", desc: "Auto-curated news from tech, world, and gaming sources via RSS feeds. Hacker News, BBC, The Verge, Kotaku, and more — refreshes every 15 minutes with zero manual work.", tags: ["RSS","Server-side","Auto-refresh","Next.js API"], gradient: "from-emerald-500 to-teal-600", icon: "📰", link: "/news", liveUrl: "https://maxwellnixon.com/news", metrics: "3 categories · 9 sources · Auto-updates every 15 min", pattern: "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)" },
-    { title: "Weather Dashboard", desc: "Full weather dashboard with live radar, hourly/daily forecasts, wind compass, sun arc visualization, air quality, and precipitation tracking. All from free APIs.", tags: ["Open-Meteo","Windy","Real-time","Canvas"], gradient: "from-sky-500 to-blue-600", icon: "🌦️", link: "/weather", liveUrl: "https://maxwellnixon.com/weather", metrics: "Live radar · 7-day forecast · AQI · Wind compass", pattern: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)" },
-    { title: "Neon Arcade", desc: "5 browser-based games — Snake, Pong vs AI, Memory Matrix, Reaction Timer, and Type Racer. Canvas rendering, retro CRT effects, and an animated arcade cabinet hub.", tags: ["Canvas","Game Dev","CSS Art","Framer Motion"], gradient: "from-fuchsia-500 to-pink-600", icon: "🕹️", link: "/play", liveUrl: "https://maxwellnixon.com/play", metrics: "5 games · Zero installs · Retro arcade experience", pattern: "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)" },
-    { title: "FiveM Game Server", desc: "Launched and managed a public FiveM multiplayer server with custom vehicles, physics mods, real-time logging, and automated mod loaders.", tags: ["Lua","Server Admin","Modding","Multiplayer"], gradient: "from-green-500 to-emerald-600", icon: "🎮", github: "https://github.com/iMaxwe11", metrics: "Custom assets · Live multiplayer · Automated mod management", pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)" },
-    { title: "Home Lab & AI Automation", desc: "Self-hosted containerized LLaMA and Mistral LLMs with GPU acceleration. Prompt tuning, offline inference, and scripting pipelines with a privacy-first mindset.", tags: ["LLaMA","Mistral","Docker","GPU","Python"], gradient: "from-orange-500 to-red-500", icon: "🧠", github: "https://github.com/iMaxwe11", metrics: "Self-hosted LLMs · GPU accelerated · Privacy-first", pattern: "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)" },
-    { title: "IT Infrastructure @ PCS", desc: "Enterprise IT support for law firms and businesses across NJ, PA, and DE. Windows Server deployment, Active Directory, VLANs, PXE imaging, VPN, and ConnectWise ticketing.", tags: ["Windows Server","AD","VLANs","PXE","ConnectWise"], gradient: "from-blue-500 to-indigo-600", icon: "🏢", metrics: "Multi-site enterprise · 50+ endpoints managed · 99.9% uptime target", pattern: "linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)" },
+    {
+      title: "Developer Tools Hub",
+      desc: "32 client-side developer utilities — JSON formatter, regex tester, hash generator, QR code, JWT decoder, and more. Zero tracking, fully private.",
+      tags: ["Next.js", "TypeScript", "Tailwind", "Framer Motion"],
+      gradient: "from-purple-500 to-pink-500",
+      icon: "🛠️",
+      link: "/tools",
+      liveUrl: "https://maxwellnixon.com/tools",
+      metrics: "32 tools · 100% client-side · Zero tracking",
+      pattern:
+        "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)",
+    },
+    {
+      title: "Space & Launch Tracker",
+      desc: "Real-time space dashboard with ISS tracking, NASA imagery, launch schedules from all providers, Mars rover photos, asteroid monitoring, and solar weather.",
+      tags: ["Next.js", "NASA API", "Real-time", "Space Devs API"],
+      gradient: "from-indigo-500 to-purple-600",
+      icon: "🚀",
+      link: "/space",
+      liveUrl: "https://maxwellnixon.com/space",
+      metrics: "Live launches · ISS tracking · Mars photos · NEO monitoring",
+      pattern: "radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px)",
+    },
+    {
+      title: "Smart Data Pipeline",
+      desc: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.",
+      tags: ["FastAPI", "Python", "Docker", "Streamlit", "CI/CD"],
+      gradient: "from-cyan-500 to-blue-600",
+      icon: "🔄",
+      github: "https://github.com/iMaxwe11/smart-data-pipeline",
+      metrics: "End-to-end ETL · Docker Compose · CI/CD pipeline",
+      pattern: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
+    },
+    {
+      title: "Neon Arcade",
+      desc: "5 browser-based games — Snake, Pong vs AI, Memory Matrix, Reaction Timer, and Type Racer. Canvas rendering, retro CRT effects, and an animated arcade cabinet hub.",
+      tags: ["Canvas", "Game Dev", "CSS Art", "Framer Motion"],
+      gradient: "from-fuchsia-500 to-pink-600",
+      icon: "🕹️",
+      link: "/play",
+      liveUrl: "https://maxwellnixon.com/play",
+      metrics: "5 games · Zero installs · Retro arcade experience",
+      pattern:
+        "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)",
+    },
+    {
+      title: "Home Lab & AI Automation",
+      desc: "Self-hosted containerized LLaMA and Mistral LLMs with GPU acceleration. Prompt tuning, offline inference, and scripting pipelines with a privacy-first mindset.",
+      tags: ["LLaMA", "Mistral", "Docker", "GPU", "Python"],
+      gradient: "from-orange-500 to-red-500",
+      icon: "🧠",
+      github: "https://github.com/iMaxwe11",
+      metrics: "Self-hosted LLMs · GPU accelerated · Privacy-first",
+      pattern:
+        "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)",
+    },
+    {
+      title: "IT Infrastructure @ PCS",
+      desc: "Enterprise IT support for law firms and businesses across NJ, PA, and DE. Windows Server deployment, Active Directory, VLANs, PXE imaging, VPN, and ConnectWise ticketing.",
+      tags: ["Windows Server", "AD", "VLANs", "PXE", "ConnectWise"],
+      gradient: "from-blue-500 to-indigo-600",
+      icon: "🏢",
+      metrics: "Multi-site enterprise · 50+ endpoints managed · 99.9% uptime target",
+      pattern: "linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+    },
   ];
+
   return (
     <Sec id="projects" className="relative py-24 sm:py-32 px-4 sm:px-6">
       <div className="max-w-[1200px] mx-auto">
-        <div className="mb-16">
-          <span className="terminal-prompt font-mono text-sm text-white/70">projects</span>
-          <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">What I Build</h2>
-          <p className="mt-4 text-white/60 max-w-2xl">From data pipelines and dev tools to game servers and AI labs — real projects with real impact.</p>
+        <div className="mb-16 flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <span className="terminal-prompt font-mono text-sm text-white/70">featured_projects</span>
+            <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">What I Build</h2>
+            <p className="mt-4 text-white/60 max-w-2xl">
+              A curated snapshot — the full archive of experiences, repos, and infrastructure work
+              lives on the <Link href="/projects" className="text-cyan-400 hover:text-cyan-300 transition-colors">projects page</Link>.
+            </p>
+          </div>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((p, i) => (
-            <motion.div key={p.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06, duration: 0.6 }} whileHover={{ y: -6 }} className="glass-card p-6 h-full group relative overflow-hidden cursor-default">
+            <motion.div
+              key={p.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.06, duration: 0.6 }}
+              whileHover={{ y: -6 }}
+              className="glass-card p-6 h-full group relative overflow-hidden cursor-default"
+            >
               <ProjectVisual gradient={p.gradient} icon={p.icon} pattern={p.pattern} liveUrl={p.liveUrl} title={p.title} />
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{p.title}</h3>
               <p className="text-white/55 leading-relaxed mb-3 text-sm">{p.desc}</p>
-              <p className="text-[11px] font-mono text-cyan-400/70 mb-4 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>{p.metrics}</p>
-              <div className="flex gap-1.5 flex-wrap mb-4">{p.tags.map(t => <span key={t} className="px-2 py-0.5 rounded-md bg-white/5 text-[0.6rem] text-white/50 border border-white/[0.06] font-mono">{t}</span>)}</div>
-              <div className="flex gap-3">{p.github && <a href={p.github} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-white/40 hover:text-cyan-400 transition-colors flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</a>}{p.link && <Link href={p.link} className="text-xs font-mono text-white/40 hover:text-cyan-400 transition-colors flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>Live Demo</Link>}</div>
+              <p className="text-[11px] font-mono text-cyan-400/70 mb-4 flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                  <path d="M22 4L12 14.01l-3-3" />
+                </svg>
+                {p.metrics}
+              </p>
+              <div className="flex gap-1.5 flex-wrap mb-4">
+                {p.tags.map((t) => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-white/5 text-[0.6rem] text-white/50 border border-white/[0.06] font-mono">
+                    {t}
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                {p.github && (
+                  <a href={p.github} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-white/40 hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                    </svg>
+                    GitHub
+                  </a>
+                )}
+                {p.link && (
+                  <Link href={p.link} className="text-xs font-mono text-white/40 hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                    </svg>
+                    Live Demo
+                  </Link>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
+
+        {/* See all */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-14 text-center"
+        >
+          <Link href="/projects" className="glow-btn glow-btn-filled">
+            <span>See all projects</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <p className="mt-4 text-xs font-mono text-white/30">
+            Live experiences · Open source · Professional work
+          </p>
+        </motion.div>
       </div>
     </Sec>
   );
@@ -237,7 +413,9 @@ function GitHubSection() {
             Shipping in Public with <span className="gradient-text">Live GitHub Signal</span>
           </h2>
           <p className="text-white/60 leading-relaxed">
-            Static project cards are useful, but live repo activity gives a better sense of how I actually work day to day. Recent pushes, pull requests, and repo changes update here through a cached server-side GitHub feed.
+            Static project cards are useful, but live repo activity gives a better sense of how I actually
+            work day to day. Recent pushes, pull requests, and repo changes update here through a cached
+            server-side GitHub feed.
           </p>
           <a
             href={`https://github.com/${siteConfig.githubUsername}`}
@@ -392,9 +570,9 @@ function Footer() {
             <p className="text-white/40 text-sm leading-relaxed">{siteConfig.shortDescription}</p>
           </div>
           <div>
-            <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Navigation</h4>
+            <h4 className="text-white/60 text-xs font-mono uppercase tracking-wider mb-4">Explore</h4>
             <div className="grid grid-cols-2 gap-2">
-              {footerNavLinks.map(link => <a key={link.label} href={link.href} className="text-sm text-white/35 hover:text-cyan-400 transition-colors rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]">{link.label}</a>)}
+              {footerNavLinks.map(link => <Link key={link.label} href={link.href} className="text-sm text-white/35 hover:text-cyan-400 transition-colors rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]">{link.label}</Link>)}
             </div>
           </div>
           <div>

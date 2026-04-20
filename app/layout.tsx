@@ -5,6 +5,8 @@ import { PageTransition } from "@/components/PageTransition";
 import { KonamiCode } from "@/components/KonamiCode";
 import { ConsoleGreeting } from "@/components/ConsoleGreeting";
 import { CursorSparkle } from "@/components/CursorSparkle";
+import { AchievementSystem } from "@/components/AchievementSystem";
+import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 import { rootMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
@@ -64,6 +66,8 @@ export default function RootLayout({
         />
         <GlobalCommandPalette />
         <KonamiCode />
+        <AchievementSystem />
+        <AnalyticsTracker />
         <ConsoleGreeting />
         <CursorSparkle />
         <div id="main-content" tabIndex={-1}>

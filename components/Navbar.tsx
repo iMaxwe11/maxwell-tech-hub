@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SocialIcon } from "@/components/SocialIcon";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { defaultNavLinks, siteConfig, socialLinks, type NavLink } from "@/lib/site-config";
 
 interface NavbarProps {
@@ -101,27 +102,33 @@ export function Navbar({ breadcrumb, accent = "#06b6d4", links = defaultNavLinks
           {links.map((link) => (
             <DesktopNavLink key={link.href} link={link} pathname={pathname} />
           ))}
-          <div className="ml-3 flex items-center gap-1 pl-3 border-l border-white/10">
-            {socialLinks.map((social) => (
-              <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer"
-                className="text-white/30 hover:text-cyan-400 transition-colors p-1.5 rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]" aria-label={social.name}>
-                <SocialIcon name={social.name} />
-              </a>
-            ))}
+          <div className="ml-3 flex items-center gap-2 pl-3 border-l border-white/10">
+            <ThemeSwitcher />
+            <div className="flex items-center gap-1">
+              {socialLinks.map((social) => (
+                <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer"
+                  className="text-white/30 hover:text-cyan-400 transition-colors p-1.5 rounded-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]" aria-label={social.name}>
+                  <SocialIcon name={social.name} />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-white/70 hover:text-white p-2 rounded-md touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
-          aria-expanded={mobileOpen}
-          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {mobileOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
-          </svg>
-        </button>
+        {/* Mobile hamburger + theme switcher */}
+        <div className="md:hidden flex items-center gap-2">
+          <ThemeSwitcher />
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="text-white/70 hover:text-white p-2 rounded-md touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {mobileOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}

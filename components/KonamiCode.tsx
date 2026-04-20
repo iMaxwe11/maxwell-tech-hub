@@ -105,6 +105,13 @@ export function KonamiCode() {
     setShowToast(true);
     setRainbowCards(true);
 
+    // Notify achievement system
+    try {
+      window.dispatchEvent(new CustomEvent("konami-activated"));
+    } catch {
+      // ignore
+    }
+
     // Generate matrix characters
     setMatrixChars(generateMatrixChars());
 

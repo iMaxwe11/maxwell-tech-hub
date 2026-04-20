@@ -50,38 +50,48 @@ export const socialLinks: SocialLink[] = [
   },
 ];
 
+/**
+ * Primary navigation shown on sub-pages.
+ * Tight 6-item menu: Home · Projects · Tools · Arcade · Terminal · Contact.
+ * The secondary experiences (Space, Weather, News, Blog, Status, Analytics)
+ * live on the /projects hub page and in the footer.
+ */
 export const defaultNavLinks: NavLink[] = [
   { href: "/", label: "Home" },
+  { href: "/projects", label: "Projects" },
   { href: "/tools", label: "Tools" },
-  { href: "/space", label: "Space" },
-  { href: "/weather", label: "Weather" },
-  { href: "/news", label: "News" },
-  { href: "/blog", label: "Blog" },
-  { href: "/status", label: "Status" },
   { href: "/play", label: "Arcade" },
+  { href: "/terminal", label: "Terminal" },
   { href: "/contact", label: "Contact" },
 ];
 
+/**
+ * Home page nav uses hash anchors so in-page sections stay a click away,
+ * while the "reach the full hub" affordance lives inline in the page content.
+ */
 export const homeNavLinks: NavLink[] = [
   { href: "#projects", label: "Projects", hash: true },
   { href: "#experience", label: "Experience", hash: true },
   { href: "/tools", label: "Tools" },
+  { href: "/play", label: "Arcade" },
+  { href: "/terminal", label: "Terminal" },
+  { href: "#contact", label: "Contact", hash: true },
+];
+
+/**
+ * Footer carries the full surface area — every removable route from the
+ * primary nav is still discoverable here.
+ */
+export const footerNavLinks: NavLink[] = [
+  { href: "/projects", label: "Projects" },
+  { href: "/tools", label: "Tools" },
   { href: "/space", label: "Space" },
   { href: "/weather", label: "Weather" },
   { href: "/news", label: "News" },
   { href: "/blog", label: "Blog" },
-  { href: "/status", label: "Status" },
   { href: "/play", label: "Arcade" },
-  { href: "#contact", label: "Contact", hash: true },
-];
-
-export const footerNavLinks: NavLink[] = [
-  { href: "#projects", label: "Projects", hash: true },
-  { href: "#experience", label: "Experience", hash: true },
-  { href: "/tools", label: "Tools" },
-  { href: "/space", label: "Space" },
-  { href: "/blog", label: "Blog" },
+  { href: "/terminal", label: "Terminal" },
   { href: "/status", label: "Status" },
-  { href: "/play", label: "Arcade" },
-  { href: "#contact", label: "Contact", hash: true },
+  { href: "/analytics", label: "Analytics" },
+  { href: "/contact", label: "Contact" },
 ];

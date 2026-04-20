@@ -8,6 +8,11 @@
   --accent-cyan: #06b6d4;
   --accent-purple: #a855f7;
   --accent-gold: #f59e0b;
+  /* Theme tokens — overridden by ThemeSwitcher */
+  --theme-primary: #06b6d4;
+  --theme-secondary: #a855f7;
+  --theme-primary-rgb: 6, 182, 212;
+  --theme-secondary-rgb: 168, 85, 247;
   --text-primary: rgba(255, 255, 255, 0.95);
   --text-secondary: rgba(255, 255, 255, 0.8);
   --text-muted: rgba(255, 255, 255, 0.6);
@@ -607,4 +612,138 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* ═════════════════════════════════════
+   THEMED ACCENT — Applied via ThemeSwitcher
+   ════════════════════════════════════ */
+
+.theme-accent-gradient {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-accent-glow:hover {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 20px rgba(var(--theme-primary-rgb), 0.3);
+}
+
+/* ═════════════════════════════════════
+   ACHIEVEMENT SYSTEM — Toast animations & unlock glows
+   ════════════════════════════════════ */
+
+@keyframes achievement-unlock {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.9);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(0) scale(1.04);
+  }
+  20% {
+    transform: translateX(0) scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.achievement-toast {
+  animation: achievement-unlock 5s ease-out forwards;
+}
+
+@keyframes achievement-shimmer {
+  0%, 100% { background-position: -200% 0; }
+  50% { background-position: 200% 0; }
+}
+
+.achievement-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 215, 0, 0) 0%,
+    rgba(255, 215, 0, 0.3) 50%,
+    rgba(255, 215, 0, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: achievement-shimmer 2s ease-in-out infinite;
+}
+
+/* ═════════════════════════════════════
+   TERMINAL PAGE — CRT & cursor effects
+   ════════════════════════════════════ */
+
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.15) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  mix-blend-mode: multiply;
+}
+
+.crt-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+@keyframes terminal-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--theme-primary);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: terminal-cursor-blink 1.1s steps(1) infinite;
+  box-shadow: 0 0 8px var(--theme-primary);
+}
+
+/* ═════════════════════════════════════
+   ANALYTICS DASHBOARD — Sparklines & meters
+   ════════════════════════════════════ */
+
+@keyframes analytics-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.analytics-pulse {
+  animation: analytics-pulse 2s ease-in-out infinite;
+}
+
+.analytics-bar {
+  background: linear-gradient(
+    90deg,
+    var(--theme-primary) 0%,
+    var(--theme-secondary) 100%
+  );
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.3);
 }
