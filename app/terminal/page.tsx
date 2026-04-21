@@ -35,8 +35,12 @@ export default function TerminalPage() {
   const cwd = "~";
   const prompt = `${siteConfig.githubUsername.toLowerCase()}@nixon:${cwd}$`;
 
-  // Boot sequence
+  // Boot sequence (guarded against React StrictMode double-invocation)
+  const bootedRef = useRef(false);
   useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+
     const sequence: HistoryEntry[] = [
       { kind: "output", lines: [ASCII_BANNER] },
       {
@@ -55,15 +59,22 @@ export default function TerminalPage() {
         ],
       },
     ];
-    // Stagger boot lines
+
+    // Stagger boot lines and track timers for cleanup
+    const timers: ReturnType<typeof setTimeout>[] = [];
     sequence.forEach((entry, i) => {
-      setTimeout(() => {
+      const t = setTimeout(() => {
         setHistory((prev) => [...prev, entry]);
         if (i === sequence.length - 1) {
-          setTimeout(() => setBooted(true), 200);
+          timers.push(setTimeout(() => setBooted(true), 200));
         }
       }, i * 300);
+      timers.push(t);
     });
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
   }, []);
 
   // Auto-scroll & focus
@@ -281,12 +292,22 @@ export default function TerminalPage() {
           if (!target) {
             appendError("cd: missing operand. Try 'cd tools' or 'ls'.");
           } else if (routes[target]) {
+            const dest = routes[target];
             appendOutput([
               <span key="cd" className="text-white/60">
-                Navigating to /{target}…
+                Navigating to {dest}…
               </span>,
             ]);
-            setTimeout(() => router.push(routes[target]), 500);
+            setTimeout(() => {
+              // App Router's router.push does NOT scroll to hash anchors, so
+              // fall back to a native href assignment for "/#section" targets
+              // and only use the router for real route pushes.
+              if (dest.includes("#")) {
+                window.location.href = dest;
+              } else {
+                router.push(dest);
+              }
+            }, 500);
           } else {
             appendError(`cd: no such page: ${target}`);
           }
