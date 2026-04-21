@@ -10,9 +10,17 @@ import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
 import { StockTicker } from "@/components/widgets/StockTicker";
 import { GitHubActivity } from "@/components/widgets/GitHubActivity";
+import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
+import { ISSTracker } from "@/components/widgets/ISSTracker";
 import { CopyButton } from "@/components/CopyButton";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 import { useAccent } from "@/lib/use-accent";
+import {
+  Atom, FileCode, Code, Container, Cloud, Palette, Zap, RefreshCw,
+  Monitor, Network, Terminal, Hexagon, Award, GraduationCap, Check,
+  Radio, Activity, Satellite, Image as ImageIcon, Sparkles, ArrowRight,
+  type LucideIcon,
+} from "lucide-react";
 
 /* ═══ SECTION WRAPPER ═══ */
 function Sec({ children, className = "", delay = 0, id }: { children: React.ReactNode; className?: string; delay?: number; id?: string }) {
@@ -319,33 +327,81 @@ function HeroSection() {
   );
 }
 
-/* ═══ LIVE DATA — Compact 3-widget strip ═══ */
+/* ═══ LIVE DATA — Dashboard grid with markets + space + activity ═══ */
 function LiveDataSection() {
   return (
-    <Sec className="relative py-24 sm:py-32 px-4 sm:px-6">
+    <Sec id="live-data" className="relative py-24 sm:py-32 px-4 sm:px-6">
       <div className="max-w-[1400px] mx-auto">
         <div className="mb-12 flex items-end justify-between flex-wrap gap-4">
           <div>
             <span className="terminal-prompt font-mono text-sm text-white/70">live_data</span>
-            <h2 className="mt-4 font-bold text-3xl sm:text-4xl text-white">Real-Time Intelligence</h2>
+            <div className="mt-4 flex items-center gap-3 flex-wrap">
+              <h2 className="font-bold text-3xl sm:text-4xl text-white">Real-Time Intelligence</h2>
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-400/[0.08] border border-green-400/25 text-[10px] font-mono text-green-400"
+                title="Widgets refresh automatically on an interval"
+              >
+                <motion.span
+                  animate={{ opacity: [1, 0.35, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="inline-flex"
+                >
+                  <Radio size={11} strokeWidth={2} aria-hidden />
+                </motion.span>
+                LIVE
+              </span>
+            </div>
             <p className="mt-3 text-white/60 max-w-2xl">
-              Live weather, cryptocurrency, and stock market data — all self-hosted, updated automatically.
+              A dashboard pulling from Open-Meteo, CoinGecko, FMP, NASA, and Open-Notify — all aggregated
+              through serverless routes, cached, and refreshed on their own schedule. No trackers, no external
+              scripts.
             </p>
           </div>
           <Link
             href="/projects"
-            className="text-xs font-mono text-white/50 hover:text-cyan-400 transition-colors flex items-center gap-1.5"
+            className="text-xs font-mono text-white/50 hover:text-cyan-400 transition-colors flex items-center gap-1.5 group"
           >
             <span>See more live data</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+            <ArrowRight size={12} strokeWidth={2} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
           </Link>
         </div>
+
+        {/* Category tag row — makes the section's composition legible at a glance */}
+        <div className="mb-6 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-wider">
+          {[
+            { Icon: Cloud,     label: "Weather",   color: "var(--accent-cyan)" },
+            { Icon: Activity,  label: "Markets",   color: "var(--accent-gold)" },
+            { Icon: Satellite, label: "Space",     color: "var(--accent-purple)" },
+            { Icon: Sparkles,  label: "Imagery",   color: "var(--accent-cyan)" },
+            { Icon: ImageIcon, label: "Activity",  color: "var(--accent-purple)" },
+          ].map(({ Icon, label, color }) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border bg-white/[0.02]"
+              style={{
+                color,
+                borderColor: `color-mix(in oklab, ${color} 25%, transparent)`,
+              }}
+            >
+              <Icon size={11} strokeWidth={2} aria-hidden />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Row 1 — Weather + Markets (3 cols on md+) */}
         <div className="grid md:grid-cols-3 gap-6">
           <WeatherWidget />
           <CryptoTicker />
           <StockTicker />
+        </div>
+
+        {/* Row 2 — Space imagery + ISS position (NASA APOD spans 2 cols) */}
+        <div className="mt-6 grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <NASAAPODCard />
+          </div>
+          <ISSTracker />
         </div>
       </div>
     </Sec>
@@ -615,8 +671,39 @@ function ExperienceSection() {
             </motion.div>
           ))}</div>
         </div>
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="mt-14 glass-card p-7">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><span className="text-xl">🛡️</span>Certifications</h3>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.25 }} className="mt-14 glass-card p-7">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--accent-cyan)]/25 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)]">
+              <GraduationCap size={16} strokeWidth={1.75} aria-hidden />
+            </span>
+            Education
+          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm text-white/85 font-semibold">Lincoln Technical Institute</p>
+              <p className="text-xs text-white/55 mt-0.5">Information Technology Program · Graduated with GPA 4.0+</p>
+              <a
+                href="https://www.lincolntech.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-mono text-white/40 hover:text-cyan-400 transition-colors"
+              >
+                lincolntech.edu
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+              </a>
+            </div>
+            <span className="text-xs font-mono px-3 py-1 rounded-md border border-[var(--accent-cyan)]/25 text-[var(--accent-cyan)]/90 whitespace-nowrap w-fit">
+              IT Program · 4.0+ GPA
+            </span>
+          </div>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="mt-6 glass-card p-7">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--accent-gold)]/25 bg-[var(--accent-gold)]/10 text-[var(--accent-gold)]">
+              <Award size={16} strokeWidth={1.75} aria-hidden />
+            </span>
+            Certifications
+          </h3>
           <div className="grid sm:grid-cols-2 gap-2">{certs.map(c => <div key={c} className="flex items-center gap-3 py-2"><div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60 shrink-0" /><span className="text-sm text-white/65">{c}</span></div>)}</div>
         </motion.div>
       </div>
@@ -626,19 +713,19 @@ function ExperienceSection() {
 
 /* ═══ TECH STACK ═══ */
 function StackSection() {
-  const stack = [
-    { name: "React & Next.js", icon: "⚛️", years: 4, kind: "Framework" },
-    { name: "TypeScript", icon: "📘", years: 3, kind: "Language" },
-    { name: "Python", icon: "🐍", years: 5, kind: "Language" },
-    { name: "Docker", icon: "🐳", years: 3, kind: "DevOps" },
-    { name: "AWS / Azure", icon: "☁️", years: 3, kind: "Cloud" },
-    { name: "Tailwind CSS", icon: "🎨", years: 3, kind: "Styling" },
-    { name: "FastAPI", icon: "⚡", years: 2, kind: "Backend" },
-    { name: "GitHub Actions", icon: "🔄", years: 3, kind: "CI/CD" },
-    { name: "Windows Server", icon: "🖥️", years: 6, kind: "Systems" },
-    { name: "Active Directory", icon: "🔐", years: 4, kind: "Systems" },
-    { name: "Bash / PowerShell", icon: "💻", years: 6, kind: "Scripting" },
-    { name: "Kubernetes", icon: "☸️", years: 1, kind: "DevOps" },
+  const stack: Array<{ name: string; Icon: LucideIcon; years: number; kind: string; accent: string }> = [
+    { name: "React & Next.js",   Icon: Atom,      years: 4, kind: "Framework", accent: "var(--accent-cyan)" },
+    { name: "TypeScript",        Icon: FileCode,  years: 3, kind: "Language",  accent: "var(--accent-purple)" },
+    { name: "Python",            Icon: Code,      years: 5, kind: "Language",  accent: "var(--accent-gold)" },
+    { name: "Docker",            Icon: Container, years: 3, kind: "DevOps",    accent: "var(--accent-cyan)" },
+    { name: "AWS / Azure",       Icon: Cloud,     years: 3, kind: "Cloud",     accent: "var(--accent-purple)" },
+    { name: "Tailwind CSS",      Icon: Palette,   years: 3, kind: "Styling",   accent: "var(--accent-gold)" },
+    { name: "FastAPI",           Icon: Zap,       years: 2, kind: "Backend",   accent: "var(--accent-cyan)" },
+    { name: "GitHub Actions",    Icon: RefreshCw, years: 3, kind: "CI/CD",     accent: "var(--accent-purple)" },
+    { name: "Windows Server",    Icon: Monitor,   years: 6, kind: "Systems",   accent: "var(--accent-gold)" },
+    { name: "Active Directory",  Icon: Network,   years: 4, kind: "Systems",   accent: "var(--accent-cyan)" },
+    { name: "Bash / PowerShell", Icon: Terminal,  years: 6, kind: "Scripting", accent: "var(--accent-purple)" },
+    { name: "Kubernetes",        Icon: Hexagon,   years: 1, kind: "DevOps",    accent: "var(--accent-gold)" },
   ];
   return (
     <Sec className="relative py-24 sm:py-32 px-4 sm:px-6">
@@ -666,7 +753,16 @@ function StackSection() {
               <span className="absolute top-2 right-2 text-[8px] font-mono uppercase tracking-wider text-white/25 group-hover:text-white/45 transition-colors">
                 {t.kind}
               </span>
-              <div className="text-3xl mb-2">{t.icon}</div>
+              <div
+                className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border transition-colors"
+                style={{
+                  color: t.accent,
+                  background: `color-mix(in oklab, ${t.accent} 10%, transparent)`,
+                  borderColor: `color-mix(in oklab, ${t.accent} 25%, transparent)`,
+                }}
+              >
+                <t.Icon size={22} strokeWidth={1.6} aria-hidden />
+              </div>
               <div className="text-xs text-white/85 font-semibold leading-tight">{t.name}</div>
               <div className="mt-1.5 text-[10px] font-mono text-cyan-400/70">
                 {t.years}+ {t.years === 1 ? "year" : "years"}
@@ -732,7 +828,11 @@ function ContactSection() {
                            focus-visible:ring-[rgba(var(--theme-primary-rgb),0.4)]
                            focus-visible:ring-offset-2 focus-visible:ring-offset-[#020204]"
               >
-                {sent ? "✓ Opening Email Client…" : "Send Message"}
+                {sent ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Check size={14} strokeWidth={2.5} aria-hidden /> Opening Email Client…
+                  </span>
+                ) : "Send Message"}
               </motion.button>
               <p className="text-[10px] text-white/25 text-center font-mono">Opens your default email client with pre-filled message</p>
             </div>

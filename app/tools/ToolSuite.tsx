@@ -5,6 +5,73 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { CAT_COLORS, CATEGORIES, NAV_IDS, TOOL_META, type ToolId } from "./tool-config";
 import { copyToClipboard, toast } from "@/lib/toast";
+import { Dice6, Terminal, CircleDot, Share2 } from "lucide-react";
+
+/* ── URL hash state: share tool inputs via #toolid?v=base64urldata ──
+ * Only the four tools that exercise it (json / base64 / url / hash) read
+ * from this helper on mount; everything else ignores the hash.
+ */
+function readHashPrefill(): { id: string; value: string } | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.location.hash.slice(1);
+  if (!raw) return null;
+  const [id, queryStr] = raw.split("?");
+  if (!id) return null;
+  if (!queryStr) return { id, value: "" };
+  const params = new URLSearchParams(queryStr);
+  const v = params.get("v");
+  if (!v) return { id, value: "" };
+  try {
+    const b64 = v.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const decoded = decodeURIComponent(escape(atob(padded)));
+    return { id, value: decoded };
+  } catch {
+    return { id, value: "" };
+  }
+}
+function prefillFor(toolId: string): string | null {
+  const pref = readHashPrefill();
+  if (!pref || pref.id !== toolId) return null;
+  return pref.value || null;
+}
+function encodeShareValue(value: string): string {
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(value)));
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  } catch {
+    return "";
+  }
+}
+function buildShareUrl(toolId: string, value: string): string {
+  if (typeof window === "undefined") return "";
+  const encoded = encodeShareValue(value);
+  const { origin, pathname } = window.location;
+  return `${origin}${pathname}#${toolId}${encoded ? `?v=${encoded}` : ""}`;
+}
+async function shareLink(toolId: string, value: string) {
+  const url = buildShareUrl(toolId, value);
+  if (!url) { toast("Share link failed — nothing to encode", "error"); return; }
+  // Keep the hash in sync with the shared payload so a quick reload still works.
+  try { window.history.replaceState(null, "", url); } catch {}
+  await copyToClipboard(url, "Share link copied");
+}
+
+/* Small reusable share button rendered inside tool sections. */
+function ShareButton({ toolId, value }: { toolId: string; value: string }) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.92 }}
+      whileHover={{ scale: 1.04 }}
+      type="button"
+      onClick={() => shareLink(toolId, value)}
+      title="Copy a shareable link that prefills this tool with the current input"
+      className="tool-btn flex items-center gap-1.5 whitespace-nowrap"
+    >
+      <Share2 size={13} strokeWidth={1.8} aria-hidden /> Share
+    </motion.button>
+  );
+}
 
 type Accent = "cyan" | "purple" | "gold";
 
@@ -193,7 +260,7 @@ function QRCodeGenerator() {
         </div>
         <div className="space-y-3">
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={download}>Download PNG</motion.button>
-          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(text)}>Copy Text</motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={() => copyToClipboard(text)}>Copy Text</motion.button>
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn" onClick={() => setText("https://maxwellnixon.com/status")}>Load Sample</motion.button>
         </div>
       </div>
@@ -234,7 +301,7 @@ function JWTDecoder() {
             ))}
           </div>
           {(["header", "payload"] as const).map((section) => (
-            <div key={section} className="rounded-lg bg-black/20 border border-white/[0.04] p-3 cursor-pointer group" onClick={() => navigator.clipboard.writeText(JSON.stringify(decoded[section], null, 2))}>
+            <div key={section} className="rounded-lg bg-black/20 border border-white/[0.04] p-3 cursor-pointer group" onClick={() => copyToClipboard(JSON.stringify(decoded[section], null, 2))}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-[family-name:var(--font-mono)] text-[var(--accent-purple)] uppercase tracking-wider">{section}</span>
                 <span className="text-[0.55rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity">copy</span>
@@ -347,7 +414,7 @@ function IPInfo() {
       {loading ? (<div className="h-32 bg-white/5 rounded-lg animate-pulse" />) : info ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {fields.map(([label, val]) => (
-            <motion.div key={label} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] cursor-pointer group" onClick={() => navigator.clipboard.writeText(String(val))}>
+            <motion.div key={label} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] cursor-pointer group" onClick={() => copyToClipboard(String(val))}>
               <div className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider">{label}</div>
               <div className="text-sm text-[var(--text-primary)] font-[family-name:var(--font-mono)] mt-1 break-all">{String(val)}</div>
               <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">copy</div>
@@ -422,7 +489,7 @@ function BaseConverter() {
       {conversions ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {Object.entries(conversions).map(([label, val]) => (
-            <motion.div key={label} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] text-center cursor-pointer group" onClick={() => navigator.clipboard.writeText(val)}>
+            <motion.div key={label} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] text-center cursor-pointer group" onClick={() => copyToClipboard(val)}>
               <div className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider">{label}</div>
               <div className="text-sm text-[var(--accent-gold)] font-[family-name:var(--font-mono)] mt-1 break-all">{val}</div>
               <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">copy</div>
@@ -457,7 +524,7 @@ function GradientGenerator() {
         {(["linear","radial"] as const).map(t => (<motion.button key={t} whileTap={{ scale: 0.95 }} onClick={() => setType(t)}
           className={`px-3 py-2 rounded-lg text-xs font-[family-name:var(--font-mono)] uppercase transition-all ${type===t?"bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/20":"bg-white/[0.02] text-[var(--text-muted)] border border-white/[0.04]"}`}>{t}</motion.button>))}
       </div>
-      <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3 flex items-center justify-between group cursor-pointer" onClick={() => navigator.clipboard.writeText(css)}>
+      <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3 flex items-center justify-between group cursor-pointer" onClick={() => copyToClipboard(css)}>
         <code className="text-xs text-[var(--text-secondary)] font-[family-name:var(--font-mono)]">{css}</code>
         <span className="text-[0.55rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity">copy</span>
       </div>
@@ -1066,6 +1133,24 @@ export default function ToolsPage() {
     return () => window.removeEventListener("keydown", fn);
   }, []);
 
+  // On mount — and on subsequent hash changes — if the URL has #toolid(?v=...),
+  // scroll that tool section into view. Tools that opt into prefill (json,
+  // base64, url, hash) read the ?v= payload themselves from prefillFor().
+  useEffect(() => {
+    const scrollToHash = () => {
+      const pref = readHashPrefill();
+      if (!pref) return;
+      // Defer one frame so tool sections have mounted.
+      requestAnimationFrame(() => {
+        const el = document.getElementById(pref.id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    scrollToHash();
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
+  }, []);
+
   // Track tool interaction (scroll into view = "use")
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -1154,11 +1239,12 @@ export default function ToolsPage() {
               <div className="flex gap-2">
                 <motion.button whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }} onClick={luckyTool}
                   className="tool-btn-primary tool-btn flex items-center gap-1.5 whitespace-nowrap">
-                  <span>🎲</span> Feeling Lucky
+                  <Dice6 size={14} strokeWidth={1.8} aria-hidden /> Feeling Lucky
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }} onClick={() => setHackerMode(!hackerMode)}
                   className={`tool-btn flex items-center gap-1.5 whitespace-nowrap transition-all ${hackerMode ? "!bg-green-400/10 !border-green-400/30 !text-green-400" : ""}`}>
-                  <span>{hackerMode ? "🟢" : "💻"}</span> <span className="hidden sm:inline">{hackerMode ? "Exit Matrix" : "Hacker Mode"}</span>
+                  {hackerMode ? <CircleDot size={14} strokeWidth={1.8} aria-hidden /> : <Terminal size={14} strokeWidth={1.8} aria-hidden />}
+                  <span className="hidden sm:inline">{hackerMode ? "Exit Matrix" : "Hacker Mode"}</span>
                 </motion.button>
               </div>
             </motion.div>
@@ -1290,7 +1376,7 @@ function Palette() {
     { label: "Light", value: l, setValue: setL, max: 100 },
   ] as const;
   const swatches = [20, 35, 50, 65, 80];
-  function copy(value = `hsl(${h} ${s}% ${l}%)`) { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); }
+  function copy(value = `hsl(${h} ${s}% ${l}%)`) { copyToClipboard(value); setCopied(true); setTimeout(() => setCopied(false), 1500); }
   function randomize() {
     setH(Math.floor(Math.random() * 361));
     setS(Math.floor(Math.random() * 41) + 55);
@@ -1374,7 +1460,7 @@ function MarkdownPreview() {
         <motion.button whileTap={{ scale: 0.95 }} className="tool-btn text-xs" onClick={() => setText(starter)}>
           Reset Sample
         </motion.button>
-        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn text-xs" onClick={() => navigator.clipboard.writeText(text)}>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn text-xs" onClick={() => copyToClipboard(text)}>
           Copy Markdown
         </motion.button>
       </div>
@@ -1473,8 +1559,13 @@ function Inspiration() {
 /* ═══════════════ TOOL 4: JSON Formatter ═══════════════ */
 function JSONFormatter() {
   const starterJson = '{"hello":"world","arr":[1,2,3]}';
-  const [input, setInput] = useState(starterJson); const [space, setSpace] = useState(2);
-  const [error, setError] = useState<string|null>(null); const [output, setOutput] = useState(() => JSON.stringify(JSON.parse(starterJson), null, 2));
+  const [input, setInput] = useState(() => prefillFor("json") ?? starterJson);
+  const [space, setSpace] = useState(2);
+  const [error, setError] = useState<string|null>(null);
+  const [output, setOutput] = useState(() => {
+    try { return JSON.stringify(JSON.parse(prefillFor("json") ?? starterJson), null, 2); }
+    catch { return prefillFor("json") ?? starterJson; }
+  });
   function prettify() { try { setError(null); setOutput(JSON.stringify(JSON.parse(input), null, space)); } catch (error) { setError(getErrorMessage(error)); setOutput(""); } }
   function minify() { try { setError(null); setOutput(JSON.stringify(JSON.parse(input))); } catch (error) { setError(getErrorMessage(error)); setOutput(""); } }
   return (
@@ -1490,7 +1581,8 @@ function JSONFormatter() {
         <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn-primary tool-btn" onClick={prettify}>Prettify</motion.button>
         <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={minify}>Minify</motion.button>
         <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={() => setInput('{"name":"maxwell","stack":["next","react","tailwind"],"status":"shipping"}')}>Load Sample</motion.button>
-        <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(output)}>Copy</motion.button>
+        <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }} className="tool-btn" onClick={() => copyToClipboard(output)}>Copy</motion.button>
+        <ShareButton toolId="json" value={input} />
       </div>
     </Section>
   );
@@ -1544,7 +1636,7 @@ function TimestampConverter() {
       <motion.div layout className="mt-3 p-3 rounded-lg bg-black/20 border border-white/[0.04] text-sm text-[var(--text-secondary)] font-[family-name:var(--font-mono)] break-all">{converted}</motion.div>
       <div className="mt-3 flex gap-2">
         <motion.button whileTap={{ scale:0.9 }} className="tool-btn text-xs" onClick={() => setTs(String(Math.floor(Date.now()/1000)))}>Now</motion.button>
-        <motion.button whileTap={{ scale:0.9 }} className="tool-btn text-xs" onClick={() => navigator.clipboard.writeText(converted)}>Copy</motion.button>
+        <motion.button whileTap={{ scale:0.9 }} className="tool-btn text-xs" onClick={() => copyToClipboard(converted)}>Copy</motion.button>
       </div>
     </Section>
   );
@@ -1591,13 +1683,13 @@ function GeneratorKit() {
           <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider mb-2 block">UUID v4</label>
           <div className="flex gap-2 flex-wrap sm:flex-nowrap"><input className="tool-input neon-input flex-1 min-w-0" readOnly value={uuid} />
             <motion.button whileTap={{ scale:0.9 }} className="tool-btn-primary tool-btn whitespace-nowrap" onClick={genUUID}>Generate</motion.button>
-            <motion.button whileTap={{ scale:0.9 }} className="tool-btn whitespace-nowrap" onClick={() => navigator.clipboard.writeText(uuid)}>Copy</motion.button></div>
+            <motion.button whileTap={{ scale:0.9 }} className="tool-btn whitespace-nowrap" onClick={() => copyToClipboard(uuid)}>Copy</motion.button></div>
         </div>
         <div>
           <label className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider mb-2 block">Password ({pwLen} chars)</label>
           <div className="flex gap-2 flex-wrap sm:flex-nowrap"><input className="tool-input neon-input flex-1 min-w-0" readOnly value={pw} />
             <motion.button whileTap={{ scale:0.9 }} className="tool-btn-primary tool-btn whitespace-nowrap" onClick={genPW}>Generate</motion.button>
-            <motion.button whileTap={{ scale:0.9 }} className="tool-btn whitespace-nowrap" onClick={() => navigator.clipboard.writeText(pw)}>Copy</motion.button></div>
+            <motion.button whileTap={{ scale:0.9 }} className="tool-btn whitespace-nowrap" onClick={() => copyToClipboard(pw)}>Copy</motion.button></div>
           <div className="mt-3 flex items-center gap-4 flex-wrap">
             <label className="text-xs text-[var(--text-muted)]">Length <input type="number" min={6} max={64} value={pwLen} onChange={(e) => setPwLen(+e.target.value||16)} className="tool-input w-16 text-center ml-1 neon-input" /></label>
             {[["A-Z", upper, setUpper], ["0-9", nums, setNums], ["!@#", syms, setSyms]].map(([label, val, setter]: any) => (
@@ -1614,7 +1706,7 @@ function GeneratorKit() {
 
 /* ═══════════════ TOOL 9: Base64 Tool ═══════════════ */
 function Base64Tool() {
-  const [input, setInput] = useState("Hello, World!"); const [output, setOutput] = useState("");
+  const [input, setInput] = useState(() => prefillFor("base64") ?? "Hello, World!"); const [output, setOutput] = useState("");
   const [mode, setMode] = useState<"encode"|"decode">("encode");
   function convert() { try { setOutput(mode === "encode" ? btoa(input) : atob(input)); } catch { setOutput("Error: Invalid input"); } }
   useEffect(() => { convert(); }, [input, mode]);
@@ -1628,14 +1720,17 @@ function Base64Tool() {
         <textarea className="tool-input neon-input min-h-[140px] resize-none" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Input..." />
         <textarea className="tool-input min-h-[140px] resize-none bg-black/20" readOnly value={output} placeholder="Output..." />
       </div>
-      <motion.button whileTap={{ scale:0.9 }} className="tool-btn mt-3" onClick={() => navigator.clipboard.writeText(output)}>Copy Output</motion.button>
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
+        <motion.button whileTap={{ scale:0.9 }} className="tool-btn" onClick={() => copyToClipboard(output)}>Copy Output</motion.button>
+        <ShareButton toolId="base64" value={input} />
+      </div>
     </Section>
   );
 }
 
 /* ═══════════════ TOOL 10: URL Encoder/Decoder ═══════════════ */
 function URLTool() {
-  const [input, setInput] = useState("https://example.com/path?q=hello world&foo=bar baz"); const [output, setOutput] = useState("");
+  const [input, setInput] = useState(() => prefillFor("url") ?? "https://example.com/path?q=hello world&foo=bar baz"); const [output, setOutput] = useState("");
   const [mode, setMode] = useState<"encode"|"decode">("encode");
   useEffect(() => { try { setOutput(mode === "encode" ? encodeURIComponent(input) : decodeURIComponent(input)); } catch { setOutput("Error: Invalid input"); } }, [input, mode]);
   return (
@@ -1648,7 +1743,10 @@ function URLTool() {
         <textarea className="tool-input neon-input min-h-[120px] resize-none" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Input..." />
         <textarea className="tool-input min-h-[120px] resize-none bg-black/20" readOnly value={output} placeholder="Output..." />
       </div>
-      <motion.button whileTap={{ scale:0.9 }} className="tool-btn mt-3" onClick={() => navigator.clipboard.writeText(output)}>Copy Output</motion.button>
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
+        <motion.button whileTap={{ scale:0.9 }} className="tool-btn" onClick={() => copyToClipboard(output)}>Copy Output</motion.button>
+        <ShareButton toolId="url" value={input} />
+      </div>
     </Section>
   );
 }
@@ -1675,14 +1773,14 @@ function LoremIpsum() {
         <motion.button whileTap={{ scale:0.9 }} className="tool-btn-primary tool-btn" onClick={generate}>Regenerate</motion.button>
       </div>
       <textarea className="tool-input min-h-[160px] resize-none bg-black/20 text-sm" readOnly value={output} />
-      <motion.button whileTap={{ scale:0.9 }} className="tool-btn mt-3" onClick={() => navigator.clipboard.writeText(output)}>Copy</motion.button>
+      <motion.button whileTap={{ scale:0.9 }} className="tool-btn mt-3" onClick={() => copyToClipboard(output)}>Copy</motion.button>
     </Section>
   );
 }
 
 /* ═══════════════ TOOL 12: Hash Generator ═══════════════ */
 function HashGenerator() {
-  const [input, setInput] = useState("Hello, World!"); const [hashes, setHashes] = useState<Record<string,string>>({});
+  const [input, setInput] = useState(() => prefillFor("hash") ?? "Hello, World!"); const [hashes, setHashes] = useState<Record<string,string>>({});
   async function compute() {
     const enc = new TextEncoder().encode(input);
     const results: Record<string,string> = {};
@@ -1695,10 +1793,13 @@ function HashGenerator() {
   useEffect(() => { compute(); }, [input]);
   return (
     <Section id="hash" title="Hash Generator" desc="SHA-1/256/384/512 hashing." accent="gold" index={11}>
-      <input className="tool-input neon-input mb-4" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Enter text to hash..." />
+      <div className="mb-4 flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        <input className="tool-input neon-input flex-1 min-w-0" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Enter text to hash..." />
+        <ShareButton toolId="hash" value={input} />
+      </div>
       <div className="space-y-2">
         {Object.entries(hashes).map(([algo, hash]) => (
-          <motion.div key={algo} whileHover={{ scale: 1.01 }} className="flex items-center gap-3 p-3 rounded-lg bg-black/20 border border-white/[0.04] group cursor-pointer" onClick={() => navigator.clipboard.writeText(hash)}>
+          <motion.div key={algo} whileHover={{ scale: 1.01 }} className="flex items-center gap-3 p-3 rounded-lg bg-black/20 border border-white/[0.04] group cursor-pointer" onClick={() => copyToClipboard(hash)}>
             <span className="text-xs text-[var(--accent-gold)] font-[family-name:var(--font-mono)] w-16 shrink-0">{algo}</span>
             <span className="text-xs text-[var(--text-secondary)] font-[family-name:var(--font-mono)] break-all flex-1 min-w-0">{hash}</span>
             <span className="text-[0.6rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">copy</span>
@@ -1758,7 +1859,7 @@ function CSSUnitConverter() {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {Object.entries(conversions).map(([unit, val]) => (
-          <motion.div key={unit} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] text-center cursor-pointer group" onClick={() => navigator.clipboard.writeText(`${val}${unit}`)}>
+          <motion.div key={unit} whileHover={{ y: -2, scale: 1.03 }} className="rounded-lg p-3 bg-black/20 border border-white/[0.04] text-center cursor-pointer group" onClick={() => copyToClipboard(`${val}${unit}`)}>
             <div className="text-lg font-bold text-[var(--accent-purple)] font-[family-name:var(--font-heading)]">{val}</div>
             <div className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] mt-0.5">{unit}</div>
             <div className="text-[0.5rem] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1">click to copy</div>
@@ -1801,7 +1902,7 @@ function SlugStudio() {
             key={token.label}
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => navigator.clipboard.writeText(token.value)}
+            onClick={() => copyToClipboard(token.value)}
             className="rounded-xl border border-white/[0.05] bg-black/20 p-4 text-left"
           >
             <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{token.label}</div>
@@ -1870,7 +1971,7 @@ function TextCaseStudio() {
             key={output.label}
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => navigator.clipboard.writeText(output.value)}
+            onClick={() => copyToClipboard(output.value)}
             className="rounded-xl border border-white/[0.05] bg-black/20 p-4 text-left"
           >
             <div className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--text-muted)] font-[family-name:var(--font-mono)]">{output.label}</div>
@@ -2016,7 +2117,7 @@ function CSVJSONStudio() {
       </AnimatePresence>
       <div className="mt-4 flex flex-wrap gap-2">
         <motion.button whileTap={{ scale: 0.95 }} className="tool-btn-primary tool-btn" onClick={convert}>Convert</motion.button>
-        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(output)}>Copy Output</motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn" onClick={() => copyToClipboard(output)}>Copy Output</motion.button>
       </div>
     </Section>
   );
@@ -2049,7 +2150,7 @@ function HTTPStatusExplorer() {
             key={status.code}
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => navigator.clipboard.writeText(String(status.code))}
+            onClick={() => copyToClipboard(String(status.code))}
             className="rounded-xl border border-white/[0.05] bg-black/20 p-4 text-left"
           >
             <div className="flex items-center justify-between gap-3">
@@ -2131,8 +2232,8 @@ function CronBuilder() {
         <p className="mt-3 text-sm text-[var(--text-secondary)]">{explanation}</p>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn-primary tool-btn" onClick={() => navigator.clipboard.writeText(expression)}>Copy Cron</motion.button>
-        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn" onClick={() => navigator.clipboard.writeText(explanation)}>Copy Summary</motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn-primary tool-btn" onClick={() => copyToClipboard(expression)}>Copy Cron</motion.button>
+        <motion.button whileTap={{ scale: 0.95 }} className="tool-btn" onClick={() => copyToClipboard(explanation)}>Copy Summary</motion.button>
       </div>
     </Section>
   );
@@ -2363,7 +2464,7 @@ function ASCIIArtGenerator() {
       <motion.pre className="bg-black/20 border border-white/[0.04] p-4 rounded-lg overflow-x-auto text-xs font-[family-name:var(--font-mono)] text-[var(--accent-cyan)] mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {lines}
       </motion.pre>
-      <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={() => navigator.clipboard.writeText(lines)}>
+      <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={() => copyToClipboard(lines)}>
         Copy ASCII
       </motion.button>
     </Section>
