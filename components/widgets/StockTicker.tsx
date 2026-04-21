@@ -2,6 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Apple, AppWindow, Search, Package, Cpu, Zap, Globe, TrendingUp,
+  TrendingDown, ChartCandlestick, ChartLine, type LucideIcon,
+} from "lucide-react";
 
 import type { StockApiQuote } from "@/lib/types";
 
@@ -15,17 +19,18 @@ interface StockData {
   dayLow: number;
   previousClose: number;
   sparkline: number[];
-  icon: string;
+  Icon: LucideIcon;
+  tint: string;
 }
 
-const META: Record<string, { name: string; icon: string }> = {
-  AAPL: { name: "Apple", icon: "🍎" },
-  MSFT: { name: "Microsoft", icon: "🪟" },
-  GOOGL: { name: "Alphabet", icon: "🔍" },
-  AMZN: { name: "Amazon", icon: "📦" },
-  NVDA: { name: "NVIDIA", icon: "🟢" },
-  TSLA: { name: "Tesla", icon: "⚡" },
-  META: { name: "Meta", icon: "🌐" },
+const META: Record<string, { name: string; Icon: LucideIcon; tint: string }> = {
+  AAPL:  { name: "Apple",     Icon: Apple,     tint: "#d1d5db" },
+  MSFT:  { name: "Microsoft", Icon: AppWindow, tint: "#60a5fa" },
+  GOOGL: { name: "Alphabet",  Icon: Search,    tint: "#fbbf24" },
+  AMZN:  { name: "Amazon",    Icon: Package,   tint: "#fb923c" },
+  NVDA:  { name: "NVIDIA",    Icon: Cpu,       tint: "#4ade80" },
+  TSLA:  { name: "Tesla",     Icon: Zap,       tint: "#f87171" },
+  META:  { name: "Meta",      Icon: Globe,     tint: "#818cf8" },
 };
 
 /* ── Sparkline from real close data ── */
@@ -96,7 +101,8 @@ export function StockTicker() {
           dayLow: +(s.dayLow ?? 0),
           previousClose: +(s.previousClose ?? 0),
           sparkline: Array.isArray(s.sparkline) ? s.sparkline : [],
-          icon: META[String(s.symbol)]?.icon || "📊",
+          Icon: META[String(s.symbol)]?.Icon || ChartLine,
+          tint: META[String(s.symbol)]?.tint || "#94a3b8",
         }));
 
       if (mapped.length > 0) {
@@ -132,7 +138,10 @@ export function StockTicker() {
   if (loading) {
     return (
       <div className="glass-card p-6">
-        <h3 className="text-lg font-bold text-white mb-4">📊 Live Stocks</h3>
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <ChartCandlestick size={18} strokeWidth={1.8} className="text-cyan-400" aria-hidden />
+          Live Stocks
+        </h3>
         <div className="space-y-3">
           {[1, 2, 3, 4, 5, 6, 7].map((i) => (
             <div key={i} className="flex items-center justify-between py-2">
@@ -157,7 +166,10 @@ export function StockTicker() {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-white">📊 Stocks</h3>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <ChartCandlestick size={18} strokeWidth={1.8} className="text-cyan-400" aria-hidden />
+            Stocks
+          </h3>
           <span className="text-[10px] text-white/25 font-mono px-2 py-0.5 rounded-full border border-white/10">
             Offline
           </span>
@@ -178,7 +190,10 @@ export function StockTicker() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-white">📊 Live Stocks</h3>
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <ChartCandlestick size={18} strokeWidth={1.8} className="text-cyan-400" aria-hidden />
+          Live Stocks
+        </h3>
         <div className="flex items-center gap-2">
           <motion.div
             animate={{ opacity: [1, 0.3, 1] }}
@@ -207,8 +222,15 @@ export function StockTicker() {
                   className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0 group hover:bg-white/[0.02] rounded-lg px-2 -mx-2 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform">
-                      {stock.icon}
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border group-hover:scale-110 transition-transform"
+                      style={{
+                        color: stock.tint,
+                        background: `color-mix(in oklab, ${stock.tint} 12%, transparent)`,
+                        borderColor: `color-mix(in oklab, ${stock.tint} 30%, transparent)`,
+                      }}
+                    >
+                      <stock.Icon size={14} strokeWidth={1.8} aria-hidden />
                     </div>
                     <div className="min-w-0">
                       <div className="text-white font-semibold text-sm group-hover:text-cyan-400 transition-colors truncate">
@@ -226,11 +248,15 @@ export function StockTicker() {
                   <div className="text-right shrink-0 ml-2">
                     <Price value={stock.price} prev={prevPrices[stock.symbol] || 0} />
                     <div
-                      className={`text-xs font-mono flex items-center justify-end gap-0.5 ${
+                      className={`text-xs font-mono flex items-center justify-end gap-1 ${
                         pos ? "text-green-400" : "text-red-400"
                       }`}
                     >
-                      <span>{pos ? "▲" : "▼"}</span>
+                      {pos ? (
+                        <TrendingUp size={12} strokeWidth={2} aria-hidden />
+                      ) : (
+                        <TrendingDown size={12} strokeWidth={2} aria-hidden />
+                      )}
                       <span>{Math.abs(stock.changePercent).toFixed(2)}%</span>
                     </div>
                   </div>

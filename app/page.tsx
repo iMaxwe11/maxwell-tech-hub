@@ -19,6 +19,7 @@ import {
   Atom, FileCode, Code, Container, Cloud, Palette, Zap, RefreshCw,
   Monitor, Network, Terminal, Hexagon, Award, GraduationCap, Check,
   Radio, Activity, Satellite, Image as ImageIcon, Sparkles, ArrowRight,
+  Wrench, Rocket, Workflow, Gamepad2, Brain, Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,7 +31,7 @@ function Sec({ children, className = "", delay = 0, id }: { children: React.Reac
 }
 
 /* ═══ PROJECT VISUAL — Live Demo Preview ═══ */
-function ProjectVisual({ gradient, icon, pattern, liveUrl, title }: { gradient: string; icon: string; pattern: string; liveUrl?: string; title: string }) {
+function ProjectVisual({ gradient, Icon, iconTint, pattern, liveUrl, title }: { gradient: string; Icon: LucideIcon; iconTint: string; pattern: string; liveUrl?: string; title: string }) {
   const [showDemo, setShowDemo] = useState(false);
   return (
     <div className="relative mb-5">
@@ -63,7 +64,16 @@ function ProjectVisual({ gradient, icon, pattern, liveUrl, title }: { gradient: 
           <>
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: pattern, backgroundSize: "30px 30px" }} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-3 left-4 text-3xl drop-shadow-lg">{icon}</div>
+            <div
+              className="absolute bottom-3 left-4 flex h-11 w-11 items-center justify-center rounded-xl border backdrop-blur-sm drop-shadow-lg"
+              style={{
+                color: iconTint,
+                background: `color-mix(in oklab, ${iconTint} 18%, rgba(0,0,0,0.35))`,
+                borderColor: `color-mix(in oklab, ${iconTint} 40%, transparent)`,
+              }}
+            >
+              <Icon size={22} strokeWidth={1.6} aria-hidden />
+            </div>
             {liveUrl && (
               <div className="absolute top-10 right-3 text-[9px] font-mono text-white/80 bg-green-500/20 border border-green-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -82,7 +92,8 @@ interface ProjectCard {
   desc: string;
   tags: string[];
   gradient: string;
-  icon: string;
+  Icon: LucideIcon;
+  iconTint: string;
   metrics: string;
   pattern: string;
   github?: string;
@@ -459,7 +470,8 @@ function ProjectsSection() {
       desc: "35 client-side developer utilities — JSON formatter, regex tester, hash generator, QR code, JWT decoder, SQL formatter, and more. Zero tracking, fully private.",
       tags: ["Next.js", "TypeScript", "Tailwind", "Framer Motion"],
       gradient: "from-purple-500 to-pink-500",
-      icon: "🛠️",
+      Icon: Wrench,
+      iconTint: "#c084fc",
       link: "/tools",
       liveUrl: "https://maxwellnixon.com/tools",
       metrics: "35 tools · 100% client-side · Zero tracking",
@@ -471,7 +483,8 @@ function ProjectsSection() {
       desc: "Real-time space dashboard with ISS tracking, NASA imagery, launch schedules from all providers, Mars rover photos, asteroid monitoring, and solar weather.",
       tags: ["Next.js", "NASA API", "Real-time", "Space Devs API"],
       gradient: "from-indigo-500 to-purple-600",
-      icon: "🚀",
+      Icon: Rocket,
+      iconTint: "#a78bfa",
       link: "/space",
       liveUrl: "https://maxwellnixon.com/space",
       metrics: "Live launches · ISS tracking · Mars photos · NEO monitoring",
@@ -482,7 +495,8 @@ function ProjectsSection() {
       desc: "Cloud-style data pipeline with FastAPI API layer, Python ETL processor, and Streamlit dashboard. Fully containerized with Docker and CI/CD via GitHub Actions.",
       tags: ["FastAPI", "Python", "Docker", "Streamlit", "CI/CD"],
       gradient: "from-cyan-500 to-blue-600",
-      icon: "🔄",
+      Icon: Workflow,
+      iconTint: "#22d3ee",
       github: "https://github.com/iMaxwe11/smart-data-pipeline",
       metrics: "End-to-end ETL · Docker Compose · CI/CD pipeline",
       pattern: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
@@ -492,7 +506,8 @@ function ProjectsSection() {
       desc: "5 browser-based games — Snake, Pong vs AI, Memory Matrix, Reaction Timer, and Type Racer. Canvas rendering, retro CRT effects, and an animated arcade cabinet hub.",
       tags: ["Canvas", "Game Dev", "CSS Art", "Framer Motion"],
       gradient: "from-fuchsia-500 to-pink-600",
-      icon: "🕹️",
+      Icon: Gamepad2,
+      iconTint: "#f472b6",
       link: "/play",
       liveUrl: "https://maxwellnixon.com/play",
       metrics: "5 games · Zero installs · Retro arcade experience",
@@ -504,7 +519,8 @@ function ProjectsSection() {
       desc: "Self-hosted containerized LLaMA and Mistral LLMs with GPU acceleration. Prompt tuning, offline inference, and scripting pipelines with a privacy-first mindset.",
       tags: ["LLaMA", "Mistral", "Docker", "GPU", "Python"],
       gradient: "from-orange-500 to-red-500",
-      icon: "🧠",
+      Icon: Brain,
+      iconTint: "#fb923c",
       github: "https://github.com/iMaxwe11",
       metrics: "Self-hosted LLMs · GPU accelerated · Privacy-first",
       pattern:
@@ -515,7 +531,8 @@ function ProjectsSection() {
       desc: "Enterprise IT support for law firms and businesses across NJ, PA, and DE. Windows Server deployment, Active Directory, VLANs, PXE imaging, VPN, and ConnectWise ticketing.",
       tags: ["Windows Server", "AD", "VLANs", "PXE", "ConnectWise"],
       gradient: "from-blue-500 to-indigo-600",
-      icon: "🏢",
+      Icon: Building2,
+      iconTint: "#60a5fa",
       metrics: "Multi-site enterprise · 50+ endpoints managed · 99.9% uptime target",
       pattern: "linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
     },
@@ -545,7 +562,7 @@ function ProjectsSection() {
               whileHover={{ y: -6 }}
               className="glass-card p-6 h-full group relative overflow-hidden cursor-default"
             >
-              <ProjectVisual gradient={p.gradient} icon={p.icon} pattern={p.pattern} liveUrl={p.liveUrl} title={p.title} />
+              <ProjectVisual gradient={p.gradient} Icon={p.Icon} iconTint={p.iconTint} pattern={p.pattern} liveUrl={p.liveUrl} title={p.title} />
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{p.title}</h3>
               <p className="text-white/55 leading-relaxed mb-3 text-sm">{p.desc}</p>
               <p className="text-[11px] font-mono text-cyan-400/70 mb-4 flex items-center gap-1.5">
@@ -863,12 +880,12 @@ function BackToTop() {
 
 /* ═══ FOOTER ═══ */
 function Footer() {
-  const techStack = [
-    { name: "Next.js", icon: "▲" },
-    { name: "TypeScript", icon: "TS" },
-    { name: "Tailwind", icon: "∼" },
-    { name: "Framer Motion", icon: "⚡" },
-    { name: "Vercel", icon: "▲" },
+  const techStack: Array<{ name: string; Icon: LucideIcon }> = [
+    { name: "Next.js",        Icon: Zap },
+    { name: "TypeScript",     Icon: FileCode },
+    { name: "Tailwind",       Icon: Palette },
+    { name: "Framer Motion",  Icon: Sparkles },
+    { name: "Vercel",         Icon: Cloud },
   ];
 
   return (
@@ -966,7 +983,7 @@ function Footer() {
                          hover:text-white/90 hover:border-white/15
                          transition-colors cursor-default"
             >
-              <span className="text-[9px] opacity-70">{t.icon}</span>
+              <t.Icon size={11} strokeWidth={1.8} className="opacity-70" aria-hidden />
               {t.name}
             </span>
           ))}

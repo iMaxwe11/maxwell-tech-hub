@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from "react"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { MapPin, Globe, Mail, Phone } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { siteConfig, socialLinks } from "@/lib/site-config";
@@ -147,8 +148,12 @@ export default function TerminalPage() {
             <span key="w" className="text-white/80">
               {siteConfig.name} — IT Systems Technician & Full-Stack Developer
             </span>,
-            <span key="l" className="text-white/50">
-              📍 {siteConfig.location} · 🌐 {siteConfig.domain}
+            <span key="l" className="text-white/50 inline-flex items-center gap-2 flex-wrap">
+              <MapPin size={12} strokeWidth={1.8} aria-hidden className="inline text-[color:var(--theme-primary)]" />
+              {siteConfig.location}
+              <span className="text-white/25">·</span>
+              <Globe size={12} strokeWidth={1.8} aria-hidden className="inline text-[color:var(--theme-primary)]" />
+              {siteConfig.domain}
             </span>,
           ]);
           break;
@@ -221,9 +226,9 @@ export default function TerminalPage() {
 
         case "contact":
           appendOutput([
-            <div key="c" className="space-y-0.5 text-sm">
-              <p className="text-white/70">
-                📧{" "}
+            <div key="c" className="space-y-1 text-sm">
+              <p className="text-white/70 inline-flex items-center gap-2">
+                <Mail size={13} strokeWidth={1.8} aria-hidden className="text-[color:var(--theme-primary)]" />
                 <a
                   href={`mailto:${siteConfig.email}`}
                   className="text-[color:var(--theme-primary)] hover:underline"
@@ -231,8 +236,14 @@ export default function TerminalPage() {
                   {siteConfig.email}
                 </a>
               </p>
-              <p className="text-white/70">📞 {siteConfig.phone}</p>
-              <p className="text-white/70">📍 {siteConfig.location}</p>
+              <p className="text-white/70 inline-flex items-center gap-2">
+                <Phone size={13} strokeWidth={1.8} aria-hidden className="text-[color:var(--theme-primary)]" />
+                {siteConfig.phone}
+              </p>
+              <p className="text-white/70 inline-flex items-center gap-2">
+                <MapPin size={13} strokeWidth={1.8} aria-hidden className="text-[color:var(--theme-primary)]" />
+                {siteConfig.location}
+              </p>
             </div>,
           ]);
           break;
