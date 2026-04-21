@@ -31,6 +31,9 @@ export const NAV_IDS = [
   "dice",
   "ascii",
   "colorgame",
+  "sql",
+  "emoji",
+  "shadow",
 ] as const;
 
 export type ToolId = (typeof NAV_IDS)[number];
@@ -68,6 +71,9 @@ export const TOOL_META: Record<ToolId, { cat: string; keywords: string }> = {
   dice: { cat: "Fun", keywords: "dice roller d6 roll random numbers" },
   ascii: { cat: "Fun", keywords: "ascii art text convert block letters" },
   colorgame: { cat: "Fun", keywords: "color game matching guess puzzle" },
+  sql: { cat: "Code", keywords: "sql formatter pretty print query indent keywords database" },
+  emoji: { cat: "Text", keywords: "emoji unicode picker symbol arrow check copy search" },
+  shadow: { cat: "Design", keywords: "box shadow generator css layer depth drop shadow design" },
 };
 
 export const CATEGORIES = ["All", "Code", "Encode", "Design", "Text", "Convert", "Fun"] as const;

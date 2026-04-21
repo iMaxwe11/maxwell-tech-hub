@@ -176,7 +176,7 @@ export default function TerminalPage() {
             <div key="proj" className="space-y-1.5">
               {[
                 ["Smart Data Pipeline", "FastAPI + Python + Docker ETL"],
-                ["Developer Tools Hub", "32 client-side utilities"],
+                ["Developer Tools Hub", "35 client-side utilities"],
                 ["Space & Launch Tracker", "NASA + SpaceDevs API dashboard"],
                 ["News Feed Hub", "RSS-aggregated tech news"],
                 ["Weather Dashboard", "Open-Meteo + Windy radar"],

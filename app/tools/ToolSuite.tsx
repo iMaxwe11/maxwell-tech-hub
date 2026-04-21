@@ -4,6 +4,7 @@ import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "f
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { CAT_COLORS, CATEGORIES, NAV_IDS, TOOL_META, type ToolId } from "./tool-config";
+import { copyToClipboard, toast } from "@/lib/toast";
 
 type Accent = "cyan" | "purple" | "gold";
 
@@ -568,6 +569,482 @@ function MatrixRain({ active }: { active: boolean }) {
   return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none opacity-40" />;
 }
 
+/* ═══════════════ TOOL 33: SQL Formatter ═══════════════ */
+function SQLFormatter() {
+  const [raw, setRaw] = useState(
+    "select id, name, email, created_at from users where active = 1 and created_at > '2024-01-01' order by name limit 10",
+  );
+  const formatted = useMemo(() => {
+    if (!raw.trim()) return "";
+    const KEYWORDS = /\b(select|from|where|and|or|inner join|left join|right join|full join|cross join|on|group by|order by|having|limit|offset|insert into|values|update|set|delete|returning|with|as|union|case|when|then|else|end|is null|is not null|between|in|like|desc|asc|distinct|all)\b/gi;
+    const MAJOR = /\b(select|from|where|group by|order by|having|limit|offset|insert into|values|update|set|delete|returning|with|union|left join|right join|inner join|full join|cross join|join|on)\b/gi;
+
+    // Normalise whitespace, then uppercase keywords
+    let s = raw.replace(/\s+/g, " ").trim().replace(KEYWORDS, (m) => m.toUpperCase());
+    // Newline before each major clause (except the very first occurrence)
+    let first = true;
+    s = s.replace(MAJOR, (m) => {
+      if (first) {
+        first = false;
+        return m.toUpperCase();
+      }
+      return "\n" + m.toUpperCase();
+    });
+    // Indent continuations (nested JOIN / ON)
+    s = s
+      .split("\n")
+      .map((line) => {
+        const trimmed = line.trim();
+        if (/^(ON|AND|OR)\s/i.test(trimmed)) return "  " + trimmed;
+        return trimmed;
+      })
+      .join("\n");
+    // Break long SELECT column lists onto their own indented lines
+    s = s.replace(/^(SELECT\s+)(.+)$/im, (_full, prefix: string, cols: string) => {
+      // Skip if the SELECT body already contains a subquery
+      if (/\bSELECT\b/i.test(cols)) return prefix + cols.trim();
+      const parts = cols.split(",").map((c) => c.trim()).filter(Boolean);
+      if (parts.length <= 2) return prefix + parts.join(", ");
+      return prefix + "\n  " + parts.join(",\n  ");
+    });
+    // Add a trailing semicolon if the original had one or if the statement looks complete
+    if (raw.trim().endsWith(";") && !s.endsWith(";")) s += ";";
+    return s;
+  }, [raw]);
+
+  return (
+    <Section id="sql" title="SQL Formatter" desc="Paste SQL → indented, uppercased, clause-broken output." accent="purple" index={32}>
+      <div className="grid md:grid-cols-2 gap-3">
+        <div>
+          <label className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider mb-1 block">
+            Input
+          </label>
+          <textarea
+            className="tool-input neon-input min-h-[220px] resize-none text-xs"
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            spellCheck={false}
+            placeholder="Paste SQL here…"
+          />
+        </div>
+        <div>
+          <label className="text-[0.6rem] text-[var(--text-muted)] font-[family-name:var(--font-mono)] uppercase tracking-wider mb-1 block">
+            Formatted
+          </label>
+          <pre className="rounded-lg bg-black/30 border border-white/[0.06] p-3 min-h-[220px] max-h-[420px] overflow-auto text-xs font-[family-name:var(--font-mono)] text-[var(--accent-cyan)] whitespace-pre">
+            {formatted || <span className="text-white/20">Output will appear here</span>}
+          </pre>
+        </div>
+      </div>
+      <div className="mt-3 flex gap-2 flex-wrap">
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => copyToClipboard(formatted, "SQL copied")}
+          disabled={!formatted}
+          className="tool-btn-primary tool-btn disabled:opacity-30"
+        >
+          Copy Formatted
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setRaw("")}
+          className="tool-btn"
+        >
+          Clear
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() =>
+            setRaw(
+              "SELECT u.id, u.name, count(o.id) as orders FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE u.active = 1 GROUP BY u.id, u.name HAVING count(o.id) > 5 ORDER BY orders DESC LIMIT 20",
+            )
+          }
+          className="tool-btn"
+        >
+          Load Sample
+        </motion.button>
+      </div>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 34: Emoji & Symbol Picker ═══════════════ */
+const EMOJI_SET: { char: string; name: string; cat: string }[] = [
+  // Faces
+  { char: "😀", name: "grinning face happy", cat: "Face" },
+  { char: "😂", name: "joy tears laughing lol", cat: "Face" },
+  { char: "🥲", name: "smile tear", cat: "Face" },
+  { char: "😍", name: "heart eyes love", cat: "Face" },
+  { char: "🤔", name: "thinking consider hmm", cat: "Face" },
+  { char: "😎", name: "sunglasses cool", cat: "Face" },
+  { char: "🥳", name: "party celebrate hat", cat: "Face" },
+  { char: "😴", name: "sleeping tired zzz", cat: "Face" },
+  { char: "🤯", name: "mind blown explosion shocked", cat: "Face" },
+  { char: "😭", name: "crying sad sob", cat: "Face" },
+  { char: "🙃", name: "upside down face silly", cat: "Face" },
+  { char: "😬", name: "grimace awkward", cat: "Face" },
+  // Gestures
+  { char: "👍", name: "thumbs up approve ok yes", cat: "Hand" },
+  { char: "👎", name: "thumbs down reject no", cat: "Hand" },
+  { char: "👋", name: "wave hello hi bye", cat: "Hand" },
+  { char: "👏", name: "clap applause bravo", cat: "Hand" },
+  { char: "🙏", name: "pray thanks please", cat: "Hand" },
+  { char: "💪", name: "flex strong muscle", cat: "Hand" },
+  { char: "🤝", name: "handshake deal agree", cat: "Hand" },
+  { char: "✌️", name: "peace victory two fingers", cat: "Hand" },
+  { char: "🤞", name: "fingers crossed hope luck", cat: "Hand" },
+  { char: "👌", name: "ok perfect circle", cat: "Hand" },
+  { char: "🫶", name: "heart hands love", cat: "Hand" },
+  { char: "🤌", name: "pinched fingers italian", cat: "Hand" },
+  // Symbols
+  { char: "❤️", name: "heart red love", cat: "Symbol" },
+  { char: "🧡", name: "heart orange", cat: "Symbol" },
+  { char: "💛", name: "heart yellow", cat: "Symbol" },
+  { char: "💚", name: "heart green", cat: "Symbol" },
+  { char: "💙", name: "heart blue", cat: "Symbol" },
+  { char: "💜", name: "heart purple", cat: "Symbol" },
+  { char: "🖤", name: "heart black", cat: "Symbol" },
+  { char: "💯", name: "hundred perfect 100", cat: "Symbol" },
+  { char: "🔥", name: "fire hot lit", cat: "Symbol" },
+  { char: "⭐", name: "star favorite", cat: "Symbol" },
+  { char: "✨", name: "sparkles shine magic glitter", cat: "Symbol" },
+  { char: "⚡", name: "lightning bolt fast zap", cat: "Symbol" },
+  { char: "💡", name: "lightbulb idea", cat: "Symbol" },
+  { char: "🎉", name: "party popper celebrate", cat: "Symbol" },
+  { char: "🚀", name: "rocket launch fast ship", cat: "Symbol" },
+  { char: "💰", name: "money bag cash", cat: "Symbol" },
+  { char: "🏆", name: "trophy winner first", cat: "Symbol" },
+  { char: "🎯", name: "target bullseye goal", cat: "Symbol" },
+  // Tech
+  { char: "💻", name: "laptop computer", cat: "Tech" },
+  { char: "📱", name: "phone mobile iphone", cat: "Tech" },
+  { char: "⌨️", name: "keyboard type", cat: "Tech" },
+  { char: "🖥️", name: "desktop monitor computer", cat: "Tech" },
+  { char: "💾", name: "floppy save disk", cat: "Tech" },
+  { char: "🌐", name: "globe web internet world", cat: "Tech" },
+  { char: "📡", name: "satellite signal antenna", cat: "Tech" },
+  { char: "🔋", name: "battery power", cat: "Tech" },
+  { char: "🔌", name: "plug electric power", cat: "Tech" },
+  { char: "📶", name: "signal wifi bars", cat: "Tech" },
+  { char: "🎮", name: "game controller", cat: "Tech" },
+  { char: "🕹️", name: "joystick arcade", cat: "Tech" },
+  // Arrows
+  { char: "→", name: "arrow right next", cat: "Arrow" },
+  { char: "←", name: "arrow left back previous", cat: "Arrow" },
+  { char: "↑", name: "arrow up", cat: "Arrow" },
+  { char: "↓", name: "arrow down", cat: "Arrow" },
+  { char: "↗", name: "arrow up right diagonal", cat: "Arrow" },
+  { char: "↘", name: "arrow down right diagonal", cat: "Arrow" },
+  { char: "↙", name: "arrow down left diagonal", cat: "Arrow" },
+  { char: "↖", name: "arrow up left diagonal", cat: "Arrow" },
+  { char: "⇒", name: "arrow thick right implies", cat: "Arrow" },
+  { char: "⇐", name: "arrow thick left", cat: "Arrow" },
+  { char: "⇄", name: "arrows left right swap exchange", cat: "Arrow" },
+  { char: "⟶", name: "long arrow right", cat: "Arrow" },
+  // Marks
+  { char: "✓", name: "check mark yes done", cat: "Mark" },
+  { char: "✔", name: "check mark heavy", cat: "Mark" },
+  { char: "✗", name: "cross x no wrong", cat: "Mark" },
+  { char: "✘", name: "cross heavy no", cat: "Mark" },
+  { char: "⚠️", name: "warning caution alert", cat: "Mark" },
+  { char: "❓", name: "question mark unknown", cat: "Mark" },
+  { char: "❗", name: "exclamation important", cat: "Mark" },
+  { char: "ℹ️", name: "info information", cat: "Mark" },
+  { char: "⭕", name: "circle hollow ok", cat: "Mark" },
+  { char: "•", name: "bullet point dot", cat: "Mark" },
+  { char: "—", name: "em dash long", cat: "Mark" },
+  { char: "…", name: "ellipsis three dots", cat: "Mark" },
+  // Math
+  { char: "×", name: "multiply times cross", cat: "Math" },
+  { char: "÷", name: "divide division", cat: "Math" },
+  { char: "±", name: "plus minus plusminus", cat: "Math" },
+  { char: "≈", name: "approximately equal", cat: "Math" },
+  { char: "≠", name: "not equal", cat: "Math" },
+  { char: "≤", name: "less than or equal", cat: "Math" },
+  { char: "≥", name: "greater than or equal", cat: "Math" },
+  { char: "∞", name: "infinity", cat: "Math" },
+  { char: "π", name: "pi math", cat: "Math" },
+  { char: "Σ", name: "sigma sum", cat: "Math" },
+  { char: "√", name: "square root radical", cat: "Math" },
+  { char: "°", name: "degree temperature", cat: "Math" },
+];
+
+function EmojiPicker() {
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState<string>("All");
+  const cats = useMemo(
+    () => ["All", ...Array.from(new Set(EMOJI_SET.map((e) => e.cat)))],
+    [],
+  );
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return EMOJI_SET.filter((e) => {
+      if (cat !== "All" && e.cat !== cat) return false;
+      if (!query) return true;
+      return e.name.includes(query) || e.char === query;
+    });
+  }, [q, cat]);
+
+  return (
+    <Section
+      id="emoji"
+      title="Emoji & Symbol Picker"
+      desc="Search, click to copy — emojis, arrows, checks, math."
+      accent="gold"
+      index={33}
+    >
+      <div className="flex gap-2 mb-3 flex-wrap">
+        <input
+          className="tool-input neon-input flex-1 min-w-[160px]"
+          placeholder="Search emojis… (e.g. rocket, heart, arrow)"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          aria-label="Search emojis"
+        />
+        <div className="flex gap-1 flex-wrap">
+          {cats.map((c) => (
+            <motion.button
+              key={c}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setCat(c)}
+              className={`px-2.5 py-1.5 rounded-md text-[10px] font-[family-name:var(--font-mono)] uppercase tracking-wider border transition-colors ${
+                cat === c
+                  ? "bg-[var(--accent-gold)]/15 text-[var(--accent-gold)] border-[var(--accent-gold)]/40"
+                  : "bg-white/[0.02] text-white/40 border-white/[0.06] hover:text-white/70"
+              }`}
+            >
+              {c}
+            </motion.button>
+          ))}
+        </div>
+      </div>
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-12 gap-1.5">
+          {filtered.map((e, i) => (
+            <motion.button
+              key={`${e.char}-${i}`}
+              whileTap={{ scale: 0.85 }}
+              whileHover={{ scale: 1.2, y: -2 }}
+              onClick={() => copyToClipboard(e.char, `Copied ${e.char}`)}
+              title={`${e.name} — click to copy`}
+              aria-label={`Copy ${e.name}`}
+              className="aspect-square rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] hover:border-[var(--accent-gold)]/30 flex items-center justify-center text-xl transition-colors"
+            >
+              {e.char}
+            </motion.button>
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-white/40 py-6 font-[family-name:var(--font-mono)] text-xs">
+          No matches for &quot;{q}&quot;
+        </p>
+      )}
+      <p className="mt-3 text-[10px] text-white/30 font-[family-name:var(--font-mono)] text-center">
+        {filtered.length} shown · Click any symbol to copy
+      </p>
+    </Section>
+  );
+}
+
+/* ═══════════════ TOOL 35: Box Shadow Generator ═══════════════ */
+interface ShadowLayer {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: string;
+  opacity: number;
+  inset: boolean;
+}
+
+function ShadowGenerator() {
+  const [shadows, setShadows] = useState<ShadowLayer[]>([
+    { x: 0, y: 12, blur: 30, spread: -4, color: "#000000", opacity: 0.35, inset: false },
+    { x: 0, y: 2, blur: 6, spread: 0, color: "#06b6d4", opacity: 0.35, inset: false },
+  ]);
+
+  const renderLayer = (s: ShadowLayer) => {
+    const c = s.color.replace("#", "");
+    const r = parseInt(c.slice(0, 2), 16) || 0;
+    const g = parseInt(c.slice(2, 4), 16) || 0;
+    const b = parseInt(c.slice(4, 6), 16) || 0;
+    return `${s.inset ? "inset " : ""}${s.x}px ${s.y}px ${s.blur}px ${s.spread}px rgba(${r}, ${g}, ${b}, ${s.opacity})`;
+  };
+
+  const cssValue = shadows.map(renderLayer).join(", ");
+  const cssMultiLine = shadows.map(renderLayer).join(",\n             ");
+
+  const update = (i: number, patch: Partial<ShadowLayer>) => {
+    setShadows((prev) => prev.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  };
+  const remove = (i: number) =>
+    setShadows((prev) => (prev.length > 1 ? prev.filter((_, j) => j !== i) : prev));
+  const add = () =>
+    setShadows((prev) => [
+      ...prev,
+      { x: 0, y: 4, blur: 12, spread: 0, color: "#a855f7", opacity: 0.3, inset: false },
+    ]);
+  const reset = () => {
+    setShadows([
+      { x: 0, y: 12, blur: 30, spread: -4, color: "#000000", opacity: 0.35, inset: false },
+      { x: 0, y: 2, blur: 6, spread: 0, color: "#06b6d4", opacity: 0.35, inset: false },
+    ]);
+    toast("Reset to defaults", "info");
+  };
+
+  const sliders: Array<[string, keyof ShadowLayer, number, number, string]> = [
+    ["X", "x", -50, 50, "px"],
+    ["Y", "y", -50, 50, "px"],
+    ["Blur", "blur", 0, 100, "px"],
+    ["Spread", "spread", -50, 50, "px"],
+  ];
+
+  return (
+    <Section
+      id="shadow"
+      title="Box Shadow Generator"
+      desc="Multi-layer CSS box-shadow with live preview."
+      accent="purple"
+      index={34}
+    >
+      <div className="grid md:grid-cols-[1fr_300px] gap-5">
+        {/* Preview */}
+        <div
+          className="flex items-center justify-center min-h-[260px] rounded-xl p-8 border border-white/[0.06]"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.04), transparent), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 8px, transparent 8px 16px)",
+          }}
+        >
+          <motion.div
+            layout
+            className="w-36 h-36 rounded-2xl bg-white/95"
+            style={{ boxShadow: cssValue }}
+          />
+        </div>
+        {/* Controls */}
+        <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+          {shadows.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-lg border border-white/[0.08] bg-black/20 p-3 space-y-2"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-[family-name:var(--font-mono)] text-white/40 uppercase tracking-wider">
+                  Layer {i + 1}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[10px] font-[family-name:var(--font-mono)] text-white/55 flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={s.inset}
+                      onChange={(e) => update(i, { inset: e.target.checked })}
+                      className="accent-[var(--accent-purple)]"
+                    />{" "}
+                    inset
+                  </label>
+                  <button
+                    onClick={() => remove(i)}
+                    disabled={shadows.length <= 1}
+                    aria-label="Remove layer"
+                    className="text-white/30 hover:text-red-400 text-base leading-none w-5 h-5 rounded hover:bg-red-400/10 disabled:opacity-20 disabled:cursor-not-allowed"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {sliders.map(([label, key, min, max, unit]) => {
+                  const v = s[key] as number;
+                  return (
+                    <label
+                      key={key as string}
+                      className="text-[9px] font-[family-name:var(--font-mono)] text-white/40 uppercase tracking-wider flex flex-col gap-1"
+                    >
+                      <span className="flex justify-between">
+                        <span>{label}</span>
+                        <span className="text-white/60 normal-case">
+                          {v}
+                          {unit}
+                        </span>
+                      </span>
+                      <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        value={v}
+                        onChange={(e) =>
+                          update(i, { [key]: parseInt(e.target.value, 10) } as Partial<ShadowLayer>)
+                        }
+                        className="w-full accent-[var(--accent-purple)]"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={s.color}
+                  onChange={(e) => update(i, { color: e.target.value })}
+                  aria-label={`Layer ${i + 1} color`}
+                  className="w-7 h-7 rounded border border-white/10 cursor-pointer"
+                />
+                <label className="flex-1 text-[9px] font-[family-name:var(--font-mono)] text-white/40 uppercase tracking-wider flex flex-col gap-0.5">
+                  <span className="flex justify-between">
+                    <span>Opacity</span>
+                    <span className="text-white/60 normal-case">
+                      {Math.round(s.opacity * 100)}%
+                    </span>
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={s.opacity * 100}
+                    onChange={(e) => update(i, { opacity: parseInt(e.target.value, 10) / 100 })}
+                    className="w-full accent-[var(--accent-purple)]"
+                  />
+                </label>
+              </div>
+            </motion.div>
+          ))}
+          <div className="grid grid-cols-2 gap-2">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={add}
+              className="tool-btn text-xs"
+            >
+              + Add layer
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={reset}
+              className="tool-btn text-xs"
+            >
+              Reset
+            </motion.button>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 rounded-lg bg-black/30 border border-white/[0.06] p-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <pre className="text-[11px] font-[family-name:var(--font-mono)] text-[var(--accent-cyan)] whitespace-pre-wrap flex-1 min-w-[200px]">{`box-shadow: ${cssMultiLine};`}</pre>
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() => copyToClipboard(`box-shadow: ${cssValue};`, "CSS copied")}
+            className="tool-btn-primary tool-btn shrink-0"
+          >
+            Copy CSS
+          </motion.button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 /* ═══════════════════════════════════════════
    PAGE LAYOUT
    ═══════════════════════════════════════════ */
@@ -630,6 +1107,7 @@ export default function ToolsPage() {
     diff: DiffChecker, baseconv: BaseConverter, gradient: GradientGenerator,
     password: PasswordTester, eightball: Magic8Ball, coinflip: CoinFlip,
     dice: DiceRoller, ascii: ASCIIArtGenerator, colorgame: ColorGuessingGame,
+    sql: SQLFormatter, emoji: EmojiPicker, shadow: ShadowGenerator,
   }), []);
 
   return (

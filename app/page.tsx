@@ -400,13 +400,13 @@ function ProjectsSection() {
   const projects: ProjectCard[] = [
     {
       title: "Developer Tools Hub",
-      desc: "32 client-side developer utilities — JSON formatter, regex tester, hash generator, QR code, JWT decoder, and more. Zero tracking, fully private.",
+      desc: "35 client-side developer utilities — JSON formatter, regex tester, hash generator, QR code, JWT decoder, SQL formatter, and more. Zero tracking, fully private.",
       tags: ["Next.js", "TypeScript", "Tailwind", "Framer Motion"],
       gradient: "from-purple-500 to-pink-500",
       icon: "🛠️",
       link: "/tools",
       liveUrl: "https://maxwellnixon.com/tools",
-      metrics: "32 tools · 100% client-side · Zero tracking",
+      metrics: "35 tools · 100% client-side · Zero tracking",
       pattern:
         "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)",
     },
