@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
-import { GrokStarfield } from "@/components/GrokStarfield";
 
 /* ═══════════════════════════════════════════════════════════════
    DATA — edit this freely; the page will reflect it immediately
@@ -105,7 +104,6 @@ function StatusDot({ status }: { status: "active" | "ongoing" }) {
 export default function NowPage() {
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg">
         <div className="aurora-band" />
         <div className="aurora-band" />

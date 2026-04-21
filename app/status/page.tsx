@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import type { ServiceCategory, ServiceStatus } from "@/lib/types";
 
@@ -205,7 +204,6 @@ export default function StatusPage() {
 
   return (
     <div className="min-h-screen bg-[#020204] text-white overflow-hidden">
-      <GrokStarfield />
       <Navbar />
 
       {/* HERO SECTION */}

@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, useInView, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import { ISSTracker } from "@/components/widgets/ISSTracker";
 import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
@@ -827,7 +826,6 @@ export default function SpacePage() {
 
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
       <Navbar breadcrumb={["space"]} accent="#a855f7" />
 

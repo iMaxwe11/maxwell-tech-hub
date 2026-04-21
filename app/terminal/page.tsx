@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Globe, Mail, Phone } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { siteConfig, socialLinks } from "@/lib/site-config";
 
 type HistoryEntry =
@@ -445,7 +444,6 @@ export default function TerminalPage() {
 
   return (
     <>
-      <GrokStarfield />
       <Navbar breadcrumb={["terminal"]} />
       <main className="min-h-screen pt-20 pb-12 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">

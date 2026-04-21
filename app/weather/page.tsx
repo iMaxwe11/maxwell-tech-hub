@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 
 /* ═══ Types ═══ */
@@ -667,7 +666,6 @@ export default function WeatherPage() {
 
   return (
     <>
-      <GrokStarfield />
       {current && <WeatherBackground code={current.weatherCode} />}
 
       <Navbar breadcrumb={["weather"]} accent="#3b82f6" />

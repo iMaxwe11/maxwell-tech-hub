@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import type { NewsItem, VideoFeedItem } from "@/lib/types";
 
@@ -425,7 +424,6 @@ export default function NewsPage() {
 
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
 
       <Navbar breadcrumb={["news"]} accent="#06b6d4" />

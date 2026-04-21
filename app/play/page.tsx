@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -676,7 +675,6 @@ export default function ArcadePage() {
 
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg">
         <div className="aurora-band" />
         <div className="aurora-band" />

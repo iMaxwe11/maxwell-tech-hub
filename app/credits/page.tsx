@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { GrokStarfield } from "@/components/GrokStarfield";
 
 export default function CreditsPage() {
   return (
     <div className="relative min-h-screen w-full bg-black overflow-hidden">
       {/* Starfield background */}
-      <GrokStarfield />
 
       {/* Star Wars crawl style credits */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-4 perspective">

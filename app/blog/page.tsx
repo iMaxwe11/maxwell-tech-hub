@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import type { BlogPost } from "@/app/api/blog/route";
 
@@ -304,7 +303,6 @@ export default function BlogPage() {
 
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg">
         <div className="aurora-band" />
         <div className="aurora-band" />

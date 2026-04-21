@@ -2,12 +2,10 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { GrokStarfield } from "@/components/GrokStarfield";
 
 export default function NotFound() {
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg">
         <div className="aurora-band" />
         <div className="aurora-band" />

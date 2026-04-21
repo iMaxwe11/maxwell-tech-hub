@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { ACHIEVEMENTS, type Achievement } from "@/components/AchievementSystem";
 
 interface SessionData {
@@ -194,7 +193,6 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <>
-        <GrokStarfield />
         <Navbar breadcrumb={["analytics"]} />
         <main className="min-h-screen flex items-center justify-center">
           <div className="skeleton w-60 h-10 rounded-md" />
@@ -211,7 +209,6 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <GrokStarfield />
       <Navbar breadcrumb={["analytics"]} />
       <main className="min-h-screen pt-20 pb-16 px-4 sm:px-6">
         <div className="max-w-[1200px] mx-auto space-y-12">

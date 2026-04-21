@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { siteConfig } from "@/lib/site-config";
 
 /* ═════════════════════════════════════════════════════════════
@@ -270,7 +269,6 @@ function WorkSection({
 export default function ProjectsPage() {
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
       <Navbar breadcrumb={["projects"]} />
 

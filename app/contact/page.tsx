@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import { SocialIcon } from "@/components/SocialIcon";
 import { siteConfig, socialLinks } from "@/lib/site-config";
@@ -74,7 +73,6 @@ export default function ContactPage() {
 
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
 
       <Navbar breadcrumb={["contact"]} />

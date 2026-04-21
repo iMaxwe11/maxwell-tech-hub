@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { SocialIcon } from "@/components/SocialIcon";
-import { GrokStarfield } from "@/components/GrokStarfield";
 import { Navbar } from "@/components/Navbar";
 import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { CryptoTicker } from "@/components/widgets/CryptoTicker";
@@ -1006,7 +1005,6 @@ function Footer() {
 export default function Home() {
   return (
     <>
-      <GrokStarfield />
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
       <Navbar links={homeNavLinks} />
       <main>
