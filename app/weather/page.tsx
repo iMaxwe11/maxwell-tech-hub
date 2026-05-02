@@ -44,6 +44,15 @@ interface DailyData {
   precipSum: number;
 }
 
+interface AirQualityCurrent {
+  us_aqi?: number;
+  pm10?: number;
+  pm2_5?: number;
+  carbon_monoxide?: number;
+  nitrogen_dioxide?: number;
+  ozone?: number;
+}
+
 /* ═══ Section Wrapper ═══ */
 function Sec({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef(null);
@@ -520,13 +529,13 @@ function SunTimes({ sunrise, sunset }: { sunrise: string; sunset: string }) {
 
 /* ═══ Air Quality Widget ═══ */
 function AirQuality() {
-  const [aqi, setAqi] = useState<any>(null);
+  const [aqi, setAqi] = useState<AirQualityCurrent | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=39.9526&longitude=-74.7146&current=us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone&timezone=America/New_York")
       .then(r => r.json())
-      .then(data => { setAqi(data.current); setLoading(false); })
+      .then((data: { current?: AirQualityCurrent }) => { setAqi(data.current ?? null); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 

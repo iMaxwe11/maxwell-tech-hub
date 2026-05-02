@@ -20,13 +20,17 @@ const routes = [
   "/now",
   "/analytics",
   "/contact",
+  "/credits",
 ];
 
+const HIGH_PRIORITY = new Set(["/projects", "/tools", "/space", "/play"]);
+
 export default function sitemap(): MetadataRoute.Sitemap {
+  const lastModified = new Date();
   return routes.map((path) => ({
     url: `${siteConfig.url}${path}`,
-    lastModified: new Date(),
+    lastModified,
     changeFrequency: path.startsWith("/play/") ? "monthly" : "weekly",
-    priority: path === "" ? 1 : path === "/projects" || path === "/tools" || path === "/space" || path === "/play" ? 0.9 : 0.7,
+    priority: path === "" ? 1 : HIGH_PRIORITY.has(path) ? 0.9 : 0.7,
   }));
 }

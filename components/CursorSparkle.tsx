@@ -35,6 +35,9 @@ export function CursorSparkle() {
     const createSparkle = (x: number, y: number) => {
       const color = colors[Math.floor(Math.random() * colors.length)];
       const sparkle = document.createElement("div");
+      // Decorative — should not be announced by assistive tech
+      sparkle.setAttribute("aria-hidden", "true");
+      sparkle.setAttribute("role", "presentation");
 
       sparkle.style.position = "fixed";
       sparkle.style.left = x + "px";

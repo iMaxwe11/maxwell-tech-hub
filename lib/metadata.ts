@@ -73,11 +73,18 @@ export const rootMetadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: baseKeywords,
-  authors: [{ name: siteConfig.name }],
+  authors: [{ name: siteConfig.name, url: siteConfig.url }],
   creator: siteConfig.name,
+  publisher: siteConfig.name,
+  applicationName: `${siteConfig.name} | Tech Hub`,
   metadataBase: new URL(siteConfig.url),
   alternates: {
     canonical: siteConfig.url,
+  },
+  formatDetection: {
+    email: false,
+    telephone: false,
+    address: false,
   },
   openGraph: {
     type: "website",
@@ -104,5 +111,12 @@ export const rootMetadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };

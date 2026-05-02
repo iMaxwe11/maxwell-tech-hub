@@ -20,8 +20,10 @@ const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-code" }
 
 export const viewport: Viewport = {
   themeColor: "#020204",
+  colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
 };
 
 export const metadata: Metadata = rootMetadata;
@@ -44,6 +46,21 @@ export default function RootLayout({
           "https://linkedin.com/in/maxwell-nixon-90351627a",
         ],
         jobTitle: "IT Systems Technician & Full-Stack Developer",
+        knowsAbout: [
+          "Windows Server",
+          "Active Directory",
+          "AWS",
+          "Azure",
+          "Docker",
+          "Kubernetes",
+          "Next.js",
+          "React",
+          "TypeScript",
+          "Python",
+          "FastAPI",
+          "DevOps",
+          "Cloud Infrastructure",
+        ],
         homeLocation: {
           "@type": "Place",
           name: siteConfig.location,
@@ -54,6 +71,12 @@ export default function RootLayout({
         name: siteConfig.domain,
         url: siteConfig.url,
         description: siteConfig.description,
+        inLanguage: "en-US",
+        author: {
+          "@type": "Person",
+          name: siteConfig.name,
+          url: siteConfig.url,
+        },
       },
     ],
   };
