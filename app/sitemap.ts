@@ -21,6 +21,7 @@ const routes = [
   "/analytics",
   "/contact",
   "/credits",
+  "/uses",
 ];
 
 const HIGH_PRIORITY = new Set(["/projects", "/tools", "/space", "/play"]);

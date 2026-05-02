@@ -9,6 +9,10 @@
 # npm lockfile — project uses pnpm (pnpm-lock.yaml)
 package-lock.json
 
+# local tooling sandbox (used to host pnpm/etc. when global install is unavailable)
+/.local-tools
+/.npm-prefix
+
 # testing
 /coverage
 

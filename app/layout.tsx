@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GlobalCommandPalette } from "@/components/GlobalCommandPalette";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { PageTransition } from "@/components/PageTransition";
@@ -106,6 +108,8 @@ export default function RootLayout({
         <div id="main-content" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>
         </div>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
