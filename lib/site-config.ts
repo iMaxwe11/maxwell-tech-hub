@@ -22,7 +22,7 @@ export const siteConfig = {
   phone: "609-923-9437",
   location: "Southampton, NJ",
   timezone: "America/New_York",
-  resumePath: "/Maxwell_Nixon_Resume.docx",
+  resumePath: "/Maxwell_Nixon_Resume.pdf",
   description:
     "Cloud-savvy IT technician and full-stack developer building automation tools, managing infrastructure, and engineering premium software experiences.",
   shortDescription:
