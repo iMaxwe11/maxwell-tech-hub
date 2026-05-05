@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 export async function GET() {
   try {
     const res = await fetch("https://api.wheretheiss.at/v1/satellites/25544");

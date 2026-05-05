@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 type Endpoint = "apod" | "neo" | "donki" | "mars-latest";
 type DonkiType = "FLR" | "GST";
 
