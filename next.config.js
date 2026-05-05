@@ -19,12 +19,12 @@ const nextConfig = {
     return [
       {
         source: "/resume",
-        destination: "/Maxwell_Nixon_Resume.docx",
-        permanent: false, // 307 — easy to swap to PDF later without breaking the URL
+        destination: "/Maxwell_Nixon_Resume.pdf",
+        permanent: false,
       },
       {
         source: "/cv",
-        destination: "/Maxwell_Nixon_Resume.docx",
+        destination: "/Maxwell_Nixon_Resume.pdf",
         permanent: false,
       },
       {

@@ -232,7 +232,11 @@ export async function GET(request: Request) {
   if (id) {
     const post = POSTS.find(p => p.id === id);
     return post
-      ? NextResponse.json(post)
+      ? NextResponse.json(post, {
+          headers: {
+            "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        })
       : NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -241,5 +245,9 @@ export async function GET(request: Request) {
       ? POSTS.filter(p => p.category === category)
       : POSTS;
 
-  return NextResponse.json(filtered);
+  return NextResponse.json(filtered, {
+    headers: {
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
 }

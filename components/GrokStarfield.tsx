@@ -396,15 +396,27 @@ export function GrokStarfield() {
       }
 
       lastTs = timestamp;
-      if (!shouldReduceMotion) {
+      if (!shouldReduceMotion && document.visibilityState !== "hidden") {
         frameId = requestAnimationFrame(animate);
       }
     };
 
     frameId = requestAnimationFrame(animate);
 
+    // Resume animation when tab becomes visible again. Reset lastTs so the
+    // first dt after wake isn't a multi-minute spike that throws off timers.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !shouldReduceMotion) {
+        lastTs = performance.now();
+        cancelAnimationFrame(frameId);
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       cancelAnimationFrame(frameId);
     };
   }, [shouldReduceMotion]);
