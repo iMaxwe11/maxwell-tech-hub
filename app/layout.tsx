@@ -2,17 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { GlobalCommandPalette } from "@/components/GlobalCommandPalette";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { PageTransition } from "@/components/PageTransition";
-import { KonamiCode } from "@/components/KonamiCode";
-import { ConsoleGreeting } from "@/components/ConsoleGreeting";
-import { CursorSparkle } from "@/components/CursorSparkle";
-import { AchievementSystem } from "@/components/AchievementSystem";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 import { ScrollProgress } from "@/components/ScrollProgress";
-import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { Toast } from "@/components/Toast";
+import { DeferredEnhancements } from "@/components/DeferredEnhancements";
 import { rootMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
@@ -96,14 +91,9 @@ export default function RootLayout({
         {/* Sitewide starfield backdrop. Mounted once here so it persists across
             client-side route transitions without unmounting/remounting. */}
         <GrokStarfield />
-        <GlobalCommandPalette />
-        <KonamiCode />
-        <AchievementSystem />
+        <DeferredEnhancements />
         <AnalyticsTracker />
-        <ConsoleGreeting />
-        <CursorSparkle />
         <ScrollProgress />
-        <KeyboardShortcuts />
         <Toast />
         <div id="main-content" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>

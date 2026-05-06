@@ -1,19 +1,51 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { SocialIcon } from "@/components/SocialIcon";
 import { Navbar } from "@/components/Navbar";
-import { WeatherWidget } from "@/components/widgets/WeatherWidget";
-import { CryptoTicker } from "@/components/widgets/CryptoTicker";
-import { StockTicker } from "@/components/widgets/StockTicker";
-import { GitHubActivity } from "@/components/widgets/GitHubActivity";
-import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
-import { ISSTracker } from "@/components/widgets/ISSTracker";
 import { CopyButton } from "@/components/CopyButton";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 import { useAccent } from "@/lib/use-accent";
+
+// All six "Real-Time Intelligence" widgets are below the fold and fetch their
+// own data via useEffect, so SSR has nothing to render for them. Splitting
+// each into its own chunk keeps them off the homepage's First Load JS.
+// Skeletons match each widget's internal loading state to prevent CLS.
+const widgetSkeleton = (minH: string) =>
+  `glass-card p-6 animate-pulse ${minH}`;
+
+const WeatherWidget = dynamic(
+  () => import("@/components/widgets/WeatherWidget").then((m) => m.WeatherWidget),
+  { ssr: false, loading: () => <div className={widgetSkeleton("min-h-[280px]")} /> },
+);
+
+const CryptoTicker = dynamic(
+  () => import("@/components/widgets/CryptoTicker").then((m) => m.CryptoTicker),
+  { ssr: false, loading: () => <div className={widgetSkeleton("min-h-[280px]")} /> },
+);
+
+const StockTicker = dynamic(
+  () => import("@/components/widgets/StockTicker").then((m) => m.StockTicker),
+  { ssr: false, loading: () => <div className={widgetSkeleton("min-h-[280px]")} /> },
+);
+
+const NASAAPODCard = dynamic(
+  () => import("@/components/widgets/NASAAPODCard").then((m) => m.NASAAPODCard),
+  { ssr: false, loading: () => <div className={widgetSkeleton("min-h-[320px]")} /> },
+);
+
+const ISSTracker = dynamic(
+  () => import("@/components/widgets/ISSTracker").then((m) => m.ISSTracker),
+  { ssr: false, loading: () => <div className={widgetSkeleton("min-h-[180px]")} /> },
+);
+
+const GitHubActivity = dynamic(
+  () => import("@/components/widgets/GitHubActivity").then((m) => m.GitHubActivity),
+  { ssr: false, loading: () => <div className="glass-card p-7 animate-pulse min-h-[420px]" /> },
+);
 import {
   Atom, FileCode, Code, Container, Cloud, Palette, Zap, RefreshCw,
   Monitor, Network, Terminal, Hexagon, Award, GraduationCap, Check,
