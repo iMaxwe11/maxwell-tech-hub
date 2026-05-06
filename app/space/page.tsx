@@ -718,24 +718,25 @@ function StatCard({ label, value, icon, color, sub }: { label: string; value: st
   );
 }
 
-/* ═══ Live From Space — ISS HD Earth View ═══ */
+/* ═══ Live From Space — NASA ISS Live Stream ═══ */
 function LiveFromSpace() {
-  const [activeStream, setActiveStream] = useState<"earth" | "iss" | "tracker">("earth");
+  const [activeStream, setActiveStream] = useState<"live" | "tracker">("live");
   const [isExpanded, setIsExpanded] = useState(false);
 
   const streams = [
-    { id: "earth" as const, label: "HD Earth View", icon: "🌍", desc: "NASA ISS HD Earth Viewing Experiment — IBM Video", color: "#22c55e" },
-    { id: "iss" as const, label: "ISS Live", icon: "🛰️", desc: "NASA ISS live camera feed — UStream", color: "#06b6d4" },
+    { id: "live" as const, label: "ISS Live", icon: "🛰️", desc: "NASA's official ISS live stream — Earth views & mission feed", color: "#06b6d4" },
     { id: "tracker" as const, label: "ISS Tracker", icon: "📍", desc: "Real-time ISS position over Earth — ESA", color: "#a855f7" },
   ];
 
-  /* NASA's official ISS streams hosted on IBM Video (formerly UStream) — these are persistent channel IDs, not YouTube videos */
+  /* NASA's HDEV experiment ended August 2019, and the IBM Video (UStream) feeds
+     went permanently offline. We now embed NASA's official YouTube live channel
+     (UCLA_DiR1FfKNvjuUpBHmylQ) via the channel-based live_stream embed - it
+     auto-switches to whatever NASA is currently broadcasting and falls back
+     gracefully to the next scheduled stream when the channel is offline. */
   const getStreamSrc = () => {
     switch (activeStream) {
-      case "earth":
-        return "https://video.ibm.com/embed/17074538?autoplay&volume=0";
-      case "iss":
-        return "https://video.ibm.com/embed/9408562?autoplay&volume=0";
+      case "live":
+        return "https://www.youtube.com/embed/live_stream?channel=UCLA_DiR1FfKNvjuUpBHmylQ&autoplay=1&mute=1";
       case "tracker":
         return "https://isstracker.spaceflight.esa.int/";
     }
@@ -809,7 +810,7 @@ function LiveFromSpace() {
 
       {/* Info bar */}
       <div className="px-4 sm:px-5 py-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-white/30">
-        <span>Source: {activeStream === "tracker" ? "ESA ISS Tracker" : "NASA / IBM Video (UStream)"}</span>
+        <span>Source: {activeStream === "tracker" ? "ESA ISS Tracker" : "NASA Live (YouTube)"}</span>
         <span>The ISS orbits Earth every ~92 minutes at 28,000 km/h</span>
         <span>Dark periods = ISS is on the night side of Earth</span>
       </div>

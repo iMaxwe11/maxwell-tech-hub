@@ -2264,23 +2264,96 @@ function Magic8Ball() {
           animate={shaking ? { rotate: [0, -15, 15, -15, 15, 0], y: [0, -10, 0, -10, 0] } : {}}
           transition={{ duration: 1.2 }}
           onClick={shake}
-          className="w-40 h-40 rounded-full bg-gradient-to-br from-slate-900 to-black border-4 border-slate-700 flex items-center justify-center cursor-pointer shadow-2xl relative"
+          className="relative w-48 h-48 rounded-full cursor-pointer select-none"
+          style={{
+            background: "radial-gradient(circle at 32% 30%, #4a4a4a 0%, #1a1a1a 35%, #050505 75%, #000 100%)",
+            boxShadow:
+              "inset -12px -16px 32px rgba(0,0,0,0.85), inset 8px 8px 24px rgba(255,255,255,0.04), 0 24px 48px -12px rgba(0,0,0,0.9), 0 8px 16px rgba(0,0,0,0.5)",
+          }}
         >
-          <div className="absolute inset-3 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-            <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute top-2 left-4 w-3 h-3 rounded-full bg-blue-300 opacity-60" />
-                {result ? (
-                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-                    <p className="text-xs font-bold text-white font-[family-name:var(--font-heading)] text-center px-2">{result}</p>
-                  </motion.div>
-                ) : (
-                  <span className="text-white text-3xl font-bold opacity-40">8</span>
-                )}
+          {/* Glossy specular highlight */}
+          <div
+            aria-hidden
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              top: "8%",
+              left: "16%",
+              width: "38%",
+              height: "26%",
+              background: "radial-gradient(ellipse at center, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 40%, transparent 70%)",
+              filter: "blur(1px)",
+            }}
+          />
+
+          {/* Front face — white circle with 8, OR blue answer window */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {result ? (
+              /* Triangular blue answer window */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 280, damping: 18 }}
+                className="relative w-28 h-28 flex items-center justify-center"
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    clipPath: "polygon(50% 0%, 100% 86%, 0% 86%)",
+                    background: "radial-gradient(circle at 50% 30%, #5fa9ff 0%, #2554c7 45%, #0a1d6b 90%)",
+                    boxShadow: "inset 0 0 20px rgba(0,0,0,0.55), inset 0 4px 8px rgba(255,255,255,0.18)",
+                  }}
+                />
+                <p
+                  className="relative text-center text-[10px] font-bold leading-tight px-2 z-10 tracking-wide"
+                  style={{
+                    color: "#e8f1ff",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.8), 0 0 6px rgba(120,170,255,0.4)",
+                    transform: "translateY(8px)",
+                    fontFamily: "var(--font-heading), serif",
+                  }}
+                >
+                  {result.toUpperCase()}
+                </p>
+              </motion.div>
+            ) : (
+              /* White circle with embossed 8 */
+              <div
+                className="w-24 h-24 rounded-full flex items-center justify-center"
+                style={{
+                  background: "radial-gradient(circle at 35% 30%, #ffffff 0%, #e8e8e8 60%, #c8c8c8 100%)",
+                  boxShadow:
+                    "inset 0 -4px 8px rgba(0,0,0,0.18), inset 0 3px 4px rgba(255,255,255,0.7), 0 2px 6px rgba(0,0,0,0.4)",
+                }}
+              >
+                <span
+                  className="text-5xl font-black"
+                  style={{
+                    color: "#0a0a0a",
+                    textShadow: "0 1px 0 rgba(255,255,255,0.6), 0 -1px 0 rgba(0,0,0,0.2)",
+                    fontFamily: "var(--font-heading), serif",
+                  }}
+                >
+                  8
+                </span>
               </div>
-            </div>
+            )}
           </div>
+
+          {/* Subtle bottom shadow ring (where ball meets surface) */}
+          <div
+            aria-hidden
+            className="absolute pointer-events-none rounded-full"
+            style={{
+              bottom: "-6%",
+              left: "10%",
+              width: "80%",
+              height: "12%",
+              background: "radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, transparent 70%)",
+              filter: "blur(4px)",
+            }}
+          />
         </motion.div>
+
         <div className="text-center">
           <p className="text-sm text-[var(--text-secondary)] mb-3 font-[family-name:var(--font-mono)]">Ask a yes/no question and click the ball</p>
           <motion.button whileTap={{ scale: 0.9 }} className="tool-btn-primary tool-btn" onClick={shake}>
@@ -2313,25 +2386,150 @@ function CoinFlip() {
   };
   const heads = history.filter(h => h === "heads").length;
   const headsPercent = history.length > 0 ? Math.round((heads / history.length) * 100) : 50;
+
+  // End-state rotation: lands face-up on the result side. Spins 5 full turns (1800deg) plus
+  // 180 if tails so tails ends up showing. Whole flip is one motion - no two-stage state hacks.
+  const finalRotation = !flipping && result === "tails" ? 180 : 0;
+  const flipRotation = flipping ? 1800 + (result === "tails" ? 180 : 0) : finalRotation;
+
   return (
     <Section id="coinflip" title="Coin Flip" desc="3D animated coin with streak tracker." accent="gold" index={23}>
       <div className="flex flex-col items-center gap-6">
-        <motion.div
-          animate={flipping ? { rotateY: [0, 1800], rotateX: [0, 360] } : {}}
-          transition={{ duration: 1, ease: "easeOut" }}
-          style={{ perspective: 1000 }}
-          className="w-32 h-32 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center cursor-pointer shadow-xl text-3xl font-bold border-4 border-yellow-700"
-          onClick={flip}
-        >
-          {!flipping && result && (
-            <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="text-white font-[family-name:var(--font-heading)]">
-              {result === "heads" ? "H" : "T"}
-            </motion.div>
-          )}
-        </motion.div>
+        <div style={{ perspective: 1200 }} className="py-4">
+          <motion.div
+            onClick={flip}
+            animate={{ rotateY: flipRotation, y: flipping ? [0, -40, 0] : 0 }}
+            transition={{
+              rotateY: { duration: flipping ? 1.1 : 0.4, ease: flipping ? "easeOut" : "easeInOut" },
+              y: { duration: 1.1, ease: "easeOut", times: [0, 0.5, 1] },
+            }}
+            className="relative w-32 h-32 cursor-pointer"
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            {/* HEADS face */}
+            <div
+              className="absolute inset-0 rounded-full flex items-center justify-center"
+              style={{
+                backfaceVisibility: "hidden",
+                background:
+                  "radial-gradient(circle at 35% 30%, #fde68a 0%, #f5c842 30%, #c9961a 70%, #8c6510 100%)",
+                boxShadow:
+                  "inset 0 -3px 8px rgba(0,0,0,0.35), inset 0 3px 4px rgba(255,255,255,0.55), 0 8px 16px rgba(0,0,0,0.4)",
+              }}
+            >
+              {/* Inner ring */}
+              <div
+                className="absolute inset-3 rounded-full"
+                style={{
+                  border: "1.5px solid rgba(120,80,10,0.45)",
+                  boxShadow: "inset 0 0 6px rgba(120,80,10,0.3)",
+                }}
+              />
+              {/* Decorative dots around perimeter */}
+              {Array.from({ length: 16 }).map((_, i) => {
+                const angle = (i / 16) * Math.PI * 2;
+                const r = 54;
+                return (
+                  <span
+                    key={i}
+                    aria-hidden
+                    className="absolute w-[3px] h-[3px] rounded-full bg-amber-900/50"
+                    style={{
+                      left: `calc(50% + ${Math.cos(angle) * r}px - 1.5px)`,
+                      top: `calc(50% + ${Math.sin(angle) * r}px - 1.5px)`,
+                    }}
+                  />
+                );
+              })}
+              {/* Embossed H */}
+              <span
+                className="text-5xl font-black z-10"
+                style={{
+                  color: "#7a5510",
+                  textShadow: "0 -1px 0 rgba(0,0,0,0.4), 0 1px 1px rgba(255,255,255,0.55)",
+                  fontFamily: "var(--font-heading), serif",
+                }}
+              >
+                H
+              </span>
+              {/* Star accent below H */}
+              <span
+                className="absolute text-[10px] text-amber-900/55"
+                style={{ bottom: "20%", textShadow: "0 1px 0 rgba(255,255,255,0.4)" }}
+              >
+                ★
+              </span>
+            </div>
+
+            {/* TAILS face — rotated 180deg on Y so it's the back */}
+            <div
+              className="absolute inset-0 rounded-full flex items-center justify-center"
+              style={{
+                backfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+                background:
+                  "radial-gradient(circle at 35% 30%, #fde68a 0%, #f5c842 30%, #c9961a 70%, #8c6510 100%)",
+                boxShadow:
+                  "inset 0 -3px 8px rgba(0,0,0,0.35), inset 0 3px 4px rgba(255,255,255,0.55), 0 8px 16px rgba(0,0,0,0.4)",
+              }}
+            >
+              <div
+                className="absolute inset-3 rounded-full"
+                style={{
+                  border: "1.5px solid rgba(120,80,10,0.45)",
+                  boxShadow: "inset 0 0 6px rgba(120,80,10,0.3)",
+                }}
+              />
+              {Array.from({ length: 16 }).map((_, i) => {
+                const angle = (i / 16) * Math.PI * 2;
+                const r = 54;
+                return (
+                  <span
+                    key={i}
+                    aria-hidden
+                    className="absolute w-[3px] h-[3px] rounded-full bg-amber-900/50"
+                    style={{
+                      left: `calc(50% + ${Math.cos(angle) * r}px - 1.5px)`,
+                      top: `calc(50% + ${Math.sin(angle) * r}px - 1.5px)`,
+                    }}
+                  />
+                );
+              })}
+              {/* Embossed T */}
+              <span
+                className="text-5xl font-black z-10"
+                style={{
+                  color: "#7a5510",
+                  textShadow: "0 -1px 0 rgba(0,0,0,0.4), 0 1px 1px rgba(255,255,255,0.55)",
+                  fontFamily: "var(--font-heading), serif",
+                }}
+              >
+                T
+              </span>
+              {/* Laurel accents on either side of T */}
+              <span
+                className="absolute text-[8px] text-amber-900/55"
+                style={{ left: "22%", textShadow: "0 1px 0 rgba(255,255,255,0.4)" }}
+              >
+                ❦
+              </span>
+              <span
+                className="absolute text-[8px] text-amber-900/55"
+                style={{ right: "22%", textShadow: "0 1px 0 rgba(255,255,255,0.4)" }}
+              >
+                ❦
+              </span>
+            </div>
+          </motion.div>
+        </div>
+
         <div className="text-center">
-          {result && (
-            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-lg font-bold text-white capitalize mb-2 font-[family-name:var(--font-heading)]">
+          {result && !flipping && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-lg font-bold text-white capitalize mb-2 font-[family-name:var(--font-heading)]"
+            >
               {result}!
             </motion.p>
           )}
@@ -2418,10 +2616,10 @@ function DiceRoller() {
 function ASCIIArtGenerator() {
   const [input, setInput] = useState("Hello");
   const BLOCK_CHARS: Record<string, string[]> = {
-    A: [" ███ ", "█   █", "█████", "█   █"],
+    A: [" ███ ", "█   █", "█████", "█   █", "█   █"],
     B: ["████ ", "█   █", "████ ", "█   █", "████ "],
-    C: [" ███ ", "█    ", "█    ", " ███ "],
-    D: ["████ ", "█   █", "█   █", "████ "],
+    C: [" ███ ", "█    ", "█    ", "█    ", " ███ "],
+    D: ["████ ", "█   █", "█   █", "█   █", "████ "],
     E: ["█████", "█    ", "███  ", "█    ", "█████"],
     F: ["█████", "█    ", "███  ", "█    ", "█    "],
     G: [" ███ ", "█    ", "█  ██", "█   █", " ███ "],
