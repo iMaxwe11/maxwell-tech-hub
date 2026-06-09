@@ -6,6 +6,10 @@ export const metadata: Metadata = {
 };
 
 export default function TeslaPage() {
+  // NOTE: no position:fixed here. The root layout's PageTransition wraps
+  // pages in a motion.div with will-change/transform/filter, which makes it
+  // the containing block for fixed descendants — a fixed iframe collapses to
+  // 0 height and renders blank. In-flow + viewport units sidesteps that.
   return (
     <iframe
       src="/tesla-hub.html"
@@ -13,12 +17,11 @@ export default function TeslaPage() {
       allow="fullscreen"
       allowFullScreen
       style={{
-        position: "fixed",
-        inset: 0,
+        display: "block",
         width: "100%",
-        height: "100%",
+        height: "100dvh",
+        minHeight: "600px",
         border: 0,
-        zIndex: 9999,
         background: "#0a0a0c",
       }}
     />
