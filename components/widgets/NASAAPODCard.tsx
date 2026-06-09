@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { Telescope } from "lucide-react";
 
 import type { ApodData } from "@/lib/types";
 
@@ -11,6 +12,8 @@ export function NASAAPODCard() {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  // Index into the image candidate list; bumped by onError to walk the fallback chain.
+  const [imgStep, setImgStep] = useState(0);
 
   const fetchApod = useCallback(async () => {
     setLoading(true);
@@ -27,6 +30,7 @@ export function NASAAPODCard() {
 
       const data = (await response.json()) as ApodData;
       setApod(data);
+      setImgStep(0);
     } catch (fetchError) {
       console.error(fetchError);
       setError(true);
@@ -64,6 +68,14 @@ export function NASAAPODCard() {
 
   const mediaUrl = apod.media_type === "video" ? apod.url : apod.hdurl || apod.url;
 
+  // Display the ~960px `url` first — the card is only 256px tall, and APOD `hdurl`
+  // originals are routinely 10-30 MB, which can exceed the image optimizer's source
+  // limits or time out on cold load. Fall back to hdurl, then a styled placeholder.
+  const imageCandidates = [apod.url, apod.hdurl].filter(
+    (u, i, arr): u is string => Boolean(u) && arr.indexOf(u) === i
+  );
+  const imgSrc = imageCandidates[imgStep];
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
       <div className="relative h-64 overflow-hidden bg-black">
@@ -75,14 +87,20 @@ export function NASAAPODCard() {
             allow="fullscreen; encrypted-media"
             allowFullScreen
           />
-        ) : (
+        ) : imgSrc ? (
           <Image
-            src={mediaUrl}
+            key={imgSrc}
+            src={imgSrc}
             alt={apod.title}
             fill
             className="object-cover"
             sizes="(min-width: 1280px) 420px, (min-width: 768px) 50vw, 100vw"
+            onError={() => setImgStep((step) => step + 1)}
           />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-indigo-950/60 via-black to-purple-950/40">
+            <Telescope size={48} className="text-white/15" />
+          </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
         <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
