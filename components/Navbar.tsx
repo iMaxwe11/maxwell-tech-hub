@@ -32,6 +32,7 @@ const EXPLORE_ITEMS: { href: string; label: string; desc: string; icon: string }
   { href: "/blog", label: "Blog", desc: "Notes, ideas, writeups", icon: "✍️" },
   { href: "/status", label: "Status", desc: "Live uptime dashboard", icon: "📡" },
   { href: "/analytics", label: "Analytics", desc: "Site traffic & stats", icon: "📊" },
+  { href: "/tesla", label: "Tesla", desc: "In-car streaming & gaming hub", icon: "🚗" },
 ];
 
 /**
@@ -409,6 +410,7 @@ export function Navbar({ breadcrumb, accent, links = defaultNavLinks }: NavbarPr
                       { href: "/blog", label: "Blog" },
                       { href: "/status", label: "Status" },
                       { href: "/analytics", label: "Analytics" },
+                      { href: "/tesla", label: "Tesla" },
                     ].map((r) => (
                       <Link
                         key={r.href}
