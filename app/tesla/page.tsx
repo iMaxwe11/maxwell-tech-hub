@@ -19,7 +19,7 @@ export default function TeslaPage() {
       style={{
         display: "block",
         width: "100%",
-        height: "100dvh",
+        height: "100vh",
         minHeight: "600px",
         border: 0,
         background: "#0a0a0c",

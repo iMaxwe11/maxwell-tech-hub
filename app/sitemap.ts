@@ -18,6 +18,7 @@ const routes = [
   "/play/typing",
   "/terminal",
   "/now",
+  "/tesla",
   "/analytics",
   "/contact",
   "/credits",
