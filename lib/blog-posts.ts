@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+// Static blog content. Posts are rendered at build time on /blog and /blog/[slug].
+// Categories: ai | dev | space | gaming | science | security | builds
 
 export interface BlogPost {
   id: string;
@@ -9,10 +10,12 @@ export interface BlogPost {
   readTime: string;
   date: string;
   tags: string[];
-  emoji: string;
+  icon: string;
+  /** True for first-person build logs written by Maxwell (not AI-curated). */
+  original?: boolean;
 }
 
-const POSTS: BlogPost[] = [
+export const POSTS: BlogPost[] = [
   // AI (4)
   {
     id: "neural-network-interpretability",
@@ -23,7 +26,7 @@ const POSTS: BlogPost[] = [
     readTime: "4 min read",
     date: "2026-04-10",
     tags: ["AI", "Neural Networks", "Interpretability", "Research"],
-    emoji: "🧠"
+    icon: "Brain"
   },
   {
     id: "ai-hallucinations-root-cause",
@@ -34,7 +37,7 @@ const POSTS: BlogPost[] = [
     readTime: "4 min read",
     date: "2026-04-08",
     tags: ["AI", "Hallucinations", "Language Models", "Safety"],
-    emoji: "👻"
+    icon: "Ghost"
   },
   {
     id: "quantum-advantage-practical",
@@ -45,7 +48,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-04-05",
     tags: ["Quantum Computing", "Technology", "Innovation", "Breakthrough"],
-    emoji: "⚛️"
+    icon: "Atom"
   },
   {
     id: "ai-generated-content-detection",
@@ -56,7 +59,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-04-02",
     tags: ["AI Detection", "Content Verification", "Research", "Security"],
-    emoji: "🔍"
+    icon: "Search"
   },
 
   // Dev (4)
@@ -69,7 +72,7 @@ const POSTS: BlogPost[] = [
     readTime: "4 min read",
     date: "2026-04-09",
     tags: ["RISC-V", "Processor Architecture", "Open Source", "Hardware"],
-    emoji: "⚙️"
+    icon: "Cpu"
   },
   {
     id: "dns-internet-backbone",
@@ -80,7 +83,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-31",
     tags: ["DNS", "Infrastructure", "Internet", "DevOps"],
-    emoji: "🔗"
+    icon: "Network"
   },
   {
     id: "webassembly-beyond-browser",
@@ -91,7 +94,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-28",
     tags: ["WebAssembly", "Backend", "Infrastructure", "Technology"],
-    emoji: "📦"
+    icon: "Package"
   },
   {
     id: "the-mass-of-all-code",
@@ -102,7 +105,7 @@ const POSTS: BlogPost[] = [
     readTime: "2 min read",
     date: "2026-03-25",
     tags: ["Programming", "Physics", "Philosophy", "Software"],
-    emoji: "⚖️"
+    icon: "Scale"
   },
 
   // Space (3)
@@ -115,7 +118,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-04-07",
     tags: ["Mars", "Machine Learning", "Weather", "Space"],
-    emoji: "🔴"
+    icon: "Orbit"
   },
   {
     id: "starlink-latency-breakthrough",
@@ -126,7 +129,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-04-01",
     tags: ["Starlink", "Satellite Internet", "Space", "Technology"],
-    emoji: "🛰️"
+    icon: "Satellite"
   },
   {
     id: "europa-mission-launch",
@@ -137,7 +140,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-22",
     tags: ["Space Exploration", "NASA", "Astrobiology", "Europa"],
-    emoji: "🚀"
+    icon: "Rocket"
   },
 
   // Gaming (3)
@@ -150,7 +153,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-04-03",
     tags: ["Game Development", "Physics", "Performance", "Graphics"],
-    emoji: "🎮"
+    icon: "Gamepad2"
   },
   {
     id: "rtx-neural-rendering",
@@ -161,7 +164,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-30",
     tags: ["Game Graphics", "Ray Tracing", "Neural Networks", "Technology"],
-    emoji: "✨"
+    icon: "Sparkles"
   },
   {
     id: "esports-ai-coaches",
@@ -172,7 +175,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-26",
     tags: ["Esports", "AI", "Coaching", "Gaming"],
-    emoji: "🏆"
+    icon: "Trophy"
   },
 
   // Science (2)
@@ -185,7 +188,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-29",
     tags: ["Medicine", "Vaccines", "Biotechnology", "Health"],
-    emoji: "💉"
+    icon: "Syringe"
   },
   {
     id: "crispr-off-target-problem",
@@ -196,7 +199,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-23",
     tags: ["CRISPR", "Gene Editing", "Medicine", "Biotechnology"],
-    emoji: "🧬"
+    icon: "Dna"
   },
 
   // Security (2)
@@ -209,7 +212,7 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-04-04",
     tags: ["Cybersecurity", "Zero-Day", "Exploits", "Economics"],
-    emoji: "🔓"
+    icon: "LockOpen"
   },
   {
     id: "passkey-adoption-tipping-point",
@@ -220,34 +223,53 @@ const POSTS: BlogPost[] = [
     readTime: "3 min read",
     date: "2026-03-20",
     tags: ["Cybersecurity", "Authentication", "Passwords", "Technology"],
-    emoji: "🔐"
+    icon: "Lock"
+  },
+
+  // Build Log (3) — first-person field notes from building this site & homelab
+  {
+    id: "stock-ticker-vs-vercel",
+    title: "The Stock Ticker That Worked Everywhere Except Production",
+    excerpt: "My dashboard's stock widget ran flawlessly on localhost and died the moment it hit Vercel. The culprit: Yahoo Finance silently blocks cloud provider IPs.",
+    content: "I wanted a simple stock ticker on my Real-Time Intelligence dashboard: a handful of symbols, current price, a 5-day sparkline, refreshing every 60 seconds. No API key, no paid plan. Yahoo Finance's quote endpoint looked perfect — it worked instantly in local dev. Then I deployed, and every request returned errors. Same code, same endpoint, same headers.\n\nThe first lesson came fast: 'works on localhost, fails in production' for an external API almost always means IP reputation, not code. Yahoo's v7 quote endpoint blocks requests originating from cloud provider IP ranges — Vercel, AWS, the lot — and no amount of User-Agent spoofing changes that, because they are not looking at your headers. They are looking at where the packet came from. I burned more time than I want to admit proving this to myself.\n\nThe second lesson was about Vercel's edge runtime. My first instinct was to build a multi-source fallback chain with a Finnhub API key as backup, running on the edge for speed. The edge runtime turned out to be too restrictive for API routes calling external services, and the fallback chain was complexity I did not actually want — more keys to manage, more failure modes, more code to maintain for a widget on a portfolio site.\n\nThe fix that stuck was simpler than everything I tried before it: Yahoo's v8 chart endpoint (/v8/finance/chart/{symbol}) is not blocked the same way, returns both the quote and the historical points I needed for sparklines in one call, and runs fine on the Node runtime. I deleted the fallback chain, dropped the API key dependency entirely, and the widget has been quietly refreshing every 60 seconds since. Sometimes the senior move is removing code.",
+    category: "builds",
+    readTime: "4 min read",
+    date: "2026-05-30",
+    tags: ["Build Log", "Next.js", "Vercel", "APIs"],
+    icon: "ChartLine",
+    original: true
+  },
+  {
+    id: "plex-in-a-tesla",
+    title: "Streaming My Plex Library in a Tesla with a Cloudflare Tunnel",
+    excerpt: "The Tesla browser is just Chromium, which means it can run anything — including my home media server, with no open ports on my router.",
+    content: "The Tesla's center screen runs a full Chromium browser, and once you realize that, the car stops being a car and starts being a 17-inch kiosk you happen to drive. I built a custom launcher page for it — dark theme, big touch-friendly tiles for cloud gaming services, a clock, a search bar — and the obvious next tile was my Plex server sitting on my home network.\n\nThe problem is the same one every homelab person hits: my server lives on a private IP behind my router, and the car is on LTE. The old answer is port forwarding, which means exposing Plex directly to the internet and trusting its auth as your only wall. The better answer in 2026 is a Cloudflare Tunnel: a lightweight daemon on the server dials out to Cloudflare, and Cloudflare routes a public hostname back through that connection. Zero open ports, my home IP stays hidden, and TLS is handled for me.\n\nTwo gotchas are worth writing down because both produce confusing symptoms. First, Cloudflare caching will break video seeking — playback starts fine, but scrubbing the timeline stalls or errors. You need a cache rule that bypasses caching for the Plex hostname; skip it and you will spend an evening blaming Plex's transcoder for something that is actually a CDN eating range requests. Second, Plex itself needs to know about the tunnel: the custom server access URL setting has to include the public hostname, or remote clients will try to reach the server some other way and fall back to relay quality.\n\nWith both in place, the launcher tile points at the tunnel hostname and the car streams my library directly — full quality, no relay, while parked obviously. Total new attack surface on my home network: zero ports.",
+    category: "builds",
+    readTime: "4 min read",
+    date: "2026-06-04",
+    tags: ["Build Log", "Plex", "Cloudflare", "Homelab"],
+    icon: "Car",
+    original: true
+  },
+  {
+    id: "five-themes-one-variable-system",
+    title: "Five Themes, One CSS Variable System (and the Bug That Broke All of Them)",
+    excerpt: "Building a sitewide theme switcher taught me that CSS custom properties scale beautifully — and fail completely silently.",
+    content: "This site ships with five accent palettes — Obsidian, Sunset, Matrix, Synthwave, Crimson — switchable from a command palette and persisted in localStorage. The architecture is the standard one done thoroughly: every accent color in the design system resolves through CSS custom properties on :root, components never hardcode accent values, and switching themes is just swapping one set of property values. Framer Motion animations, glass-card borders, gradient text — all of it re-skins instantly because nothing references a literal color.\n\nThe variables come in pairs: a ready-to-use color and an RGB triplet like --theme-primary-rgb, because rgba() compositing needs raw channel values to apply per-use alpha. That second form is where the bug lived. Somewhere during a refactor, a batch of styles ended up as rgba(var(--theme-primary-rgb), ) — the alpha argument just gone, a dangling comma where a number should be.\n\nHere is the part that makes CSS different from every other language I work in: that is not an error. Nothing throws. Nothing logs. The declaration is invalid, so the browser silently drops it and the element falls back to whatever it inherits — which in a dark-themed site often looks almost right. The damage was scattered across the whole site as subtly-wrong borders and glows that I half-noticed for a while before connecting them. TypeScript would have refused to compile; CSS just shrugged.\n\nThe cleanup was a sitewide grep for the malformed pattern, and the takeaway is now a personal rule: any mechanical refactor touching CSS gets a pattern-search audit afterward, because the browser will never tell you what it discarded. Strict compilers spoil you. CSS keeps you humble.",
+    category: "builds",
+    readTime: "4 min read",
+    date: "2026-05-18",
+    tags: ["Build Log", "CSS", "Theming", "Frontend"],
+    icon: "Palette",
+    original: true
   }
 ];
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const category = searchParams.get("category");
-  const id = searchParams.get("id");
+/** All posts, newest first. */
+export const SORTED_POSTS: BlogPost[] = [...POSTS].sort(
+  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+);
 
-  if (id) {
-    const post = POSTS.find(p => p.id === id);
-    return post
-      ? NextResponse.json(post, {
-          headers: {
-            "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-          },
-        })
-      : NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const filtered =
-    category && category !== "all"
-      ? POSTS.filter(p => p.category === category)
-      : POSTS;
-
-  return NextResponse.json(filtered, {
-    headers: {
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-    },
-  });
+export function getPostById(id: string): BlogPost | undefined {
+  return POSTS.find((p) => p.id === id);
 }
