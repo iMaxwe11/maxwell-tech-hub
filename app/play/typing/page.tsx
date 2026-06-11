@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { readBest, recordScore } from "@/lib/arcade-scores";
 
 const SENTENCES_EASY = [
   "The quick brown fox jumps over the lazy dog.",
@@ -55,7 +56,10 @@ export default function TypingPage() {
   const startTime = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // No localStorage per requirements
+  // Persistent best WPM via the unified arcade store
+  useEffect(() => {
+    setBestWpm(readBest("typing")?.value ?? 0);
+  }, []);
 
   const generateText = useCallback((diff: Difficulty) => {
     const sentenceSet = diff === "easy" ? SENTENCES_EASY : diff === "medium" ? SENTENCES_MEDIUM : SENTENCES_HARD;
@@ -123,10 +127,10 @@ export default function TypingPage() {
 
   // Update best on done
   useEffect(() => {
-    if (phase === "done" && wpm > bestWpm) {
-      setBestWpm(wpm);
+    if (phase === "done" && wpm > 0) {
+      setBestWpm(recordScore("typing", wpm, "higher").best);
     }
-  }, [phase, wpm, bestWpm]);
+  }, [phase, wpm]);
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">

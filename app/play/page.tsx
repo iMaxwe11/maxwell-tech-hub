@@ -3,22 +3,27 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
+import type { LucideIcon } from "lucide-react";
+import { Brain, BrickWall, Disc, Keyboard, Trophy, Worm, Zap } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { readAllBests, clearBests, type ArcadeGameId, type BestScore } from "@/lib/arcade-scores";
 
 /* ═══════════════════════════════════════════════════════════════
    DATA
    ═══════════════════════════════════════════════════════════════ */
 
 interface ArcadeGame {
-  id: string;
+  id: ArcadeGameId;
   title: string;
   tagline: string;
   href: string;
-  icon: string;
+  icon: LucideIcon;
   accent: string;
   genre: string;
   controls: string;
   time: string;
+  scoreLabel: string;
+  formatScore: (v: number) => string;
 }
 
 const GAMES: ArcadeGame[] = [
@@ -27,55 +32,78 @@ const GAMES: ArcadeGame[] = [
     title: "Neon Snake",
     tagline: "Glow, grow, don't eat yourself.",
     href: "/play/snake",
-    icon: "🐍",
+    icon: Worm,
     accent: "#06b6d4",
     genre: "Classic",
     controls: "Arrow keys / WASD",
     time: "~2 min",
+    scoreLabel: "Top Score",
+    formatScore: (v) => String(v),
+  },
+  {
+    id: "breakout",
+    title: "Neon Breakout",
+    tagline: "Six rows of trouble. One paddle.",
+    href: "/play/breakout",
+    icon: BrickWall,
+    accent: "#d4af37",
+    genre: "Classic",
+    controls: "Mouse / Arrow keys",
+    time: "~3 min",
+    scoreLabel: "Top Score",
+    formatScore: (v) => String(v),
   },
   {
     id: "pong",
     title: "Neon Pong",
     tagline: "Rally hard. Score harder.",
     href: "/play/pong",
-    icon: "🏓",
+    icon: Disc,
     accent: "#a855f7",
     genre: "Versus",
     controls: "Arrow keys / W S",
     time: "~3 min",
+    scoreLabel: "Wins vs AI",
+    formatScore: (v) => String(v),
   },
   {
     id: "memory",
     title: "Memory Matrix",
     tagline: "Watch the pattern. Repeat it back.",
     href: "/play/memory",
-    icon: "🧠",
+    icon: Brain,
     accent: "#f59e0b",
     genre: "Puzzle",
     controls: "Mouse / Tap",
     time: "~2 min",
+    scoreLabel: "Best Level",
+    formatScore: (v) => `L${v}`,
   },
   {
     id: "reaction",
     title: "Reaction Time",
     tagline: "Wait. Green. Click.",
     href: "/play/reaction",
-    icon: "⚡",
+    icon: Zap,
     accent: "#10b981",
     genre: "Reflex",
     controls: "Mouse / Tap",
     time: "~30 sec",
+    scoreLabel: "Fastest",
+    formatScore: (v) => `${v}ms`,
   },
   {
     id: "typing",
     title: "Type Racer",
     tagline: "Type faster than you think.",
     href: "/play/typing",
-    icon: "⌨️",
+    icon: Keyboard,
     accent: "#f43f5e",
     genre: "Skill",
     controls: "Keyboard",
     time: "~1 min",
+    scoreLabel: "Best WPM",
+    formatScore: (v) => String(v),
   },
 ];
 
@@ -342,6 +370,50 @@ function Preview({ id, accent }: { id: string; accent: string }) {
         </div>
       );
     }
+    case "breakout": {
+      const rows = ["#ef4444", "#f59e0b", "#d4af37", "#a855f7"];
+      return (
+        <svg viewBox="0 0 120 80" className="w-full h-full">
+          {/* Brick rows */}
+          {rows.map((c, r) =>
+            Array.from({ length: 6 }).map((_, i) => (
+              <motion.rect
+                key={`${r}-${i}`}
+                x={6 + i * 19}
+                y={8 + r * 9}
+                width="16"
+                height="6"
+                rx="1.5"
+                fill={c}
+                animate={{ opacity: [0.9, 0.9, 0, 0.9] }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  times: [0, 0.4 + ((r * 6 + i) % 7) * 0.05, 0.45 + ((r * 6 + i) % 7) * 0.05, 1],
+                }}
+              />
+            ))
+          )}
+          {/* Paddle */}
+          <motion.rect
+            y="70"
+            width="22"
+            height="4"
+            rx="2"
+            fill={accent}
+            animate={{ x: [20, 75, 35, 60, 20] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Ball */}
+          <motion.circle
+            r="2.5"
+            fill="#fff"
+            animate={{ cx: [30, 85, 45, 70, 30], cy: [65, 45, 50, 42, 65] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          />
+        </svg>
+      );
+    }
     default:
       return null;
   }
@@ -356,6 +428,7 @@ function Cabinet({
   index,
   isFocused,
   stats,
+  best,
   onSelect,
   onQuickLaunch,
 }: {
@@ -363,6 +436,7 @@ function Cabinet({
   index: number;
   isFocused: boolean;
   stats: { plays: number; lastPlayedAt: number };
+  best: BestScore | null;
   onSelect: () => void;
   onQuickLaunch: () => void;
 }) {
@@ -442,8 +516,13 @@ function Cabinet({
 
       {/* Title + meta */}
       <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-start gap-2 mb-1">
-          <span className="text-2xl leading-none shrink-0">{game.icon}</span>
+        <div className="flex items-start gap-2.5 mb-1">
+          <span
+            className="shrink-0 mt-0.5 p-1.5 rounded-lg border"
+            style={{ background: `${game.accent}12`, borderColor: `${game.accent}35`, color: game.accent }}
+          >
+            <game.icon size={16} strokeWidth={1.8} aria-hidden />
+          </span>
           <div className="min-w-0">
             <h3
               className="text-base font-bold font-mono uppercase tracking-wide leading-tight transition-colors"
@@ -456,17 +535,27 @@ function Cabinet({
         </div>
 
         {/* Personal stats */}
-        <div className="mt-3 grid grid-cols-2 gap-1.5 text-center">
-          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1.5 py-1.5">
+        <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1 py-1.5">
+            <p className="text-[8px] font-mono uppercase tracking-wider text-white/35">{game.scoreLabel}</p>
+            <p
+              className="text-sm font-mono font-bold mt-0.5 truncate"
+              style={{ color: best ? game.accent : "rgba(255,255,255,0.3)" }}
+              title={best ? `Set ${relativeTime(best.at)}` : "No record yet"}
+            >
+              {best ? game.formatScore(best.value) : "—"}
+            </p>
+          </div>
+          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1 py-1.5">
             <p className="text-[8px] font-mono uppercase tracking-wider text-white/35">Plays</p>
             <p
               className="text-sm font-mono font-bold mt-0.5"
-              style={{ color: stats.plays > 0 ? game.accent : "rgba(255,255,255,0.3)" }}
+              style={{ color: stats.plays > 0 ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.3)" }}
             >
               {stats.plays || "—"}
             </p>
           </div>
-          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1.5 py-1.5">
+          <div className="rounded-md bg-white/[0.025] border border-white/5 px-1 py-1.5">
             <p className="text-[8px] font-mono uppercase tracking-wider text-white/35">Last</p>
             <p className="text-[10px] font-mono font-semibold text-white/70 mt-1 truncate">
               {relativeTime(stats.lastPlayedAt)}
@@ -560,7 +649,12 @@ function NowPlayingModal({
               }}
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{game.icon}</span>
+                <span
+                  className="p-2 rounded-lg border"
+                  style={{ background: `${game.accent}12`, borderColor: `${game.accent}35`, color: game.accent }}
+                >
+                  <game.icon size={18} strokeWidth={1.8} aria-hidden />
+                </span>
                 <div>
                   <p className="text-[9px] font-mono uppercase tracking-wider text-white/40">
                     Now Playing
@@ -622,10 +716,12 @@ export default function ArcadePage() {
   const [focusedIdx, setFocusedIdx] = useState(0);
   const [playing, setPlaying] = useState<ArcadeGame | null>(null);
   const [stats, setStats] = useState<PlayStats>({});
+  const [bests, setBests] = useState<Partial<Record<ArcadeGameId, BestScore>>>({});
 
-  // Load stats on mount
+  // Load stats + high scores on mount
   useEffect(() => {
     setStats(readStats());
+    setBests(readAllBests());
   }, []);
 
   const launch = useCallback((game: ArcadeGame) => {
@@ -634,7 +730,15 @@ export default function ArcadePage() {
     setPlaying(game);
   }, []);
 
-  // Keyboard shortcuts: 1-5 launches, arrows navigate focus
+  // Games in the modal iframe share this origin's localStorage, so re-read
+  // bests when the modal closes — a new record may have just been set.
+  const closeModal = useCallback(() => {
+    setPlaying(null);
+    setBests(readAllBests());
+    setStats(readStats());
+  }, []);
+
+  // Keyboard shortcuts: 1-6 launches, arrows navigate focus
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (playing) return; // modal owns keys when open
@@ -715,14 +819,14 @@ export default function ArcadePage() {
               The Arcade
             </h1>
             <p className="mt-4 max-w-xl text-white/60 text-base sm:text-lg leading-relaxed">
-              Five browser games, zero installs, unlimited credits. Pick a cabinet
+              Six browser games, zero installs, unlimited credits. Pick a cabinet
               and hit play — or press a number key.
             </p>
 
             {/* Shortcut pills */}
             <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-mono">
               {[
-                { k: "1 – 5", label: "Launch a game" },
+                { k: "1 – 6", label: "Launch a game" },
                 { k: "← →", label: "Navigate" },
                 { k: "Enter", label: "Play focused" },
                 { k: "Esc", label: "Exit" },
@@ -745,7 +849,7 @@ export default function ArcadePage() {
             role="listbox"
             aria-label="Arcade games"
             aria-activedescendant={`game-${GAMES[focusedIdx].id}`}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {GAMES.map((game, i) => (
               <Cabinet
@@ -754,11 +858,56 @@ export default function ArcadePage() {
                 index={i}
                 isFocused={i === focusedIdx}
                 stats={stats[game.id] ?? { plays: 0, lastPlayedAt: 0 }}
+                best={bests[game.id] ?? null}
                 onSelect={() => setFocusedIdx(i)}
                 onQuickLaunch={() => launch(game)}
               />
             ))}
           </div>
+
+          {/* Hall of Fame */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mt-10 sm:mt-14 rounded-2xl border border-[#d4af37]/20 bg-[#d4af37]/[0.03] backdrop-blur-sm overflow-hidden"
+          >
+            <div className="flex items-center gap-2.5 px-5 py-3 border-b border-[#d4af37]/10 bg-[#d4af37]/[0.04]">
+              <Trophy size={14} className="text-[#d4af37]" aria-hidden />
+              <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#d4af37]/90">
+                Hall of Fame
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 lg:divide-y-0 divide-white/5">
+              {GAMES.map((game) => {
+                const best = bests[game.id];
+                return (
+                  <Link
+                    key={game.id}
+                    href={game.href}
+                    className="px-4 py-4 text-center group hover:bg-white/[0.02] transition-colors"
+                  >
+                    <span className="inline-flex" style={{ color: game.accent }}>
+                      <game.icon size={16} strokeWidth={1.8} aria-hidden />
+                    </span>
+                    <p
+                      className="mt-1.5 text-lg font-mono font-bold tabular-nums"
+                      style={{ color: best ? game.accent : "rgba(255,255,255,0.25)" }}
+                    >
+                      {best ? game.formatScore(best.value) : "—"}
+                    </p>
+                    <p className="text-[8px] font-mono uppercase tracking-wider text-white/35 mt-0.5">
+                      {game.scoreLabel}
+                    </p>
+                    <p className="text-[9px] font-mono text-white/25 mt-0.5 truncate group-hover:text-white/40 transition-colors">
+                      {game.title.replace("Neon ", "")}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
 
           {/* Arcade Record strip */}
           <motion.div
@@ -777,16 +926,18 @@ export default function ArcadePage() {
                   Saved locally · Never leaves your browser
                 </p>
               </div>
-              {totalPlays > 0 && (
+              {(totalPlays > 0 || Object.keys(bests).length > 0) && (
                 <button
                   onClick={() => {
                     writeStats({});
                     setStats({});
+                    clearBests();
+                    setBests({});
                   }}
                   className="text-[10px] font-mono text-white/35 hover:text-red-400 transition-colors px-2 py-1 rounded border border-white/5"
-                  aria-label="Reset arcade stats"
+                  aria-label="Reset arcade stats and high scores"
                 >
-                  Reset
+                  Reset all
                 </button>
               )}
             </div>
@@ -816,8 +967,9 @@ export default function ArcadePage() {
                 </p>
                 <p className="text-sm font-mono font-semibold text-white/85 mt-1.5 truncate">
                   {mostPlayedGame ? (
-                    <span style={{ color: mostPlayedGame.accent }}>
-                      {mostPlayedGame.icon} {mostPlayedGame.title.replace("Neon ", "")}
+                    <span className="inline-flex items-center gap-1.5" style={{ color: mostPlayedGame.accent }}>
+                      <mostPlayedGame.icon size={13} strokeWidth={2} aria-hidden />
+                      {mostPlayedGame.title.replace("Neon ", "")}
                     </span>
                   ) : (
                     "—"
@@ -830,10 +982,12 @@ export default function ArcadePage() {
                 </p>
                 <p className="text-sm font-mono font-semibold text-white/85 mt-1.5 truncate">
                   {lastPlayedGame ? (
-                    <>
-                      <span style={{ color: lastPlayedGame.accent }}>{lastPlayedGame.icon}</span>{" "}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span style={{ color: lastPlayedGame.accent }}>
+                        <lastPlayedGame.icon size={13} strokeWidth={2} aria-hidden />
+                      </span>
                       {relativeTime(lastPlayedEntry?.[1].lastPlayedAt ?? 0)}
-                    </>
+                    </span>
                   ) : (
                     "—"
                   )}
@@ -860,7 +1014,7 @@ export default function ArcadePage() {
         </div>
       </main>
 
-      <NowPlayingModal game={playing} onClose={() => setPlaying(null)} />
+      <NowPlayingModal game={playing} onClose={closeModal} />
     </>
   );
 }

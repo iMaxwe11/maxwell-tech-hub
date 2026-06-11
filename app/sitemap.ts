@@ -13,6 +13,7 @@ const routes = [
   "/status",
   "/play",
   "/play/snake",
+  "/play/breakout",
   "/play/pong",
   "/play/memory",
   "/play/reaction",

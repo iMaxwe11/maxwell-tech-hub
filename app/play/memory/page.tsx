@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { readBest, recordScore } from "@/lib/arcade-scores";
 
 type Phase = "menu" | "diff-select" | "showing" | "input" | "correct" | "wrong";
 type Difficulty = "easy" | "medium" | "hard";
@@ -28,7 +29,10 @@ export default function MemoryPage() {
     return () => clearInterval(interval);
   }, [phase, startTime]);
 
-  // No localStorage per requirements - bestLevel stays in session
+  // Persistent best level via the unified arcade store
+  useEffect(() => {
+    setBestLevel(readBest("memory")?.value ?? 0);
+  }, []);
 
   const tileCount = useCallback(() => Math.min(3 + Math.floor((level - 1) / 2), gridSize * gridSize - 1), [level, gridSize]);
 
@@ -89,16 +93,14 @@ export default function MemoryPage() {
     if (!pattern.includes(i)) {
       // Wrong!
       setPhase("wrong");
-      const best = Math.max(level - 1, bestLevel);
-      setBestLevel(best);
+      setBestLevel(recordScore("memory", level - 1, "higher").best);
       return;
     }
 
     if (newSelected.length === pattern.length) {
       // All correct!
       setPhase("correct");
-      const best = Math.max(level, bestLevel);
-      setBestLevel(best);
+      setBestLevel(recordScore("memory", level, "higher").best);
       setTimeout(nextLevel, 800);
     }
   };

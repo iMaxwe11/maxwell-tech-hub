@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { readBest, recordScore } from "@/lib/arcade-scores";
 
 const W = 600, H = 400;
 const PADDLE_H = 70, PADDLE_W = 10, BALL_R = 6;
@@ -18,6 +19,11 @@ export default function PongPage() {
   const [playerScore, setPlayerScore] = useState(0);
   const [aiScore, setAiScore] = useState(0);
   const [rally, setRally] = useState(0);
+  const [wins, setWins] = useState(0);
+  // Persistent career wins vs the AI via the unified arcade store
+  useEffect(() => {
+    setWins(readBest("pong")?.value ?? 0);
+  }, []);
   const stateRef = useRef(gameState);
   stateRef.current = gameState;
   const animRef = useRef<number>(0);
@@ -124,7 +130,12 @@ export default function PongPage() {
       pScoreRef.current++; setPlayerScore(pScoreRef.current);
       spawnParticles(W, b.y, "#06b6d4", 15);
       spawnPowerup(Math.random() * W, Math.random() * H);
-      if (pScoreRef.current >= WINNING_SCORE) { setGameState("won"); return; }
+      if (pScoreRef.current >= WINNING_SCORE) {
+        setGameState("won");
+        const career = (readBest("pong")?.value ?? 0) + 1;
+        setWins(recordScore("pong", career, "higher").best);
+        return;
+      }
       resetBall(-1);
     }
 
@@ -319,6 +330,11 @@ export default function PongPage() {
                   {gameState === "won" ? "You Win!" : "AI Wins"}
                 </div>
                 <div className="text-white/50 font-mono text-sm">{playerScore} - {aiScore}</div>
+                {wins > 0 && (
+                  <div className="text-[11px] text-purple-300/80 font-mono">
+                    Career wins vs AI: <span className="font-bold text-purple-300">{wins}</span>
+                  </div>
+                )}
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={startGame}
                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white font-mono font-bold text-sm uppercase tracking-wider">
                   Play Again

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { readBest, recordScore } from "@/lib/arcade-scores";
 
 type Phase = "idle" | "waiting" | "ready" | "result" | "tooearly" | "menu";
 type TestMode = "click" | "color" | "aim";
@@ -20,7 +21,12 @@ export default function ReactionPage() {
   const readyAt = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // No localStorage per requirements
+  // Persistent best reaction time (ms, lower is better) via the unified arcade
+  // store. Aim-mode scores are a different metric (points, higher is better),
+  // so those stay session-only and never overwrite the stored reaction best.
+  useEffect(() => {
+    setBestTime(readBest("reaction")?.value ?? 0);
+  }, []);
 
   const startWaiting = useCallback(() => {
     setPhase("waiting");
@@ -51,8 +57,9 @@ export default function ReactionPage() {
       setReactionTime(ms);
       const newTimes = [...times, ms];
       setTimes(newTimes);
-      if (bestTime === 0 || ms < bestTime) {
-        setBestTime(ms);
+      const { best } = recordScore("reaction", ms, "lower");
+      if (bestTime === 0 || best < bestTime) {
+        setBestTime(best);
       }
       setPhase("result");
       return;

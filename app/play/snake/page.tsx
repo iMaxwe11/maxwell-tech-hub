@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { readBest, recordScore } from "@/lib/arcade-scores";
 
 const CELL = 16;
 const COLS = 24;
@@ -53,8 +54,13 @@ export default function PlayPage() {
   const stateRef = useRef(gameState);
   stateRef.current = gameState;
 
-  // Load high score (in-session only, not localStorage per requirements)
+  // Persistent high score via the unified arcade store
   const highScoreRef = useRef(0);
+  useEffect(() => {
+    const best = readBest("snake")?.value ?? 0;
+    highScoreRef.current = best;
+    setHighScore(best);
+  }, []);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -166,9 +172,9 @@ export default function PlayPage() {
     // Self collision
     if (snake.current.some((s) => s.x === head.x && s.y === head.y)) {
       setGameState("over");
-      const hs = Math.max(scoreRef.current, highScoreRef.current);
-      highScoreRef.current = hs;
-      setHighScore(hs);
+      const { best } = recordScore("snake", scoreRef.current, "higher");
+      highScoreRef.current = best;
+      setHighScore(best);
       return;
     }
 
