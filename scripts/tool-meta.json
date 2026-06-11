@@ -1,0 +1,177 @@
+{
+  "palette": {
+    "component": "Palette",
+    "title": "Color Palette",
+    "desc": "Generate a quick palette, randomize a colorway, and copy CSS-ready values."
+  },
+  "markdown": {
+    "component": "MarkdownPreview",
+    "title": "Markdown Preview",
+    "desc": "Lightweight headings, bold, italics, lists."
+  },
+  "inspo": {
+    "component": "Inspiration",
+    "title": "Inspiration",
+    "desc": "Quick idea spark."
+  },
+  "json": {
+    "component": "JSONFormatter",
+    "title": "JSON Formatter",
+    "desc": "Validate, prettify, or minify."
+  },
+  "regex": {
+    "component": "RegexTester",
+    "title": "Regex Tester",
+    "desc": "Test JavaScript regexes."
+  },
+  "timestamp": {
+    "component": "TimestampConverter",
+    "title": "Timestamp Converter",
+    "desc": "Unix ↔ human-readable."
+  },
+  "contrast": {
+    "component": "ContrastChecker",
+    "title": "Contrast Checker",
+    "desc": "WCAG accessibility ratio."
+  },
+  "generator": {
+    "component": "GeneratorKit",
+    "title": "Generator Kit",
+    "desc": "UUID v4 + secure passwords."
+  },
+  "base64": {
+    "component": "Base64Tool",
+    "title": "Base64 Encoder / Decoder",
+    "desc": "Encode or decode Base64 strings."
+  },
+  "url": {
+    "component": "URLTool",
+    "title": "URL Encoder / Decoder",
+    "desc": "Encode or decode URL components."
+  },
+  "lorem": {
+    "component": "LoremIpsum",
+    "title": "Lorem Ipsum",
+    "desc": "Generate placeholder text."
+  },
+  "hash": {
+    "component": "HashGenerator",
+    "title": "Hash Generator",
+    "desc": "SHA-1/256/384/512 hashing."
+  },
+  "wordcount": {
+    "component": "WordCounter",
+    "title": "Word Counter",
+    "desc": "Live word, character, and reading time stats."
+  },
+  "cssunit": {
+    "component": "CSSUnitConverter",
+    "title": "CSS Unit Converter",
+    "desc": "Convert between px, rem, em, pt, vw, vh, etc."
+  },
+  "slug": {
+    "component": "SlugStudio",
+    "title": "Slug Studio",
+    "desc": "Generate clean SEO slugs, URL paths, and snake case handles."
+  },
+  "textcase": {
+    "component": "TextCaseStudio",
+    "title": "Text Case Studio",
+    "desc": "Flip between title, sentence, camel, Pascal, kebab, and snake case."
+  },
+  "csvjson": {
+    "component": "CSVJSONStudio",
+    "title": "CSV ↔ JSON Studio",
+    "desc": "Convert flat CSV rows into JSON objects and send object arrays back to CSV."
+  },
+  "httpstatus": {
+    "component": "HTTPStatusExplorer",
+    "title": "HTTP Status Explorer",
+    "desc": "Search the common response codes you keep half-remembering mid-debug."
+  },
+  "cron": {
+    "component": "CronBuilder",
+    "title": "Cron Builder",
+    "desc": "Build a five-field cron expression with presets and a plain-English summary."
+  },
+  "qrcode": {
+    "component": "QRCodeGenerator",
+    "title": "QR Code Generator",
+    "desc": "Generate branded QR codes with custom size and colors."
+  },
+  "jwt": {
+    "component": "JWTDecoder",
+    "title": "JWT Decoder",
+    "desc": "Decode payloads, inspect claims, and spot expired tokens fast."
+  },
+  "pomodoro": {
+    "component": "PomodoroTimer",
+    "title": "Pomodoro Timer",
+    "desc": "Switch between focus presets, track completed rounds, and keep momentum."
+  },
+  "ipinfo": {
+    "component": "IPInfo",
+    "title": "IP Address Info",
+    "desc": "Your public IP and geolocation details."
+  },
+  "diff": {
+    "component": "DiffChecker",
+    "title": "Diff Checker",
+    "desc": "Compare two texts side by side."
+  },
+  "baseconv": {
+    "component": "BaseConverter",
+    "title": "Number Base Converter",
+    "desc": "Convert between decimal, binary, octal, and hex."
+  },
+  "gradient": {
+    "component": "GradientGenerator",
+    "title": "Gradient Generator",
+    "desc": "Create and copy beautiful CSS gradients."
+  },
+  "password": {
+    "component": "PasswordTester",
+    "title": "Password Strength",
+    "desc": "Test password strength and get security tips."
+  },
+  "eightball": {
+    "component": "Magic8Ball",
+    "title": "Magic 8-Ball",
+    "desc": "Ask a question and shake for answers."
+  },
+  "coinflip": {
+    "component": "CoinFlip",
+    "title": "Coin Flip",
+    "desc": "3D animated coin with streak tracker."
+  },
+  "dice": {
+    "component": "DiceRoller",
+    "title": "Dice Roller",
+    "desc": "Roll 1-6 dice with sum and history."
+  },
+  "ascii": {
+    "component": "ASCIIArtGenerator",
+    "title": "ASCII Art Generator",
+    "desc": "Convert text to large ASCII block letters."
+  },
+  "colorgame": {
+    "component": "ColorGuessingGame",
+    "title": "Color Guessing Game",
+    "desc": "Match the hex color with one of three squares."
+  },
+  "sql": {
+    "component": "SQLFormatter",
+    "title": "SQL Formatter",
+    "desc": "Paste SQL → indented, uppercased, clause-broken output."
+  },
+  "emoji": {
+    "component": "EmojiPicker",
+    "title": "Emoji & Symbol Picker",
+    "desc": "Search, click to copy — emojis, arrows, checks, math."
+  },
+  "shadow": {
+    "component": "ShadowGenerator",
+    "title": "Box Shadow Generator",
+    "desc": "Multi-layer CSS box-shadow with live preview."
+  }
+}
