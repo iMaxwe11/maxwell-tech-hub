@@ -86,6 +86,16 @@ const LIVE_EXPERIENCES: WorkItem[] = [
 
 const LABS: WorkItem[] = [
   {
+    title: "MaxwellOS",
+    desc: "My own Arch-based gaming Linux distro — violet KDE Plasma, Steam and Proton preinstalled, macOS-style animations, boots straight to the desktop. Verified archiso build pipeline with one-command Hyper-V deploy.",
+    icon: "🟣",
+    tags: ["Arch Linux", "archiso", "KDE Plasma", "Bash", "Hyper-V"],
+    gradient: "from-violet-500 to-purple-700",
+    github: "https://github.com/iMaxwe11/maxwellos",
+    href: "https://github.com/iMaxwe11/maxwellos",
+    category: "Open Source",
+  },
+  {
     title: "Smart Data Pipeline",
     desc: "Cloud-style ETL pipeline — FastAPI service layer, Python processor, Streamlit dashboard. Fully containerized with Docker Compose and CI/CD via GitHub Actions.",
     icon: "🔄",
