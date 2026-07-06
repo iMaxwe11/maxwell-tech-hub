@@ -51,9 +51,10 @@ import {
   Atom, FileCode, Code, Container, Cloud, Palette, Zap, RefreshCw,
   Monitor, Network, Terminal, Hexagon, Award, GraduationCap, Check,
   Radio, Activity, Satellite, Image as ImageIcon, Sparkles, ArrowRight,
-  Wrench, Rocket, Workflow, Gamepad2, Brain, Building2,
+  Wrench, Rocket, Workflow, Gamepad2, Brain, MonitorCog,
   type LucideIcon,
 } from "lucide-react";
+import { TiltCard } from "@/components/TiltCard";
 
 /* ═══ SECTION WRAPPER ═══ */
 function Sec({ children, className = "", delay = 0, id }: { children: React.ReactNode; className?: string; delay?: number; id?: string }) {
@@ -171,6 +172,68 @@ function useTypewriter(lines: string[], typeMs = 60, eraseMs = 30, holdMs = 2400
   }, [idx, phase, text, lines, typeMs, eraseMs, holdMs]);
 
   return text;
+}
+
+/* ═══ STATS STRIP ═══ */
+function CountUp({ to, suffix = "", duration = 1400 }: { to: number; suffix?: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [val, setVal] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      setVal(Math.round(eased * to));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, to, duration]);
+
+  return (
+    <span ref={ref} className="tabular-nums">
+      {val}
+      {suffix}
+    </span>
+  );
+}
+
+function StatsStrip() {
+  const stats = [
+    { to: 35, suffix: "+", label: "Developer tools" },
+    { to: 6, suffix: "", label: "Arcade games" },
+    { to: 62, suffix: "", label: "Routes in production" },
+    { to: 6, suffix: "", label: "Live data feeds" },
+  ];
+  return (
+    <Sec className="relative px-4 sm:px-6 py-14">
+      <div className="max-w-[1200px] mx-auto">
+        <div className="glass-card px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-8">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08, duration: 0.5 }}
+              className="text-center"
+            >
+              <div className="font-bold text-3xl sm:text-4xl text-white">
+                <CountUp to={s.to} suffix={s.suffix} />
+              </div>
+              <div className="mt-1.5 text-[11px] font-mono uppercase tracking-wider text-white/40">
+                {s.label}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </Sec>
+  );
 }
 
 /* ═══ HERO ═══ */
@@ -545,14 +608,14 @@ function ProjectsSection() {
     },
     {
       title: "Neon Arcade",
-      desc: "5 browser-based games — Snake, Pong vs AI, Memory Matrix, Reaction Timer, and Type Racer. Canvas rendering, retro CRT effects, and an animated arcade cabinet hub.",
+      desc: "6 browser-based games — Snake, Neon Breakout, Pong vs AI, Memory Matrix, Reaction Timer, and Type Racer. Canvas rendering, retro CRT effects, and an animated arcade cabinet hub.",
       tags: ["Canvas", "Game Dev", "CSS Art", "Framer Motion"],
       gradient: "from-fuchsia-500 to-pink-600",
       Icon: Gamepad2,
       iconTint: "#f472b6",
       link: "/play",
       liveUrl: "https://maxwellnixon.com/play",
-      metrics: "5 games · Zero installs · Retro arcade experience",
+      metrics: "6 games · Zero installs · Retro arcade experience",
       pattern:
         "linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)",
     },
@@ -569,14 +632,15 @@ function ProjectsSection() {
         "linear-gradient(135deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.04) 75%, transparent 75%)",
     },
     {
-      title: "IT Infrastructure @ PCS",
-      desc: "Enterprise IT support for law firms and businesses across NJ, PA, and DE. Windows Server deployment, Active Directory, VLANs, PXE imaging, VPN, and ConnectWise ticketing.",
-      tags: ["Windows Server", "AD", "VLANs", "PXE", "ConnectWise"],
-      gradient: "from-blue-500 to-indigo-600",
-      Icon: Building2,
-      iconTint: "#60a5fa",
-      metrics: "Multi-site enterprise · 50+ endpoints managed · 99.9% uptime target",
-      pattern: "linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+      title: "MaxwellOS",
+      desc: "My own Arch-based gaming Linux distro — violet KDE Plasma, Steam and Proton preinstalled, macOS-style animations, boots straight to the desktop. Verified archiso build pipeline.",
+      tags: ["Arch Linux", "archiso", "KDE Plasma", "Bash", "Hyper-V"],
+      gradient: "from-violet-500 to-purple-700",
+      Icon: MonitorCog,
+      iconTint: "#a78bfa",
+      github: "https://github.com/iMaxwe11/maxwellos",
+      metrics: "Custom distro · One-command deploy · Obsidian, built different",
+      pattern: "linear-gradient(135deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%)",
     },
   ];
 
@@ -595,15 +659,14 @@ function ProjectsSection() {
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((p, i) => (
-            <motion.div
-              key={p.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06, duration: 0.6 }}
-              whileHover={{ y: -6 }}
-              className="glass-card p-6 h-full group relative overflow-hidden cursor-default"
-            >
+            <TiltCard key={p.title} className="h-full">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06, duration: 0.6 }}
+                className="glass-card p-6 h-full group relative overflow-hidden cursor-default"
+              >
               <ProjectVisual gradient={p.gradient} Icon={p.Icon} iconTint={p.iconTint} pattern={p.pattern} liveUrl={p.liveUrl} title={p.title} />
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{p.title}</h3>
               <p className="text-white/55 leading-relaxed mb-3 text-sm">{p.desc}</p>
@@ -639,7 +702,8 @@ function ProjectsSection() {
                   </Link>
                 )}
               </div>
-            </motion.div>
+              </motion.div>
+            </TiltCard>
           ))}
         </div>
 
@@ -1054,6 +1118,7 @@ export default function Home() {
       <Navbar links={homeNavLinks} />
       <main>
         <HeroSection />
+        <StatsStrip />
         <div className="section-divider" />
         <LiveDataSection />
         <div className="section-divider" />

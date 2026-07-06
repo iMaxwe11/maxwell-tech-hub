@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Navbar } from "@/components/Navbar";
 import { siteConfig } from "@/lib/site-config";
 
@@ -14,6 +15,8 @@ interface WorkItem {
   icon: string;
   tags: string[];
   gradient: string;
+  /** Optional screenshot rendered in the visual header (public/ path) */
+  image?: string;
   /** Internal route OR external URL (absolute with https://) */
   href?: string;
   /** External URL for a "GitHub" link next to the primary action */
@@ -91,6 +94,7 @@ const LABS: WorkItem[] = [
     icon: "🟣",
     tags: ["Arch Linux", "archiso", "KDE Plasma", "Bash", "Hyper-V"],
     gradient: "from-violet-500 to-purple-700",
+    image: "/projects-maxwellos.webp",
     github: "https://github.com/iMaxwe11/maxwellos",
     href: "https://github.com/iMaxwe11/maxwellos",
     category: "Open Source",
@@ -148,16 +152,26 @@ function WorkCard({ item, index }: { item: WorkItem; index: number }) {
     <>
       {/* Visual header */}
       <div
-        className={`relative h-28 rounded-xl overflow-hidden mb-4 bg-gradient-to-br ${item.gradient}`}
+        className={`relative ${item.image ? "h-36" : "h-28"} rounded-xl overflow-hidden mb-4 bg-gradient-to-br ${item.gradient}`}
       >
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.15) 1.5px, transparent 1.5px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
+        {item.image ? (
+          <Image
+            src={item.image}
+            alt={`${item.title} screenshot`}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, rgba(255,255,255,0.15) 1.5px, transparent 1.5px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="absolute bottom-3 left-4 text-3xl drop-shadow-lg">{item.icon}</div>
         <div className="absolute top-3 right-3">
