@@ -6,6 +6,7 @@ import { motion, useScroll, useTransform, useInView, AnimatePresence } from "fra
 import Link from "next/link";
 import { SocialIcon } from "@/components/SocialIcon";
 import { Navbar } from "@/components/Navbar";
+import { WidgetErrorBoundary } from "@/components/WidgetErrorBoundary";
 import { CopyButton } from "@/components/CopyButton";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 import { useAccent } from "@/lib/use-accent";
@@ -433,17 +434,27 @@ function LiveDataSection() {
 
         {/* Row 1 — Weather + Markets (3 cols on md+) */}
         <div className="grid md:grid-cols-3 gap-6">
-          <WeatherWidget />
-          <CryptoTicker />
-          <StockTicker />
+          <WidgetErrorBoundary label="Weather">
+            <WeatherWidget />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary label="Top Crypto">
+            <CryptoTicker />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary label="Markets">
+            <StockTicker />
+          </WidgetErrorBoundary>
         </div>
 
         {/* Row 2 — Space imagery + ISS position (NASA APOD spans 2 cols) */}
         <div className="mt-6 grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
-            <NASAAPODCard />
+            <WidgetErrorBoundary label="NASA APOD">
+              <NASAAPODCard />
+            </WidgetErrorBoundary>
           </div>
-          <ISSTracker />
+          <WidgetErrorBoundary label="ISS Live">
+            <ISSTracker />
+          </WidgetErrorBoundary>
         </div>
       </div>
     </Sec>
@@ -682,7 +693,9 @@ function GitHubSection() {
             </svg>
           </a>
         </div>
-        <GitHubActivity />
+        <WidgetErrorBoundary label="GitHub Activity">
+          <GitHubActivity />
+        </WidgetErrorBoundary>
       </div>
     </Sec>
   );

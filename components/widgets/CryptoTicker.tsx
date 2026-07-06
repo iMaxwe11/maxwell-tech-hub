@@ -36,11 +36,23 @@ export function CryptoTicker() {
       if (!res.ok) throw new Error(`API ${res.status}`);
       const data = await res.json();
 
-      if (!Array.isArray(data) || data.length === 0) {
+      // Belt-and-suspenders: drop any entry whose numeric fields aren't finite
+      // so formatting (toFixed/toLocaleString) can never throw during render.
+      const clean: CoinData[] = Array.isArray(data)
+        ? (data as CoinData[]).filter(
+            (c) =>
+              c &&
+              typeof c.id === "string" &&
+              Number.isFinite(c.price) &&
+              Number.isFinite(c.change24h)
+          )
+        : [];
+
+      if (clean.length === 0) {
         throw new Error("Empty response");
       }
 
-      setCrypto(data);
+      setCrypto(clean);
       hasLoadedDataRef.current = true;
       setLastUpdated(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
       setError(false);

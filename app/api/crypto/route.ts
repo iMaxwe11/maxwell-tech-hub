@@ -50,19 +50,25 @@ export async function GET() {
     if (res.ok) {
       const data = (await res.json()) as CoinGeckoAsset[];
       if (Array.isArray(data) && data.length > 0) {
-        const mapped: CryptoAssetQuote[] = data.map((c) => ({
-          id: c.id,
-          symbol: c.symbol,
-          name: c.name,
-          price: c.current_price,
-          change24h: c.price_change_percentage_24h || 0,
-          marketCap: c.market_cap,
-          image: c.image,
-        }));
-        cache = { data: mapped, ts: Date.now() };
-        return NextResponse.json(mapped, {
-          headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
-        });
+        const mapped: CryptoAssetQuote[] = data
+          .map((c) => ({
+            id: c.id,
+            symbol: c.symbol,
+            name: c.name,
+            price: Number(c.current_price),
+            change24h: Number(c.price_change_percentage_24h) || 0,
+            marketCap: Number(c.market_cap) || 0,
+            image: c.image ?? null,
+          }))
+          // CoinGecko intermittently returns null/missing current_price for
+          // some assets; a non-finite price crashes client formatting.
+          .filter((c) => Number.isFinite(c.price));
+        if (mapped.length > 0) {
+          cache = { data: mapped, ts: Date.now() };
+          return NextResponse.json(mapped, {
+            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+          });
+        }
       }
     }
   } catch (e) {
@@ -77,19 +83,23 @@ export async function GET() {
     if (res.ok) {
       const json = (await res.json()) as { data?: CoinCapAsset[] };
       if (json.data && Array.isArray(json.data)) {
-        const mapped: CryptoAssetQuote[] = json.data.map((c) => ({
-          id: c.id,
-          symbol: c.symbol.toLowerCase(),
-          name: c.name,
-          price: parseFloat(c.priceUsd),
-          change24h: parseFloat(c.changePercent24Hr ?? "0") || 0,
-          marketCap: parseFloat(c.marketCapUsd),
-          image: null,
-        }));
-        cache = { data: mapped, ts: Date.now() };
-        return NextResponse.json(mapped, {
-          headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
-        });
+        const mapped: CryptoAssetQuote[] = json.data
+          .map((c) => ({
+            id: c.id,
+            symbol: c.symbol.toLowerCase(),
+            name: c.name,
+            price: parseFloat(c.priceUsd),
+            change24h: parseFloat(c.changePercent24Hr ?? "0") || 0,
+            marketCap: parseFloat(c.marketCapUsd) || 0,
+            image: null,
+          }))
+          .filter((c) => Number.isFinite(c.price));
+        if (mapped.length > 0) {
+          cache = { data: mapped, ts: Date.now() };
+          return NextResponse.json(mapped, {
+            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+          });
+        }
       }
     }
   } catch (e) {
