@@ -2,19 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { Satellite, SatelliteDish } from "lucide-react";
 import type { IssPosition } from "@/lib/types";
+
+function isValidIss(d: unknown): d is IssPosition {
+  if (!d || typeof d !== "object") return false;
+  const o = d as Record<string, unknown>;
+  return (
+    typeof o.latitude === "number" &&
+    typeof o.longitude === "number" &&
+    typeof o.velocity === "number" &&
+    typeof o.altitude === "number"
+  );
+}
 
 export function ISSTracker() {
   const [iss, setIss] = useState<IssPosition | null>(null);
+  const [lost, setLost] = useState(false);
 
   useEffect(() => {
+    let failures = 0;
     const fetchISS = async () => {
       try {
         const res = await fetch("/api/iss");
-        const data = (await res.json()) as IssPosition;
+        const data: unknown = await res.json();
+        if (!res.ok || !isValidIss(data)) throw new Error("bad response");
+        failures = 0;
+        setLost(false);
         setIss(data);
-      } catch (e) {
-        console.error("ISS error:", e);
+      } catch {
+        // Keep showing the last known position; only surface "signal lost"
+        // after repeated failures with nothing to show.
+        failures += 1;
+        if (failures >= 3) setLost(true);
       }
     };
     fetchISS();
@@ -22,17 +42,45 @@ export function ISSTracker() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!iss) return <div className="glass-card p-6 animate-pulse"><div className="h-24 bg-white/5 rounded" /></div>;
+  if (!iss) {
+    if (lost) {
+      return (
+        <div className="glass-card p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <SatelliteDish className="w-5 h-5 text-white/70" aria-hidden />
+                ISS Live
+              </h3>
+              <p className="text-xs text-white/50 mt-1">International Space Station</p>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-amber-500" />
+          </div>
+          <p className="text-sm text-white/60">
+            Signal lost — the tracking API is unreachable. Retrying automatically.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="glass-card p-6 animate-pulse">
+        <div className="h-24 bg-white/5 rounded" />
+      </div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-white">🛰️ ISS Live</h3>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Satellite className="w-5 h-5 text-cyan-400" aria-hidden />
+            ISS Live
+          </h3>
           <p className="text-xs text-white/50 mt-1">International Space Station</p>
         </div>
         <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
-          className="w-2 h-2 rounded-full bg-green-500" />
+          className={`w-2 h-2 rounded-full ${lost ? "bg-amber-500" : "bg-green-500"}`} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
