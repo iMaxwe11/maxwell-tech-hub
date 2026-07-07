@@ -376,15 +376,25 @@
     if (/^https?:\/\//i.test(v)) url = v;
     else if (looksLikeUrl) url = 'https://' + v;
     else url = 'https://www.google.com/search?q=' + encodeURIComponent(v);
-    if (fs) { goFullscreen(); setTimeout(() => window.location.href = url, 350); }
-    else window.location.href = url;
+    if (fs) { goFullscreen(); setTimeout(() => go(url), 350); }
+    else go(url);
   }
 
   // ---- Launch ----
-  function launch(url) { markLast(url); window.location.href = url; }
+  // When this page is embedded (e.g. the /tesla route iframes it),
+  // window.location.href navigates the FRAME, not the browser — which breaks
+  // any destination that forbids framing (Xbox: X-Frame-Options deny) or
+  // redirects to http (Boosteroid: 307 → http gets mixed-content blocked as a
+  // frame navigation). Navigating window.top escapes the frame; setting
+  // top.location is permitted for framed pages even cross-origin.
+  function go(url) {
+    try { (window.top || window).location.href = url; }
+    catch (e) { window.location.href = url; }
+  }
+  function launch(url) { markLast(url); go(url); }
   function launchFS(url, evt) {
     evt.stopPropagation(); markLast(url); goFullscreen();
-    setTimeout(() => { window.location.href = url; }, 350);
+    setTimeout(() => { go(url); }, 350);
   }
 
   function hostOf(url) {

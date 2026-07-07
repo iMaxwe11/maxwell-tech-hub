@@ -46,8 +46,10 @@ export async function GET() {
       },
     });
   } catch {
-    // Serve stale position for up to 10 minutes before admitting defeat.
-    if (lastGood && Date.now() - lastGood.at < 10 * 60 * 1000) {
+    // Serve stale position for up to 30 minutes before admitting defeat —
+    // wheretheiss.at rate-limits Vercel's shared egress IPs aggressively, so
+    // a generous stale window keeps the widget alive through long limit spells.
+    if (lastGood && Date.now() - lastGood.at < 30 * 60 * 1000) {
       return NextResponse.json(
         { ...lastGood.data, stale: true },
         { headers: { "Cache-Control": "public, s-maxage=5" } }

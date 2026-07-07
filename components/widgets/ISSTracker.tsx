@@ -22,6 +22,17 @@ export function ISSTracker() {
 
   useEffect(() => {
     let failures = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+
+    const schedule = () => {
+      if (stopped) return;
+      // 5s cadence while healthy; exponential backoff to 60s while the
+      // upstream is rate-limiting so we don't hammer a failing endpoint.
+      const delay = failures === 0 ? 5000 : Math.min(5000 * 2 ** failures, 60000);
+      timer = setTimeout(fetchISS, delay);
+    };
+
     const fetchISS = async () => {
       try {
         const res = await fetch("/api/iss");
@@ -35,11 +46,15 @@ export function ISSTracker() {
         // after repeated failures with nothing to show.
         failures += 1;
         if (failures >= 3) setLost(true);
+      } finally {
+        schedule();
       }
     };
     fetchISS();
-    const interval = setInterval(fetchISS, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   if (!iss) {
