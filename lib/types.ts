@@ -174,8 +174,10 @@ export interface GitHubProfileSummary {
 export interface IssPosition {
   latitude: number;
   longitude: number;
-  velocity: number;
-  altitude: number;
+  /** Absent when served by the open-notify fallback (position-only feed). */
+  velocity?: number;
+  /** Absent when served by the open-notify fallback (position-only feed). */
+  altitude?: number;
 }
 
 export interface RainViewerFrame {

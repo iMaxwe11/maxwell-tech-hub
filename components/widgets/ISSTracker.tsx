@@ -11,8 +11,10 @@ function isValidIss(d: unknown): d is IssPosition {
   return (
     typeof o.latitude === "number" &&
     typeof o.longitude === "number" &&
-    typeof o.velocity === "number" &&
-    typeof o.altitude === "number"
+    // velocity/altitude are absent when the API degrades to its position-only
+    // fallback source; the widget renders "—" for them in that case.
+    (o.velocity === undefined || typeof o.velocity === "number") &&
+    (o.altitude === undefined || typeof o.altitude === "number")
   );
 }
 
@@ -108,11 +110,11 @@ export function ISSTracker() {
         </div>
         <div>
           <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Velocity</div>
-          <div className="text-white font-mono font-semibold">{Math.round(iss.velocity)} km/h</div>
+          <div className="text-white font-mono font-semibold">{iss.velocity !== undefined ? `${Math.round(iss.velocity)} km/h` : "—"}</div>
         </div>
         <div>
           <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Altitude</div>
-          <div className="text-white font-mono font-semibold">{Math.round(iss.altitude)} km</div>
+          <div className="text-white font-mono font-semibold">{iss.altitude !== undefined ? `${Math.round(iss.altitude)} km` : "—"}</div>
         </div>
       </div>
     </motion.div>
