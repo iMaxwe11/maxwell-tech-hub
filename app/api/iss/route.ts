@@ -78,7 +78,45 @@ async function fromOpenNotify(): Promise<Record<string, unknown>> {
   return mapped;
 }
 
-export async function GET() {
+/** Recent ground-track for the Mission Control map: 10 historical positions
+ *  (wheretheiss.at caps timestamps at 10 per request) spanning the last
+ *  ~45 minutes — about half an orbit. Decorative, so failures degrade to an
+ *  empty list instead of an error; the client builds the trail live instead. */
+async function trailResponse(): Promise<NextResponse> {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const timestamps = Array.from({ length: 10 }, (_, i) => now - (9 - i) * 300);
+    const data = await fetchJson(
+      `https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps=${timestamps.join(",")}&units=kilometers`,
+      // The batch positions endpoint is measurably slower than the single-
+      // position one (>6s observed); this is a one-shot decorative fetch
+      // cached at the CDN, so give it a generous budget.
+      12_000
+    );
+    const positions = (Array.isArray(data) ? data : [])
+      .filter(hasLatLon)
+      .map((p) => ({
+        latitude: (p as Record<string, unknown>).latitude,
+        longitude: (p as Record<string, unknown>).longitude,
+        timestamp: (p as Record<string, unknown>).timestamp,
+      }));
+    return NextResponse.json(
+      { positions },
+      // History barely changes; let the CDN hold it so trail seeding is free.
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    );
+  } catch (err) {
+    console.error("[api/iss] trail", err);
+    return NextResponse.json({ positions: [] });
+  }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  if (searchParams.get("mode") === "trail") {
+    return trailResponse();
+  }
+
   try {
     let data: Record<string, unknown>;
     try {

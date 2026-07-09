@@ -765,3 +765,24 @@ body {
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.3);
 }
+
+
+/* ═══════════════ Theme-switch ripple (View Transitions API) ═══════════════
+   The switcher animates ::view-transition-new(root) with an expanding
+   clip-path circle from JS; these rules disable the default cross-fade and
+   layer the incoming snapshot above the outgoing one so the wave reads as
+   the new theme washing over the old. Browsers without support never create
+   these pseudo-elements, so this is inert everywhere else. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}

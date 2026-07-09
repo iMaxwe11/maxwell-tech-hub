@@ -72,6 +72,54 @@ function applyTheme(theme: Theme) {
   root.style.setProperty("--theme-secondary-rgb", theme.secondaryRgb);
 }
 
+type DocumentWithVT = Document & {
+  startViewTransition?: (callback: () => void) => { ready: Promise<void> };
+};
+
+/** Theme change as a circular color wave expanding from the interaction
+ *  point, via the View Transitions API. Browsers without support (and
+ *  reduced-motion users) get the instant swap they always had. */
+function applyThemeWithRipple(theme: Theme, origin?: { x: number; y: number }) {
+  const doc = document as DocumentWithVT;
+  const prefersReduced =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (typeof doc.startViewTransition !== "function" || prefersReduced) {
+    applyTheme(theme);
+    return;
+  }
+
+  const x = origin?.x ?? window.innerWidth / 2;
+  const y = origin?.y ?? window.innerHeight / 3;
+  const maxRadius = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y)
+  );
+
+  const transition = doc.startViewTransition(() => applyTheme(theme));
+  transition.ready
+    .then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${maxRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 550,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          // Animate the incoming snapshot only; CSS pins the old one below.
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+    })
+    .catch(() => {
+      // Transition was skipped (rapid clicks, tab hidden) — theme already applied.
+    });
+}
+
 const ACCENT_MODES: { id: AccentMode; label: string; hint: string }[] = [
   { id: "off", label: "Default", hint: "Static gradient" },
   { id: "sweep", label: "Sweep", hint: "Slow color sweep" },
@@ -113,7 +161,12 @@ export function ThemeSwitcher() {
       e.preventDefault();
       const idx = THEMES.findIndex((t) => t.id === activeId);
       const next = THEMES[(idx + 1) % THEMES.length];
-      applyTheme(next);
+      // Ripple out from the switcher button so the wave has a home base.
+      const rect = containerRef.current?.getBoundingClientRect();
+      applyThemeWithRipple(
+        next,
+        rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : undefined
+      );
       setActiveId(next.id);
       try {
         localStorage.setItem(STORAGE_KEY, next.id);
@@ -138,8 +191,8 @@ export function ThemeSwitcher() {
     return () => window.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const selectTheme = (theme: Theme) => {
-    applyTheme(theme);
+  const selectTheme = (theme: Theme, origin?: { x: number; y: number }) => {
+    applyThemeWithRipple(theme, origin);
     setActiveId(theme.id);
     try {
       localStorage.setItem(STORAGE_KEY, theme.id);
@@ -189,7 +242,7 @@ export function ThemeSwitcher() {
               return (
                 <button
                   key={theme.id}
-                  onClick={() => selectTheme(theme)}
+                  onClick={(e) => selectTheme(theme, { x: e.clientX, y: e.clientY })}
                   className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-colors text-left ${
                     isActive
                       ? "bg-white/5 text-white"
