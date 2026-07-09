@@ -118,6 +118,38 @@ function buildUrl(request: Request) {
   };
 }
 
+/** api.nasa.gov's APOD service 500s semi-regularly (observed 2026-07-08:
+ *  {"code":500,"msg":"Internal Service Error"}). apod.ellanan.com is a
+ *  community mirror that scrapes apod.nasa.gov directly and returns the
+ *  identical response shape, so it survives api.nasa.gov outages. Same
+ *  two-source pattern as /api/iss. */
+async function fetchApodFallback(): Promise<NextResponse | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12_000);
+    let response: Response;
+    try {
+      response = await fetch("https://apod.ellanan.com/api", {
+        next: { revalidate: 3600 },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!response.ok) return null;
+    const data = await response.json();
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control":
+          "public, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400",
+      },
+    });
+  } catch (err) {
+    console.error("[api/nasa] apod fallback", err);
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   const built = buildUrl(request);
   if ("error" in built) {
@@ -148,6 +180,10 @@ export async function GET(request: Request) {
     }
 
     if (!response.ok) {
+      if (built.endpoint === "apod") {
+        const fallback = await fetchApodFallback();
+        if (fallback) return fallback;
+      }
       const body = await response.text();
       return NextResponse.json(
         {
@@ -164,16 +200,22 @@ export async function GET(request: Request) {
 
     return NextResponse.json(payload, {
       headers: {
+        // stale-if-error lets Vercel's CDN keep serving the cached response
+        // when upstream (and the fallback) are both failing.
         "Cache-Control":
           built.endpoint === "apod"
-            ? "public, s-maxage=3600, stale-while-revalidate=86400"
-            : "public, s-maxage=1800, stale-while-revalidate=86400",
+            ? "public, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400"
+            : "public, s-maxage=1800, stale-while-revalidate=86400, stale-if-error=86400",
       },
     });
   } catch (err) {
     // Log the real failure; Vercel error-level logs are the only visibility
     // into route-internal fetch failures.
     console.error("[api/nasa]", built.endpoint, err);
+    if (built.endpoint === "apod") {
+      const fallback = await fetchApodFallback();
+      if (fallback) return fallback;
+    }
     return NextResponse.json({ error: "Failed to fetch NASA data" }, { status: 500 });
   }
 }

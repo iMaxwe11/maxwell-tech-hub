@@ -54,7 +54,10 @@ export function NASAAPODCard() {
   if (error || !apod) {
     return (
       <div className="glass-card p-6">
-        <h3 className="text-lg font-bold text-white mb-2">🌌 Astronomy Picture of the Day</h3>
+        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <Telescope className="w-5 h-5 text-white/70" aria-hidden />
+          Astronomy Picture of the Day
+        </h3>
         <p className="text-white/40 text-sm">NASA media is temporarily unavailable.</p>
         <button
           onClick={() => void fetchApod()}

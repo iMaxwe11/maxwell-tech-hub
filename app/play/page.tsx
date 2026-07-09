@@ -263,10 +263,13 @@ function Preview({ id, accent }: { id: string; accent: string }) {
             animate={{ y: [40, 15, 40] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
           />
-          {/* Ball */}
+          {/* Ball — initial cx/cy match the first keyframe: without them,
+              framer-motion writes cx="undefined" to the DOM on the first
+              frames, spamming SVG attribute errors in the console. */}
           <motion.circle
             r="2.5"
             fill="#fff"
+            initial={{ cx: 15, cy: 25 }}
             animate={{
               cx: [15, 105, 15],
               cy: [25, 55, 25],
@@ -404,10 +407,11 @@ function Preview({ id, accent }: { id: string; accent: string }) {
             animate={{ x: [20, 75, 35, 60, 20] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           />
-          {/* Ball */}
+          {/* Ball — initial cx/cy prevent cx="undefined" on first frames (see pong) */}
           <motion.circle
             r="2.5"
             fill="#fff"
+            initial={{ cx: 30, cy: 65 }}
             animate={{ cx: [30, 85, 45, 70, 30], cy: [65, 45, 50, 42, 65] }}
             transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
           />
