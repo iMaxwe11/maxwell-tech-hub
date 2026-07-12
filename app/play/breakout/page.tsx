@@ -38,6 +38,14 @@ interface Particle {
   color: string;
 }
 
+interface Popup {
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  life: number;
+}
+
 function buildBricks(): Brick[] {
   const bricks: Brick[] = [];
   for (let r = 0; r < BRICK_ROWS; r++) {
@@ -65,6 +73,10 @@ export default function BreakoutPage() {
   // Mutable game state for the rAF loop
   const bricks = useRef<Brick[]>(buildBricks());
   const particles = useRef<Particle[]>([]);
+  const popups = useRef<Popup[]>([]);
+  const trail = useRef<{ x: number; y: number; life: number }[]>([]);
+  const shake = useRef(0);
+  const reducedMotion = useRef(false);
   const paddleX = useRef(W / 2 - PADDLE_W / 2);
   const ball = useRef({ x: W / 2, y: H - 90, vx: 3, vy: -3, stuck: true });
   const keys = useRef({ left: false, right: false });
@@ -78,6 +90,7 @@ export default function BreakoutPage() {
   // Persistent high score via the unified arcade store
   useEffect(() => {
     setHighScore(readBest("breakout")?.value ?? 0);
+    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }, []);
 
   const baseSpeed = useCallback(() => 3 + (levelRef.current - 1) * 0.6, []);
@@ -121,8 +134,15 @@ export default function BreakoutPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Screen shake (decays in tick)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (shake.current > 0 && !reducedMotion.current) {
+      const m = shake.current * 8;
+      ctx.translate((Math.random() - 0.5) * 2 * m, (Math.random() - 0.5) * 2 * m);
+    }
+
     ctx.fillStyle = "#050505";
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(-12, -12, W + 24, H + 24);
 
     // Subtle grid
     ctx.strokeStyle = "rgba(212,175,55,0.04)";
@@ -164,6 +184,29 @@ export default function BreakoutPage() {
     ctx.beginPath();
     ctx.roundRect(paddleX.current, H - 32, PADDLE_W, PADDLE_H, 5);
     ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Ball trail
+    trail.current.forEach((t) => {
+      ctx.globalAlpha = t.life * 0.35;
+      ctx.fillStyle = "#d4af37";
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, BALL_R * t.life * 0.85, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Score popups
+    ctx.textAlign = "center";
+    ctx.font = "bold 13px ui-monospace, monospace";
+    popups.current.forEach((p) => {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.fillText(p.text, p.x, p.y - (1 - p.life) * 22);
+    });
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
 
     // Ball
@@ -236,9 +279,19 @@ export default function BreakoutPage() {
           b.y - BALL_R < brick.y + BRICK_H
         ) {
           brick.alive = false;
-          scoreRef.current += ROW_POINTS[brick.row] * levelRef.current;
+          const pts = ROW_POINTS[brick.row] * levelRef.current;
+          scoreRef.current += pts;
           setScore(scoreRef.current);
           spawnParticles(b.x, b.y, ROW_COLORS[brick.row]);
+          if (!reducedMotion.current) {
+            popups.current.push({
+              x: brick.x + BRICK_W / 2,
+              y: brick.y + BRICK_H / 2,
+              text: `+${pts}`,
+              color: ROW_COLORS[brick.row],
+              life: 1,
+            });
+          }
 
           // Reflect off the nearest face
           const overlapX = Math.min(b.x + BALL_R - brick.x, brick.x + BRICK_W - (b.x - BALL_R));
@@ -259,6 +312,8 @@ export default function BreakoutPage() {
 
       // Dropped
       if (b.y > H + BALL_R) {
+        shake.current = 1;
+        spawnParticles(b.x, Math.min(b.y, H - 4), "#ef4444");
         livesRef.current -= 1;
         setLives(livesRef.current);
         if (livesRef.current <= 0) {
@@ -267,9 +322,15 @@ export default function BreakoutPage() {
         }
         resetBall();
       }
+
+      // Ball trail sample
+      if (!b.stuck && !reducedMotion.current) {
+        trail.current.push({ x: b.x, y: b.y, life: 1 });
+        if (trail.current.length > 14) trail.current.shift();
+      }
     }
 
-    // Particles
+    // FX updates
     particles.current.forEach((p) => {
       p.x += p.vx;
       p.y += p.vy;
@@ -277,6 +338,11 @@ export default function BreakoutPage() {
       p.life -= 0.03;
     });
     particles.current = particles.current.filter((p) => p.life > 0);
+    popups.current.forEach((p) => { p.life -= 0.028; });
+    popups.current = popups.current.filter((p) => p.life > 0);
+    trail.current.forEach((t) => { t.life -= 0.09; });
+    trail.current = trail.current.filter((t) => t.life > 0);
+    if (shake.current > 0) shake.current = Math.max(0, shake.current - 0.055);
 
     draw();
     animRef.current = requestAnimationFrame(tick);
@@ -285,6 +351,9 @@ export default function BreakoutPage() {
   const startGame = useCallback(() => {
     bricks.current = buildBricks();
     particles.current = [];
+    popups.current = [];
+    trail.current = [];
+    shake.current = 0;
     paddleX.current = W / 2 - PADDLE_W / 2;
     scoreRef.current = 0;
     livesRef.current = 3;
@@ -414,7 +483,7 @@ export default function BreakoutPage() {
               if (gameState === "playing" && ball.current.stuck) launchBall();
             }}
             className="block touch-none cursor-none"
-            style={{ width: Math.min(W, 360), height: Math.min(H, 390) }}
+            style={{ width: "min(88vw, 480px)", height: "auto", aspectRatio: `${W} / ${H}` }}
           />
 
           <AnimatePresence>

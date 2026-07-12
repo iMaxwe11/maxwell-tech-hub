@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { Keyboard } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { readBest, recordScore } from "@/lib/arcade-scores";
 
@@ -153,7 +154,14 @@ export default function TypingPage() {
         {phase === "menu" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-6">
-            <div className="text-6xl">⌨️</div>
+            <motion.span
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              className="p-4 rounded-2xl border border-rose-400/40 bg-rose-400/10 text-rose-300"
+              style={{ boxShadow: "0 0 30px rgba(244,63,94,0.35)" }}
+            >
+              <Keyboard size={44} strokeWidth={1.5} aria-hidden />
+            </motion.span>
             {bestWpm > 0 && <p className="text-white/40 font-mono text-sm">Personal best: <span className="text-rose-400 font-bold">{bestWpm} WPM</span></p>}
             <div className="flex flex-col gap-4 items-center">
               <div>

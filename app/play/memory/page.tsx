@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { Brain } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { readBest, recordScore } from "@/lib/arcade-scores";
 
@@ -168,7 +169,14 @@ export default function MemoryPage() {
           style={{ boxShadow: "0 0 40px rgba(245,158,11,0.08)" }}>
           {phase === "menu" ? (
             <div className="w-72 h-72 sm:w-80 sm:h-80 flex flex-col items-center justify-center gap-4 bg-black/40 rounded-xl border border-white/[0.06]">
-              <div className="text-6xl">🧠</div>
+              <motion.span
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                className="p-4 rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-300"
+                style={{ boxShadow: "0 0 30px rgba(245,158,11,0.35)" }}
+              >
+                <Brain size={44} strokeWidth={1.5} aria-hidden />
+              </motion.span>
               <p className="text-[10px] text-white/40 font-mono">Choose Difficulty:</p>
               <div className="flex gap-2">
                 {(["easy", "medium", "hard"] as const).map(d => (

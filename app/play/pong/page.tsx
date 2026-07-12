@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { Disc } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { readBest, recordScore } from "@/lib/arcade-scores";
 
@@ -38,6 +39,12 @@ export default function PongPage() {
   const rallyRef = useRef(0);
   const particles = useRef<{ x: number; y: number; vx: number; vy: number; life: number; color: string }[]>([]);
   const powerups = useRef<{ x: number; y: number; type: "speed" | "paddle" | "multi"; life: number }[]>([]);
+  const trail = useRef<{ x: number; y: number; life: number }[]>([]);
+  const shake = useRef(0);
+  const reducedMotion = useRef(false);
+  useEffect(() => {
+    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
 
   const spawnParticles = (x: number, y: number, color: string, count = 8) => {
     for (let i = 0; i < count; i++) {
@@ -65,6 +72,8 @@ export default function PongPage() {
     pScoreRef.current = 0; aiScoreRef.current = 0;
     setPlayerScore(0); setAiScore(0);
     particles.current = [];
+    trail.current = [];
+    shake.current = 0;
     resetBall(1);
     setGameState("playing");
   }, [resetBall]);
@@ -121,6 +130,7 @@ export default function PongPage() {
     // Scoring
     if (b.x < 0) {
       aiScoreRef.current++; setAiScore(aiScoreRef.current);
+      shake.current = 1;
       spawnParticles(0, b.y, "#ef4444", 15);
       spawnPowerup(Math.random() * W, Math.random() * H);
       if (aiScoreRef.current >= WINNING_SCORE) { setGameState("lost"); return; }
@@ -128,6 +138,7 @@ export default function PongPage() {
     }
     if (b.x > W) {
       pScoreRef.current++; setPlayerScore(pScoreRef.current);
+      shake.current = 0.7;
       spawnParticles(W, b.y, "#06b6d4", 15);
       spawnPowerup(Math.random() * W, Math.random() * H);
       if (pScoreRef.current >= WINNING_SCORE) {
@@ -145,9 +156,23 @@ export default function PongPage() {
     // Update powerups
     powerups.current = powerups.current.filter(p => { p.life -= 0.02; return p.life > 0; });
 
+    // Ball trail sample + decay
+    if (!reducedMotion.current) {
+      trail.current.push({ x: b.x, y: b.y, life: 1 });
+      if (trail.current.length > 12) trail.current.shift();
+    }
+    trail.current.forEach(t => { t.life -= 0.1; });
+    trail.current = trail.current.filter(t => t.life > 0);
+    if (shake.current > 0) shake.current = Math.max(0, shake.current - 0.06);
+
     // ── DRAW ──
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (shake.current > 0 && !reducedMotion.current) {
+      const m = shake.current * 7;
+      ctx.translate((Math.random() - 0.5) * 2 * m, (Math.random() - 0.5) * 2 * m);
+    }
     ctx.fillStyle = "#050505";
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(-10, -10, W + 20, H + 20);
 
     // Center line
     ctx.setLineDash([6, 8]);
@@ -155,6 +180,16 @@ export default function PongPage() {
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
     ctx.setLineDash([]);
+
+    // Ball motion trail
+    trail.current.forEach(t => {
+      ctx.globalAlpha = t.life * 0.3;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, BALL_R * t.life * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
 
     // Ball trail glow
     const bGrad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, BALL_R * 4);
@@ -308,7 +343,14 @@ export default function PongPage() {
             {gameState === "menu" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-                <div className="text-6xl">🏓</div>
+                <motion.span
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  className="p-4 rounded-2xl border border-purple-400/40 bg-purple-400/10 text-purple-300"
+                  style={{ boxShadow: "0 0 30px rgba(168,85,247,0.35)" }}
+                >
+                  <Disc size={44} strokeWidth={1.5} aria-hidden />
+                </motion.span>
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={startGame}
                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white font-mono font-bold text-sm uppercase tracking-wider shadow-[0_0_30px_rgba(168,85,247,0.3)]">
                   Play

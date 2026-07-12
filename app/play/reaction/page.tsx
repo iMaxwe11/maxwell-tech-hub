@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { Zap } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { readBest, recordScore } from "@/lib/arcade-scores";
 
@@ -166,13 +167,15 @@ export default function ReactionPage() {
           >
             {phase === "idle" && (
               <>
-                <div className="text-5xl">⚡</div>
+                <span className="p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-300" style={{ boxShadow: "0 0 30px rgba(16,185,129,0.35)" }}>
+                  <Zap size={36} strokeWidth={1.5} aria-hidden />
+                </span>
                 <p className="text-white/70 font-mono text-sm">Click to start</p>
               </>
             )}
             {phase === "waiting" && (
               <>
-                <div className="text-4xl animate-pulse">🔴</div>
+                <div className="w-14 h-14 rounded-full animate-pulse bg-red-500" style={{ boxShadow: "0 0 40px rgba(239,68,68,0.7)" }} />
                 <p className="text-red-400/80 font-mono text-sm font-bold">Wait for {testMode === "color" ? "color" : testMode === "aim" ? "target" : "green"}...</p>
               </>
             )}
@@ -180,7 +183,7 @@ export default function ReactionPage() {
               <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-4 w-full h-full justify-center">
                 {testMode === "click" && (
                   <>
-                    <div className="text-5xl">🟢</div>
+                    <div className="w-20 h-20 rounded-full bg-green-500" style={{ boxShadow: "0 0 50px rgba(34,197,94,0.8)" }} />
                     <p className="text-green-400 font-mono text-lg font-bold">CLICK NOW!</p>
                   </>
                 )}
