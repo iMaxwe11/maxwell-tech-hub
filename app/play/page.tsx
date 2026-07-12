@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Brain, BrickWall, Disc, Keyboard, Trophy, Worm, Zap } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
@@ -567,15 +568,15 @@ function Cabinet({
           </div>
         </div>
 
-        {/* Launch buttons */}
-        <div className="mt-4 flex gap-2">
+        {/* Launch button */}
+        <div className="mt-4">
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={(e) => {
               e.stopPropagation();
               onQuickLaunch();
             }}
-            className="flex-1 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider
+            className="w-full py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider
                        border transition-[background-color,box-shadow]"
             style={{
               borderColor: `${game.accent}50`,
@@ -586,15 +587,6 @@ function Cabinet({
           >
             Play
           </motion.button>
-          <Link
-            href={game.href}
-            onClick={(e) => e.stopPropagation()}
-            className="py-2 px-3 rounded-lg text-xs font-mono text-white/50 hover:text-white
-                       bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20
-                       transition-colors"
-          >
-            ↗
-          </Link>
         </div>
       </div>
     </motion.div>
@@ -602,28 +594,13 @@ function Cabinet({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   NOW PLAYING MODAL
+   LAUNCH OVERLAY — brief "insert coin" flash before navigating.
+   Replaces the old iframe modal, which never received keyboard
+   focus until clicked (arrow keys silently died) and double-loaded
+   the Navbar inside a 72vh box.
    ═══════════════════════════════════════════════════════════════ */
 
-function NowPlayingModal({
-  game,
-  onClose,
-}: {
-  game: ArcadeGame | null;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    if (!game) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [game, onClose]);
+function LaunchOverlay({ game }: { game: ArcadeGame | null }) {
 
   return (
     <AnimatePresence>
@@ -632,80 +609,35 @@ function NowPlayingModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[80] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4"
-          onClick={onClose}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 z-[90] flex flex-col items-center justify-center gap-4 bg-black/90 backdrop-blur-md"
+          aria-hidden
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ duration: 0.25 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-4xl rounded-2xl border-2 overflow-hidden
-                       bg-[#050508] shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
-            style={{ borderColor: `${game.accent}60` }}
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: [0.6, 1.15, 1], opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="p-4 rounded-2xl border-2"
+            style={{
+              background: `${game.accent}12`,
+              borderColor: `${game.accent}60`,
+              color: game.accent,
+              boxShadow: `0 0 60px ${game.accent}50`,
+            }}
           >
-            {/* Header */}
-            <div
-              className="flex items-center justify-between px-5 py-3 border-b border-white/10"
-              style={{
-                background: `linear-gradient(90deg, ${game.accent}15, transparent)`,
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className="p-2 rounded-lg border"
-                  style={{ background: `${game.accent}12`, borderColor: `${game.accent}35`, color: game.accent }}
-                >
-                  <game.icon size={18} strokeWidth={1.8} aria-hidden />
-                </span>
-                <div>
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-white/40">
-                    Now Playing
-                  </p>
-                  <h2
-                    className="text-sm font-mono font-bold uppercase tracking-wide"
-                    style={{ color: game.accent }}
-                  >
-                    {game.title}
-                  </h2>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href={game.href}
-                  className="text-[10px] font-mono px-2.5 py-1.5 rounded-md
-                             bg-white/[0.04] hover:bg-white/[0.08] border border-white/10
-                             text-white/60 hover:text-white transition-colors"
-                >
-                  Full Page
-                </Link>
-                <button
-                  onClick={onClose}
-                  aria-label="Close"
-                  className="w-7 h-7 rounded-md bg-white/[0.04] hover:bg-white/[0.1] border border-white/10
-                             text-white/70 hover:text-white transition-colors flex items-center justify-center"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Game iframe */}
-            <iframe
-              src={game.href}
-              title={game.title}
-              className="w-full h-[72vh] border-0 bg-black"
-              allow="fullscreen"
-            />
-
-            {/* Footer hint */}
-            <div className="px-5 py-2.5 border-t border-white/5 text-[10px] font-mono text-white/35 text-center">
-              Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-white/60">Esc</kbd> to exit
-            </div>
-          </motion.div>
+            <game.icon size={40} strokeWidth={1.6} aria-hidden />
+          </motion.span>
+          <motion.p
+            animate={{ opacity: [1, 0.35, 1] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+            className="font-mono text-sm font-bold uppercase tracking-[0.35em]"
+            style={{ color: game.accent }}
+          >
+            Insert Coin
+          </motion.p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+            Loading {game.title}
+          </p>
         </motion.div>
       )}
     </AnimatePresence>
@@ -717,8 +649,9 @@ function NowPlayingModal({
    ═══════════════════════════════════════════════════════════════ */
 
 export default function ArcadePage() {
+  const router = useRouter();
   const [focusedIdx, setFocusedIdx] = useState(0);
-  const [playing, setPlaying] = useState<ArcadeGame | null>(null);
+  const [launching, setLaunching] = useState<ArcadeGame | null>(null);
   const [stats, setStats] = useState<PlayStats>({});
   const [bests, setBests] = useState<Partial<Record<ArcadeGameId, BestScore>>>({});
 
@@ -728,24 +661,23 @@ export default function ArcadePage() {
     setBests(readAllBests());
   }, []);
 
+  // Full-page navigation so the game owns keyboard focus from frame one.
+  // Reduced-motion users skip the coin flash and go straight there.
   const launch = useCallback((game: ArcadeGame) => {
     const next = recordPlay(game.id);
     setStats(next);
-    setPlaying(game);
-  }, []);
-
-  // Games in the modal iframe share this origin's localStorage, so re-read
-  // bests when the modal closes — a new record may have just been set.
-  const closeModal = useCallback(() => {
-    setPlaying(null);
-    setBests(readAllBests());
-    setStats(readStats());
-  }, []);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      router.push(game.href);
+      return;
+    }
+    setLaunching(game);
+    window.setTimeout(() => router.push(game.href), 650);
+  }, [router]);
 
   // Keyboard shortcuts: 1-6 launches, arrows navigate focus
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (playing) return; // modal owns keys when open
+      if (launching) return; // ignore keys mid-launch
       const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea" || (e.target as HTMLElement)?.isContentEditable) return;
 
@@ -768,7 +700,7 @@ export default function ArcadePage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focusedIdx, launch, playing]);
+  }, [focusedIdx, launch, launching]);
 
   // Aggregate stats for the footer
   const totalPlays = Object.values(stats).reduce((sum, s) => sum + s.plays, 0);
@@ -833,7 +765,6 @@ export default function ArcadePage() {
                 { k: "1 – 6", label: "Launch a game" },
                 { k: "← →", label: "Navigate" },
                 { k: "Enter", label: "Play focused" },
-                { k: "Esc", label: "Exit" },
               ].map((s) => (
                 <span
                   key={s.k}
@@ -1018,7 +949,7 @@ export default function ArcadePage() {
         </div>
       </main>
 
-      <NowPlayingModal game={playing} onClose={closeModal} />
+      <LaunchOverlay game={launching} />
     </>
   );
 }
