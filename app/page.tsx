@@ -8,6 +8,7 @@ import { SocialIcon } from "@/components/SocialIcon";
 import { Navbar } from "@/components/Navbar";
 import { WidgetErrorBoundary } from "@/components/WidgetErrorBoundary";
 import { CopyButton } from "@/components/CopyButton";
+import { AmbientOrbs, ScrollProgress, SectionBeam } from "@/components/ScrollAmbience";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 import { useAccent } from "@/lib/use-accent";
 
@@ -998,7 +999,7 @@ function Footer() {
 
   return (
     <footer className="relative py-16 px-4 sm:px-6">
-      <div className="section-divider mb-16" />
+      <div className="mb-16"><SectionBeam /></div>
       <div className="max-w-[1200px] mx-auto">
         <div className="grid sm:grid-cols-3 gap-10 mb-12">
           <div>
@@ -1115,23 +1116,25 @@ export default function Home() {
   return (
     <>
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
+      <ScrollProgress />
       <Navbar links={homeNavLinks} />
-      <main>
+      <main className="relative">
+        <AmbientOrbs />
         <HeroSection />
         <StatsStrip />
-        <div className="section-divider" />
+        <SectionBeam />
         <LiveDataSection />
-        <div className="section-divider" />
+        <SectionBeam />
         <AboutSection />
-        <div className="section-divider" />
+        <SectionBeam />
         <ProjectsSection />
-        <div className="section-divider" />
+        <SectionBeam />
         <GitHubSection />
-        <div className="section-divider" />
+        <SectionBeam />
         <ExperienceSection />
-        <div className="section-divider" />
+        <SectionBeam />
         <StackSection />
-        <div className="section-divider" />
+        <SectionBeam />
         <ContactSection />
       </main>
       <Footer />
