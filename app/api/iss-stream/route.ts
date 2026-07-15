@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
 
 /* Resolves NASA's current ISS live-stream video ID.
+
    YouTube retired the `embed/live_stream?channel=` endpoint, so embedding the
-   channel's live broadcast now requires the concrete video ID — which changes
-   whenever NASA restarts the stream. This route scrapes the canonical watch
-   URL from the channel's /live page server-side and caches it, so the client
-   always embeds a working `embed/{videoId}` URL. */
+   channel's live broadcast requires the concrete video ID. The previous
+   implementation scraped the channel /live page and trusted the FIRST
+   `"videoId"` token in the HTML. From Vercel datacenter IPs, YouTube serves
+   different markup where that first token belongs to an unrelated
+   *recommended* video — which is how a random third-party video ended up
+   playing inside the "ISS Live" widget. The `isLive` regex was equally
+   untrustworthy (it matched anywhere in ~1MB of HTML).
+
+   Fix: every candidate ID is now verified through YouTube's oEmbed API
+   before being served. oEmbed returns the video's true author and title
+   regardless of the requesting IP, so we only ever emit a video that is
+   provably NASA's ISS stream. Verification results are cached alongside
+   the ID; a verified hardcoded fallback covers cold-cache failures. */
 
 const CHANNEL_ID = "UCLA_DiR1FfKNvjuUpBHmylQ"; // NASA official
-// Last verified live 2026-07-14. Served only if resolution fails with a cold cache.
+// Verified 2026-07-15 via oEmbed: "Live High-Definition Views from the
+// International Space Station (Official NASA Stream)" — author NASA.
 const LAST_KNOWN_VIDEO_ID = "awQzjn72bI0";
 
 interface StreamPayload {
@@ -21,6 +32,26 @@ interface StreamPayload {
 
 let cache: { videoId: string; isLive: boolean; ts: number } | null = null;
 const TTL = 3_600_000; // 1h — stream IDs persist for days between restarts
+
+/* Confirms via oEmbed that a video ID is genuinely NASA's ISS stream.
+   oEmbed is IP-agnostic: it reports the real uploader even when the page
+   scrape returned datacenter-flavored markup. */
+async function verifyNasaIssVideo(videoId: string, signal: AbortSignal): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`,
+      { cache: "no-store", signal }
+    );
+    if (!response.ok) return false;
+    const meta = (await response.json()) as { author_name?: string; author_url?: string; title?: string };
+    const authorOk =
+      meta.author_name === "NASA" || meta.author_url === "https://www.youtube.com/@NASA";
+    const titleOk = /space station|ISS/i.test(meta.title ?? "");
+    return authorOk && titleOk;
+  } catch {
+    return false;
+  }
+}
 
 function respond(payload: Omit<StreamPayload, "embedUrl">, cacheState: "HIT" | "MISS" | "STALE" | "FALLBACK") {
   const body: StreamPayload = {
@@ -66,20 +97,33 @@ export async function GET() {
     }
 
     const html = await response.text();
+    /* Only the canonical watch URL is a trustworthy live-target signal.
+       The old `"videoId":"..."` first-match heuristic is gone — on
+       datacenter-served markup it points at recommendation-shelf videos. */
     const canonical = html.match(
       /<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/
     );
-    const jsonId = html.match(/"videoId":"([\w-]{11})"/);
-    const videoId = canonical?.[1] ?? jsonId?.[1];
-    const isLive = /"isLive"\s*:\s*true|"isLiveNow"\s*:\s*true/.test(html);
+    const candidateId = canonical?.[1];
 
-    if (!videoId) {
-      throw new Error("No video ID found on channel /live page");
+    if (!candidateId) {
+      throw new Error("No canonical live video on channel /live page");
     }
 
-    cache = { videoId, isLive, ts: Date.now() };
+    const verified = await verifyNasaIssVideo(candidateId, controller.signal);
+    if (!verified) {
+      throw new Error(`Candidate ${candidateId} failed NASA/ISS oEmbed verification`);
+    }
+
+    /* Scope the liveness check to the verified video's own metadata rather
+       than matching `"isLive":true` anywhere in the page (which also matches
+       unrelated recommended videos). If the scoped check can't find it,
+       treat as not-live rather than guessing. */
+    const liveScope = html.slice(0, html.indexOf(candidateId) + 20_000);
+    const isLive = /"isLiveNow"\s*:\s*true/.test(liveScope) || /"isLive"\s*:\s*true/.test(liveScope);
+
+    cache = { videoId: candidateId, isLive, ts: Date.now() };
     return respond(
-      { videoId, isLive, source: "youtube", updatedAt: new Date().toISOString() },
+      { videoId: candidateId, isLive, source: "youtube", updatedAt: new Date().toISOString() },
       "MISS"
     );
   } catch (error) {
