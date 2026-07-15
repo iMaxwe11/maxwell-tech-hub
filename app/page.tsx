@@ -8,7 +8,7 @@ import { SocialIcon } from "@/components/SocialIcon";
 import { Navbar } from "@/components/Navbar";
 import { WidgetErrorBoundary } from "@/components/WidgetErrorBoundary";
 import { CopyButton } from "@/components/CopyButton";
-import { AmbientOrbs, ScrollProgress, SectionBeam } from "@/components/ScrollAmbience";
+import { AmbientOrbs, SectionBeam } from "@/components/ScrollAmbience";
 import { footerNavLinks, homeNavLinks, siteConfig, socialLinks } from "@/lib/site-config";
 import { useAccent } from "@/lib/use-accent";
 
@@ -1116,7 +1116,6 @@ export default function Home() {
   return (
     <>
       <div className="aurora-bg"><div className="aurora-band" /><div className="aurora-band" /></div>
-      <ScrollProgress />
       <Navbar links={homeNavLinks} />
       <main className="relative">
         <AmbientOrbs />

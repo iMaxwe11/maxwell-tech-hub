@@ -5,7 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GrokStarfield } from "@/components/GrokStarfield";
 import { PageTransition } from "@/components/PageTransition";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
-import { ScrollProgress } from "@/components/ScrollProgress";
+import { ScrollProgress } from "@/components/ScrollAmbience";
 import { Toast } from "@/components/Toast";
 import { DeferredEnhancements } from "@/components/DeferredEnhancements";
 import { rootMetadata } from "@/lib/metadata";
