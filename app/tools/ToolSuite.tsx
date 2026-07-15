@@ -3,14 +3,20 @@
 // that tool (each tool is its own dynamic chunk — see ./tools/index.ts). The
 // active tool is encoded in the URL hash (#toolid), so old anchor links and
 // share links (#toolid?v=...) keep working.
+//
+// Launcher niceties: pinned tools sort first, a Recently Used strip appears
+// above the grid, arrow keys walk the grid (Enter launches), and the focused
+// tool view carries a proper header with a copy-share-link button plus a
+// related-tools row.
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, CircleDot, Dice6, Search, Terminal, X } from "lucide-react";
+import { ArrowLeft, Check, CircleDot, Dice6, History, Link2, Pin, Search, Terminal, X } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { CAT_COLORS, CATEGORIES, NAV_IDS, TOOL_META, type ToolId } from "./tool-config";
 import { MatrixRain, readHashPrefill, SpotlightCursor, ToolCountBadge, ToolsParticles } from "./shared";
+import { readPinned, readRecents, readUsage, recordToolUse, togglePinned } from "./tool-prefs";
 import { TOOL_COMPONENTS } from "./tools";
 
 const TOOL_COUNT = NAV_IDS.length;
@@ -20,23 +26,55 @@ function isToolId(id: string): id is ToolId {
 }
 
 /* ── Launcher card ── */
-function ToolCard({ id, onOpen, index, hackerMode }: { id: ToolId; onOpen: (id: ToolId) => void; index: number; hackerMode: boolean }) {
+function ToolCard({
+  id,
+  onOpen,
+  index,
+  hackerMode,
+  selected,
+  pinned,
+  onTogglePin,
+  uses,
+  dataIdx,
+}: {
+  id: ToolId;
+  onOpen: (id: ToolId) => void;
+  index: number;
+  hackerMode: boolean;
+  selected: boolean;
+  pinned: boolean;
+  onTogglePin: (id: ToolId) => void;
+  uses: number;
+  dataIdx: number;
+}) {
   const meta = TOOL_META[id];
   const color = hackerMode ? "#4ade80" : CAT_COLORS[meta.cat as keyof typeof CAT_COLORS] ?? "#06b6d4";
   const Icon = meta.icon;
 
   return (
-    <motion.button
+    <motion.div
       layout
-      type="button"
+      role="button"
+      tabIndex={0}
+      data-tool-idx={dataIdx}
       onClick={() => onOpen(id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(id);
+        }
+      }}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ delay: Math.min(index * 0.02, 0.4), duration: 0.35 }}
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.97 }}
-      className="group text-left p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.12] transition-colors relative overflow-hidden"
+      className="group cursor-pointer text-left p-4 rounded-2xl bg-white/[0.02] border hover:bg-white/[0.04] transition-colors relative overflow-hidden focus:outline-none"
+      style={{
+        borderColor: selected ? `${color}70` : "rgba(255,255,255,0.06)",
+        boxShadow: selected ? `0 0 0 1px ${color}70, 0 0 24px ${color}25` : undefined,
+      }}
     >
       <div
         className="absolute -top-10 -right-10 w-28 h-28 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity"
@@ -44,25 +82,49 @@ function ToolCard({ id, onOpen, index, hackerMode }: { id: ToolId; onOpen: (id: 
       />
       <div className="relative z-10">
         <div className="flex items-center justify-between gap-2">
-          <span
+          <motion.span
+            whileHover={{ rotate: -8, scale: 1.08 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
             className="p-2 rounded-xl border transition-colors"
             style={{ background: `${color}12`, borderColor: `${color}30`, color }}
           >
             <Icon size={18} strokeWidth={1.8} aria-hidden />
-          </span>
-          <span
-            className="px-2 py-0.5 rounded-full text-[0.55rem] font-[family-name:var(--font-mono)] uppercase tracking-wider border"
-            style={{ background: `${color}10`, borderColor: `${color}25`, color }}
-          >
-            {meta.cat}
+          </motion.span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="px-2 py-0.5 rounded-full text-[0.55rem] font-[family-name:var(--font-mono)] uppercase tracking-wider border"
+              style={{ background: `${color}10`, borderColor: `${color}25`, color }}
+            >
+              {meta.cat}
+            </span>
+            <button
+              type="button"
+              aria-label={pinned ? `Unpin ${meta.label}` : `Pin ${meta.label}`}
+              aria-pressed={pinned}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(id);
+              }}
+              className={`p-1 rounded-md border transition-all ${
+                pinned
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 border-white/10 text-white/35 hover:text-white/70 bg-white/[0.03]"
+              }`}
+              style={pinned ? { background: `${color}15`, borderColor: `${color}40`, color } : undefined}
+            >
+              <Pin size={11} strokeWidth={2} fill={pinned ? "currentColor" : "none"} aria-hidden />
+            </button>
           </span>
         </div>
-        <h3 className="mt-3 text-sm font-semibold text-white/85 group-hover:text-white transition-colors">
+        <h3 className="mt-3 text-sm font-semibold text-white/85 group-hover:text-white transition-colors flex items-baseline gap-1.5">
           {meta.label}
+          {uses >= 3 && (
+            <span className="text-[0.55rem] font-[family-name:var(--font-mono)] text-white/25">×{uses}</span>
+          )}
         </h3>
         <p className="mt-1 text-xs text-white/40 leading-relaxed line-clamp-2">{meta.desc}</p>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
@@ -74,6 +136,12 @@ export default function ToolsPage() {
   const [hackerMode, setHackerMode] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [openedCount, setOpenedCount] = useState(0);
+  const [recents, setRecents] = useState<ToolId[]>([]);
+  const [pinned, setPinned] = useState<ToolId[]>([]);
+  const [usage, setUsage] = useState<Partial<Record<ToolId, number>>>({});
+  const [selIdx, setSelIdx] = useState(-1);
+  const [cols, setCols] = useState(3);
+  const [copied, setCopied] = useState(false);
   const openedRef = useRef(new Set<string>());
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -84,6 +152,7 @@ export default function ToolsPage() {
       const pref = readHashPrefill();
       if (pref && isToolId(pref.id)) {
         setActiveTool(pref.id);
+        setCopied(false);
         if (!openedRef.current.has(pref.id)) {
           openedRef.current.add(pref.id);
           setOpenedCount(openedRef.current.size);
@@ -98,8 +167,37 @@ export default function ToolsPage() {
     return () => window.removeEventListener("hashchange", sync);
   }, []);
 
+  // Launcher prefs (localStorage)
+  useEffect(() => {
+    setRecents(readRecents());
+    setPinned(readPinned());
+    setUsage(readUsage());
+  }, []);
+
+  // Grid column count for arrow-key navigation, tracked via the same
+  // breakpoints the grid classes use (sm:grid-cols-2 lg:grid-cols-3).
+  useEffect(() => {
+    const lg = window.matchMedia("(min-width: 1024px)");
+    const sm = window.matchMedia("(min-width: 640px)");
+    const update = () => setCols(lg.matches ? 3 : sm.matches ? 2 : 1);
+    update();
+    lg.addEventListener("change", update);
+    sm.addEventListener("change", update);
+    return () => {
+      lg.removeEventListener("change", update);
+      sm.removeEventListener("change", update);
+    };
+  }, []);
+
   const openTool = (id: ToolId) => {
+    const next = recordToolUse(id);
+    setRecents(next.recents);
+    setUsage(next.usage);
     window.location.hash = id;
+  };
+
+  const togglePin = (id: ToolId) => {
+    setPinned(togglePinned(id));
   };
 
   const closeTool = () => {
@@ -112,21 +210,6 @@ export default function ToolsPage() {
     }
     setActiveTool(null);
   };
-
-  // Keyboard: Ctrl+K focuses search, Escape closes the active tool.
-  useEffect(() => {
-    const fn = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-      if (e.key === "Escape" && activeTool) {
-        closeTool();
-      }
-    };
-    window.addEventListener("keydown", fn);
-    return () => window.removeEventListener("keydown", fn);
-  }, [activeTool]);
 
   const filteredIds = useMemo(
     () =>
@@ -145,12 +228,111 @@ export default function ToolsPage() {
     [activeCat, deferredSearch]
   );
 
+  // Pinned tools float to the front of the grid (stable within each group).
+  const orderedIds = useMemo(() => {
+    if (pinned.length === 0) return filteredIds;
+    const pinnedSet = new Set(pinned);
+    return [...filteredIds].sort((a, b) => Number(pinnedSet.has(b)) - Number(pinnedSet.has(a)));
+  }, [filteredIds, pinned]);
+
+  // Selection resets whenever the visible set changes shape.
+  useEffect(() => {
+    setSelIdx(-1);
+  }, [deferredSearch, activeCat]);
+
+  // Keyboard: Ctrl+K focuses search, Escape closes the active tool, arrows walk
+  // the launcher grid (ArrowDown from the search box drops into the grid),
+  // Enter launches the selected card.
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === "Escape") {
+        if (activeTool) closeTool();
+        else setSelIdx(-1);
+        return;
+      }
+      if (activeTool) return;
+
+      const target = e.target as HTMLElement | null;
+      const inSearch = target === searchRef.current;
+      const inOtherField =
+        !inSearch &&
+        (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable);
+      if (inOtherField) return;
+
+      const max = orderedIds.length - 1;
+      if (max < 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (inSearch) searchRef.current?.blur();
+        setSelIdx((i) => (i < 0 ? 0 : Math.min(max, i + cols)));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelIdx((i) => (i < 0 ? 0 : Math.max(0, i - cols)));
+      } else if (e.key === "ArrowRight" && !inSearch) {
+        e.preventDefault();
+        setSelIdx((i) => (i < 0 ? 0 : Math.min(max, i + 1)));
+      } else if (e.key === "ArrowLeft" && !inSearch) {
+        e.preventDefault();
+        setSelIdx((i) => (i < 0 ? 0 : Math.max(0, i - 1)));
+      } else if (e.key === "Enter") {
+        if (inSearch && filteredIds.length === 1) {
+          openTool(filteredIds[0]);
+        } else if (!inSearch && selIdx >= 0 && selIdx <= max) {
+          e.preventDefault();
+          openTool(orderedIds[selIdx]);
+        }
+      }
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool, orderedIds, filteredIds, cols, selIdx]);
+
+  // Keep the keyboard-selected card in view.
+  useEffect(() => {
+    if (selIdx < 0) return;
+    document
+      .querySelector(`[data-tool-idx="${selIdx}"]`)
+      ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selIdx]);
+
   const luckyTool = () => {
     const source = filteredIds.length > 0 ? filteredIds : NAV_IDS;
     openTool(source[Math.floor(Math.random() * source.length)]);
   };
 
+  const copyShareLink = () => {
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1600);
+      })
+      .catch(() => {});
+  };
+
+  const relatedIds = useMemo(() => {
+    if (!activeTool) return [];
+    const cat = TOOL_META[activeTool].cat;
+    return NAV_IDS.filter((id) => id !== activeTool && TOOL_META[id].cat === cat).slice(0, 4);
+  }, [activeTool]);
+
+  const showRecents = !deferredSearch && activeCat === "All" && recents.length > 0;
+  const pinnedSet = useMemo(() => new Set(pinned), [pinned]);
+
   const ActiveComponent = activeTool ? TOOL_COMPONENTS[activeTool] : null;
+  const activeMeta = activeTool ? TOOL_META[activeTool] : null;
+  const activeColor =
+    activeMeta && !hackerMode
+      ? CAT_COLORS[activeMeta.cat as keyof typeof CAT_COLORS] ?? "#06b6d4"
+      : "#4ade80";
+  const ActiveIcon = activeMeta?.icon;
 
   return (
     <>
@@ -161,7 +343,7 @@ export default function ToolsPage() {
       <Navbar breadcrumb={activeTool ? ["tools", activeTool] : ["tools"]} />
       <main className="pt-20 sm:pt-24 pb-20 px-4 sm:px-6 max-w-[1200px] mx-auto relative z-10">
         <AnimatePresence mode="wait">
-          {activeTool && ActiveComponent ? (
+          {activeTool && ActiveComponent && activeMeta ? (
             /* ── Focused tool view: only this tool's chunk is loaded & mounted ── */
             <motion.div
               key={activeTool}
@@ -170,19 +352,90 @@ export default function ToolsPage() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
             >
-              <div className="mb-6 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={closeTool}
-                  className="tool-btn flex items-center gap-1.5"
-                >
-                  <ArrowLeft size={14} strokeWidth={1.8} aria-hidden /> All tools
-                </button>
-                <span className="text-[0.6rem] font-[family-name:var(--font-mono)] text-white/30 hidden sm:inline">
-                  Esc to close · #{activeTool} is linkable
-                </span>
+              {/* Tool chrome: identity + share */}
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button type="button" onClick={closeTool} className="tool-btn flex items-center gap-1.5 shrink-0">
+                    <ArrowLeft size={14} strokeWidth={1.8} aria-hidden /> All tools
+                  </button>
+                  <span
+                    className="p-2 rounded-xl border shrink-0"
+                    style={{ background: `${activeColor}12`, borderColor: `${activeColor}30`, color: activeColor }}
+                  >
+                    {ActiveIcon && <ActiveIcon size={16} strokeWidth={1.8} aria-hidden />}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm font-semibold text-white truncate">{activeMeta.label}</h2>
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[0.55rem] font-[family-name:var(--font-mono)] uppercase tracking-wider border shrink-0"
+                        style={{ background: `${activeColor}10`, borderColor: `${activeColor}25`, color: activeColor }}
+                      >
+                        {activeMeta.cat}
+                      </span>
+                    </div>
+                    <p className="text-[0.65rem] text-white/35 truncate">{activeMeta.desc}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.94 }}
+                    onClick={copyShareLink}
+                    className="tool-btn flex items-center gap-1.5"
+                    aria-live="polite"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={13} strokeWidth={2} aria-hidden className="text-emerald-400" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Link2 size={13} strokeWidth={1.8} aria-hidden /> Copy link
+                      </>
+                    )}
+                  </motion.button>
+                  <span className="text-[0.6rem] font-[family-name:var(--font-mono)] text-white/30 hidden md:inline">
+                    Esc to close
+                  </span>
+                </div>
               </div>
+
               <ActiveComponent />
+
+              {/* Related tools */}
+              {relatedIds.length > 0 && (
+                <div className="mt-10 pt-6 border-t border-white/[0.05]">
+                  <p className="text-[0.6rem] uppercase tracking-[0.2em] text-white/30 font-[family-name:var(--font-mono)] mb-3">
+                    More {activeMeta.cat} tools
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {relatedIds.map((id) => {
+                      const meta = TOOL_META[id];
+                      const color = hackerMode ? "#4ade80" : CAT_COLORS[meta.cat as keyof typeof CAT_COLORS] ?? "#06b6d4";
+                      const RIcon = meta.icon;
+                      return (
+                        <motion.button
+                          key={id}
+                          type="button"
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => openTool(id)}
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.12] transition-colors text-left"
+                        >
+                          <span
+                            className="p-1.5 rounded-lg border shrink-0"
+                            style={{ background: `${color}12`, borderColor: `${color}30`, color }}
+                          >
+                            <RIcon size={14} strokeWidth={1.8} aria-hidden />
+                          </span>
+                          <span className="text-xs text-white/70 truncate">{meta.label}</span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : (
             /* ── Launcher ── */
@@ -231,10 +484,7 @@ export default function ToolsPage() {
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && filteredIds.length === 1) openTool(filteredIds[0]);
-                      }}
-                      placeholder="Search tools... (Ctrl+K, Enter opens a single match)"
+                      placeholder="Search tools... (Ctrl+K, ↓ into grid, Enter opens)"
                       className="tool-input neon-input pl-10 pr-9"
                     />
                     {search && (
@@ -277,6 +527,35 @@ export default function ToolsPage() {
                   ))}
                 </motion.div>
 
+                {/* Recently used */}
+                {showRecents && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-5">
+                    <p className="flex items-center gap-1.5 text-[0.6rem] uppercase tracking-[0.2em] text-white/30 font-[family-name:var(--font-mono)] mb-2">
+                      <History size={11} strokeWidth={2} aria-hidden /> Recently used
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {recents.filter(isToolId).map((id) => {
+                        const meta = TOOL_META[id];
+                        const color = hackerMode ? "#4ade80" : CAT_COLORS[meta.cat as keyof typeof CAT_COLORS] ?? "#06b6d4";
+                        const RIcon = meta.icon;
+                        return (
+                          <motion.button
+                            key={id}
+                            type="button"
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => openTool(id)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.07] hover:bg-white/[0.05] transition-colors"
+                          >
+                            <RIcon size={13} strokeWidth={1.8} aria-hidden style={{ color }} />
+                            <span className="text-[0.7rem] text-white/60">{meta.label}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Workflow panels */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }} className="mt-6 grid md:grid-cols-3 gap-3">
                   {[
@@ -300,7 +579,7 @@ export default function ToolsPage() {
               </div>
 
               {/* Launcher grid */}
-              {filteredIds.length === 0 ? (
+              {orderedIds.length === 0 ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
                   <Search size={40} strokeWidth={1.5} aria-hidden className="mx-auto mb-4 text-white/20" />
                   <p className="text-white/50 font-[family-name:var(--font-mono)] text-sm">
@@ -313,8 +592,19 @@ export default function ToolsPage() {
               ) : (
                 <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <AnimatePresence mode="popLayout">
-                    {filteredIds.map((id, i) => (
-                      <ToolCard key={id} id={id} index={i} onOpen={openTool} hackerMode={hackerMode} />
+                    {orderedIds.map((id, i) => (
+                      <ToolCard
+                        key={id}
+                        id={id}
+                        index={i}
+                        dataIdx={i}
+                        onOpen={openTool}
+                        hackerMode={hackerMode}
+                        selected={i === selIdx}
+                        pinned={pinnedSet.has(id)}
+                        onTogglePin={togglePin}
+                        uses={usage[id] ?? 0}
+                      />
                     ))}
                   </AnimatePresence>
                 </motion.div>
