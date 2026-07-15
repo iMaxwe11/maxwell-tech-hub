@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -189,6 +190,12 @@ export function Navbar({ breadcrumb, accent, links = defaultNavLinks }: NavbarPr
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Portal readiness — document doesn't exist during SSR, so the drawer
+  // portal can only be created after mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Resolve accent to the live theme primary unless explicitly overridden.
   const accentColor = accent ?? "var(--theme-primary)";
@@ -315,8 +322,19 @@ export function Navbar({ breadcrumb, accent, links = defaultNavLinks }: NavbarPr
         </div>
       </div>
 
-      {/* Mobile drawer (slides in from the right, full-height, polished) */}
-      <AnimatePresence>
+      {/* Mobile drawer (slides in from the right, full-height, polished).
+          ── Containing-block hazard — the drawer MUST stay portaled ──────
+          The drawer and backdrop are position:fixed. Rendering them inside
+          this nav breaks on Safari/iOS: the nav's backdrop-blur (and its
+          entrance transform while animating) makes it a containing block
+          for fixed descendants per the Filter Effects spec, so top-16 /
+          bottom-0 resolve against the 64px-tall nav — the drawer collapses
+          to zero height and taps show only the X icon with no menu.
+          Portaling to document.body guarantees viewport-relative fixed
+          positioning on every engine. */}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
         {mobileOpen && (
           <>
             {/* Backdrop */}
@@ -456,7 +474,9 @@ export function Navbar({ breadcrumb, accent, links = defaultNavLinks }: NavbarPr
             </motion.aside>
           </>
         )}
-      </AnimatePresence>
+          </AnimatePresence>,
+          document.body
+        )}
     </motion.nav>
   );
 }
