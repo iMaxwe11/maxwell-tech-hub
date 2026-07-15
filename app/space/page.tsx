@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, useInView, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { Camera, Gauge, Globe, Map, MapPin, Newspaper, Orbit, Radar, Rocket, Satellite, SatelliteDish, Sun, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ISSTracker } from "@/components/widgets/ISSTracker";
 import { NASAAPODCard } from "@/components/widgets/NASAAPODCard";
@@ -147,7 +149,7 @@ function LaunchSchedule() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <span className="text-xl">🚀</span> Launch Schedule
+            <Rocket size={20} strokeWidth={1.8} className="text-purple-400" aria-hidden /> Launch Schedule
           </h3>
           <p className="text-xs text-white/40 font-mono mt-1">All providers — SpaceX, NASA, ULA, Rocket Lab, ISRO & more</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -315,7 +317,7 @@ function MissionDispatch() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <span className="text-xl">📰</span> Mission Dispatch
+            <Newspaper size={20} strokeWidth={1.8} className="text-cyan-400" aria-hidden /> Mission Dispatch
           </h3>
           <p className="text-xs text-white/40 font-mono mt-1">
             Fresh space headlines when launch telemetry gets quiet
@@ -400,7 +402,7 @@ function NEOWidget() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <span className="text-xl">☄️</span> Near-Earth Objects
+            <Radar size={20} strokeWidth={1.8} className="text-red-400" aria-hidden /> Near-Earth Objects
           </h3>
           <p className="text-xs text-white/40 font-mono mt-1">Asteroids passing close to Earth today</p>
         </div>
@@ -485,7 +487,7 @@ function SpaceWeather() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
       <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-        <span className="text-xl">☀️</span> Space Weather
+        <Sun size={20} strokeWidth={1.8} className="text-amber-400" aria-hidden /> Space Weather
       </h3>
       <p className="text-xs text-white/40 font-mono mb-4">Solar activity — last 7 days</p>
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -536,7 +538,7 @@ function ISSMap() {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
       <div className="p-4 pb-2">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <span className="text-xl">🗺️</span> ISS Ground Track
+          <Map size={20} strokeWidth={1.8} className="text-cyan-400" aria-hidden /> ISS Ground Track
         </h3>
         <p className="text-xs text-white/40 font-mono mt-1">Live position on world map</p>
       </div>
@@ -568,7 +570,7 @@ function MarsRoverPhotos() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <span className="text-xl">🔴</span> Mars Rover Gallery
+            <Camera size={20} strokeWidth={1.8} className="text-red-400" aria-hidden /> Mars Rover Gallery
           </h3>
           <p className="text-xs text-white/40 font-mono mt-1">Latest from Curiosity — Sol {photos[0]?.sol}</p>
         </div>
@@ -643,7 +645,7 @@ function PeopleInSpace() {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <span className="text-xl">👨‍🚀</span> Humans in Space
+          <Users size={20} strokeWidth={1.8} className="text-cyan-400" aria-hidden /> Humans in Space
         </h3>
         <div className="text-2xl font-bold text-cyan-400">{people.length}</div>
       </div>
@@ -668,22 +670,22 @@ function PeopleInSpace() {
 }
 
 /* ═══ Solar System Cards ═══ */
-const PLANETS = [
-  { name: "Mercury", dist: "0.39 AU", temp: "430°C / -180°C", icon: "🪨", color: "#94a3b8", moons: 0 },
-  { name: "Venus", dist: "0.72 AU", temp: "462°C", icon: "🌕", color: "#fbbf24", moons: 0 },
-  { name: "Earth", dist: "1.00 AU", temp: "15°C avg", icon: "🌍", color: "#3b82f6", moons: 1 },
-  { name: "Mars", dist: "1.52 AU", temp: "-65°C avg", icon: "🔴", color: "#ef4444", moons: 2 },
-  { name: "Jupiter", dist: "5.20 AU", temp: "-110°C", icon: "🟤", color: "#f59e0b", moons: 95 },
-  { name: "Saturn", dist: "9.58 AU", temp: "-140°C", icon: "🪐", color: "#d4a574", moons: 146 },
-  { name: "Uranus", dist: "19.2 AU", temp: "-195°C", icon: "🔵", color: "#67e8f9", moons: 28 },
-  { name: "Neptune", dist: "30.1 AU", temp: "-200°C", icon: "💙", color: "#6366f1", moons: 16 },
+const PLANETS: { name: string; dist: string; temp: string; color: string; moons: number; ring?: boolean }[] = [
+  { name: "Mercury", dist: "0.39 AU", temp: "430°C / -180°C", color: "#94a3b8", moons: 0 },
+  { name: "Venus", dist: "0.72 AU", temp: "462°C", color: "#fbbf24", moons: 0 },
+  { name: "Earth", dist: "1.00 AU", temp: "15°C avg", color: "#3b82f6", moons: 1 },
+  { name: "Mars", dist: "1.52 AU", temp: "-65°C avg", color: "#ef4444", moons: 2 },
+  { name: "Jupiter", dist: "5.20 AU", temp: "-110°C", color: "#f59e0b", moons: 95 },
+  { name: "Saturn", dist: "9.58 AU", temp: "-140°C", color: "#d4a574", moons: 146, ring: true },
+  { name: "Uranus", dist: "19.2 AU", temp: "-195°C", color: "#67e8f9", moons: 28 },
+  { name: "Neptune", dist: "30.1 AU", temp: "-200°C", color: "#6366f1", moons: 16 },
 ];
 
 function SolarSystemCards() {
   return (
     <div className="glass-card p-6">
       <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-        <span className="text-xl">🌌</span> Solar System
+        <Orbit size={20} strokeWidth={1.8} className="text-indigo-400" aria-hidden /> Solar System
       </h3>
       <p className="text-xs text-white/40 font-mono mb-5">Our cosmic neighborhood at a glance</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -692,7 +694,12 @@ function SolarSystemCards() {
             viewport={{ once: true }} transition={{ delay: i * 0.06, type: "spring", stiffness: 200 }}
             whileHover={{ scale: 1.03, borderColor: `${p.color}33` }}
             className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center transition-all cursor-default">
-            <div className="text-2xl mb-1.5">{p.icon}</div>
+            <div className="relative w-7 h-7 mx-auto mb-1.5">
+              <div className="w-full h-full rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.7), ${p.color} 45%, rgba(0,0,0,0.9) 130%)`, boxShadow: `0 0 10px ${p.color}40` }} />
+              {p.ring && (
+                <div className="absolute top-1/2 left-1/2 w-[170%] h-[46%] rounded-[50%] border pointer-events-none" style={{ borderColor: `${p.color}b0`, transform: "translate(-50%, -50%) rotate(-18deg)" }} />
+              )}
+            </div>
             <p className="text-white font-semibold text-sm">{p.name}</p>
             <p className="text-[10px] font-mono mt-1" style={{ color: p.color }}>{p.dist}</p>
             <p className="text-[10px] text-white/30 font-mono">{p.temp}</p>
@@ -705,12 +712,12 @@ function SolarSystemCards() {
 }
 
 /* ═══ Stat Card ═══ */
-function StatCard({ label, value, icon, color, sub }: { label: string; value: string; icon: string; color: string; sub?: string }) {
+function StatCard({ label, value, icon: Icon, color, sub }: { label: string; value: string; icon: LucideIcon; color: string; sub?: string }) {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
       whileHover={{ scale: 1.02, borderColor: `${color}33` }} transition={{ type: "spring", stiffness: 200 }}
       className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center transition-all">
-      <div className="text-2xl mb-2">{icon}</div>
+      <Icon size={24} strokeWidth={1.8} className="mx-auto mb-2" style={{ color }} aria-hidden />
       <p className="text-white/90 font-bold text-lg" style={{ color }}>{value}</p>
       <p className="text-white/40 text-[10px] font-mono mt-1 uppercase tracking-wider">{label}</p>
       {sub && <p className="text-white/20 text-[9px] font-mono mt-0.5">{sub}</p>}
@@ -719,30 +726,46 @@ function StatCard({ label, value, icon, color, sub }: { label: string; value: st
 }
 
 /* ═══ Live From Space — NASA ISS Live Stream ═══ */
+interface IssStreamPayload {
+  embedUrl?: string;
+  isLive?: boolean;
+  source?: string;
+}
+
 function LiveFromSpace() {
   const [activeStream, setActiveStream] = useState<"live" | "tracker">("live");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [stream, setStream] = useState<IssStreamPayload | null>(null);
+
+  /* YouTube removed the channel-based `embed/live_stream?channel=` endpoint
+     (the old embed here rendered a permanent "Video unavailable" card even
+     while NASA was live). /api/iss-stream resolves the channel's current
+     live video ID server-side and caches it, so we embed a concrete
+     /embed/{videoId} URL that actually plays. */
+  useEffect(() => {
+    fetch("/api/iss-stream")
+      .then((r) => r.json() as Promise<IssStreamPayload>)
+      .then((data) => setStream(data))
+      .catch(() => setStream({}));
+  }, []);
 
   const streams = [
-    { id: "live" as const, label: "ISS Live", icon: "🛰️", desc: "NASA's official ISS live stream — Earth views & mission feed", color: "#06b6d4" },
-    { id: "tracker" as const, label: "ISS Tracker", icon: "📍", desc: "Real-time ISS position over Earth — ESA", color: "#a855f7" },
+    { id: "live" as const, label: "ISS Live", icon: Satellite, desc: "NASA's official ISS live stream — Earth views & mission feed", color: "#06b6d4" },
+    { id: "tracker" as const, label: "ISS Tracker", icon: MapPin, desc: "Real-time ISS position over Earth — ESA", color: "#a855f7" },
   ];
 
-  /* NASA's HDEV experiment ended August 2019, and the IBM Video (UStream) feeds
-     went permanently offline. We now embed NASA's official YouTube live channel
-     (UCLA_DiR1FfKNvjuUpBHmylQ) via the channel-based live_stream embed - it
-     auto-switches to whatever NASA is currently broadcasting and falls back
-     gracefully to the next scheduled stream when the channel is offline. */
   const getStreamSrc = () => {
     switch (activeStream) {
       case "live":
-        return "https://www.youtube.com/embed/live_stream?channel=UCLA_DiR1FfKNvjuUpBHmylQ&autoplay=1&mute=1";
+        return stream?.embedUrl ?? null;
       case "tracker":
         return "https://isstracker.spaceflight.esa.int/";
     }
   };
 
   const current = streams.find(s => s.id === activeStream)!;
+  const CurrentIcon = current.icon;
+  const src = getStreamSrc();
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
@@ -750,7 +773,7 @@ function LiveFromSpace() {
       <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <span className="text-xl">{current.icon}</span> {current.label}
+            <CurrentIcon size={18} aria-hidden style={{ color: current.color }} /> {current.label}
           </h3>
           <p className="text-xs text-white/40 font-mono mt-1">{current.desc}</p>
         </div>
@@ -767,45 +790,57 @@ function LiveFromSpace() {
 
       {/* Stream selector tabs */}
       <div className="px-4 sm:px-5 pb-3 flex gap-2 overflow-x-auto">
-        {streams.map(s => (
-          <button
-            key={s.id}
-            onClick={() => setActiveStream(s.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all border ${
-              activeStream === s.id
-                ? "border-opacity-30 text-white"
-                : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
-            }`}
-            style={activeStream === s.id ? {
-              backgroundColor: `${s.color}15`,
-              borderColor: `${s.color}40`,
-              color: s.color,
-            } : undefined}
-          >
-            <span>{s.icon}</span>
-            <span>{s.label}</span>
-          </button>
-        ))}
+        {streams.map(s => {
+          const TabIcon = s.icon;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setActiveStream(s.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all border ${
+                activeStream === s.id
+                  ? "border-opacity-30 text-white"
+                  : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
+              }`}
+              style={activeStream === s.id ? {
+                backgroundColor: `${s.color}15`,
+                borderColor: `${s.color}40`,
+                color: s.color,
+              } : undefined}
+            >
+              <TabIcon size={12} aria-hidden />
+              <span>{s.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Stream viewport */}
       <div className="relative transition-all duration-500" style={{ height: isExpanded ? 600 : 400 }}>
-        {/* Live pulse indicator */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-red-500/30">
-          <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1, repeat: Infinity }}
-            className="w-2 h-2 rounded-full bg-red-500" />
-          <span className="text-[10px] font-mono text-red-400">LIVE</span>
-        </div>
+        {/* Live pulse indicator — only claim LIVE when the resolver says so */}
+        {(activeStream === "tracker" || stream?.isLive) && (
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-red-500/30">
+            <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1, repeat: Infinity }}
+              className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="text-[10px] font-mono text-red-400">LIVE</span>
+          </div>
+        )}
 
-        <iframe
-          key={activeStream}
-          src={getStreamSrc()}
-          style={{ width: "100%", height: "100%", border: "none" }}
-          title={current.label}
-          loading="lazy"
-          allowFullScreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        />
+        {src ? (
+          <iframe
+            key={`${activeStream}-${src}`}
+            src={src}
+            style={{ width: "100%", height: "100%", border: "none" }}
+            title={current.label}
+            loading="lazy"
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          />
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-black/40">
+            <div className="w-8 h-8 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />
+            <p className="text-[11px] font-mono text-white/30">Resolving NASA live stream…</p>
+          </div>
+        )}
       </div>
 
       {/* Info bar */}
@@ -857,10 +892,10 @@ export default function SpacePage() {
       {/* ═══ STATS BAR ═══ */}
       <Sec className="px-4 sm:px-6 -mt-16 relative z-20" delay={0}>
         <div className="max-w-[1400px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="ISS Speed" value="28,000" icon="🛰️" color="#06b6d4" sub="km/h" />
-          <StatCard label="ISS Altitude" value="408" icon="📡" color="#a855f7" sub="km above Earth" />
-          <StatCard label="Known NEOs" value="34,000+" icon="☄️" color="#f59e0b" sub="tracked objects" />
-          <StatCard label="Mars Rovers" value="2 Active" icon="🔴" color="#ef4444" sub="Curiosity & Perseverance" />
+          <StatCard label="ISS Speed" value="28,000" icon={Gauge} color="#06b6d4" sub="km/h" />
+          <StatCard label="ISS Altitude" value="408" icon={SatelliteDish} color="#a855f7" sub="km above Earth" />
+          <StatCard label="Known NEOs" value="34,000+" icon={Radar} color="#f59e0b" sub="tracked objects" />
+          <StatCard label="Mars Rovers" value="2 Active" icon={Globe} color="#ef4444" sub="Curiosity & Perseverance" />
         </div>
       </Sec>
 

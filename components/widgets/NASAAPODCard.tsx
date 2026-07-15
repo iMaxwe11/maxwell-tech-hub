@@ -71,6 +71,12 @@ export function NASAAPODCard() {
 
   const mediaUrl = apod.media_type === "video" ? apod.url : apod.hdurl || apod.url;
 
+  // APOD now self-hosts some videos as raw files (e.g. Auroras_Esa.mp4). Framing
+  // those renders a dead black box, so file URLs get a native <video> element;
+  // embeddable players (YouTube/Vimeo) keep the iframe path.
+  const isFileVideo =
+    apod.media_type === "video" && /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(apod.url ?? "");
+
   // Display the ~960px `url` first — the card is only 256px tall, and APOD `hdurl`
   // originals are routinely 10-30 MB, which can exceed the image optimizer's source
   // limits or time out on cold load. Fall back to hdurl, then a styled placeholder.
@@ -82,7 +88,18 @@ export function NASAAPODCard() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
       <div className="relative h-64 overflow-hidden bg-black">
-        {apod.media_type === "video" ? (
+        {apod.media_type === "video" && isFileVideo ? (
+          <video
+            src={apod.url}
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            controls
+            preload="metadata"
+          />
+        ) : apod.media_type === "video" ? (
           <iframe
             src={apod.url}
             title={apod.title}
