@@ -77,8 +77,13 @@ type DocumentWithVT = Document & {
 };
 
 /** Theme change as a circular color wave expanding from the interaction
- *  point, via the View Transitions API. Browsers without support (and
- *  reduced-motion users) get the instant swap they always had. */
+ *  point, via the View Transitions API. The wave itself is a plain CSS
+ *  animation on ::view-transition-new(root) (see globals.css) — Safari
+ *  supports View Transitions but not the WAAPI `pseudoElement` option this
+ *  previously relied on, so the JS-driven animate() silently never attached
+ *  there and, with the default cross-fade disabled, themes just snapped.
+ *  This function only hands CSS the geometry. Browsers without support
+ *  (and reduced-motion users) get the instant swap they always had. */
 function applyThemeWithRipple(theme: Theme, origin?: { x: number; y: number }) {
   const doc = document as DocumentWithVT;
   const prefersReduced =
@@ -97,27 +102,11 @@ function applyThemeWithRipple(theme: Theme, origin?: { x: number; y: number }) {
     Math.max(y, window.innerHeight - y)
   );
 
-  const transition = doc.startViewTransition(() => applyTheme(theme));
-  transition.ready
-    .then(() => {
-      document.documentElement.animate(
-        {
-          clipPath: [
-            `circle(0px at ${x}px ${y}px)`,
-            `circle(${maxRadius}px at ${x}px ${y}px)`,
-          ],
-        },
-        {
-          duration: 550,
-          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-          // Animate the incoming snapshot only; CSS pins the old one below.
-          pseudoElement: "::view-transition-new(root)",
-        }
-      );
-    })
-    .catch(() => {
-      // Transition was skipped (rapid clicks, tab hidden) — theme already applied.
-    });
+  const root = document.documentElement;
+  root.style.setProperty("--vt-ripple-x", `${x}px`);
+  root.style.setProperty("--vt-ripple-y", `${y}px`);
+  root.style.setProperty("--vt-ripple-r", `${Math.ceil(maxRadius)}px`);
+  doc.startViewTransition(() => applyTheme(theme));
 }
 
 const ACCENT_MODES: { id: AccentMode; label: string; hint: string }[] = [

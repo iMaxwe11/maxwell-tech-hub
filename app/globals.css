@@ -768,11 +768,15 @@ body {
 
 
 /* ═══════════════ Theme-switch ripple (View Transitions API) ═══════════════
-   The switcher animates ::view-transition-new(root) with an expanding
-   clip-path circle from JS; these rules disable the default cross-fade and
-   layer the incoming snapshot above the outgoing one so the wave reads as
-   the new theme washing over the old. Browsers without support never create
-   these pseudo-elements, so this is inert everywhere else. */
+   The ripple is a pure-CSS clip-path animation on the incoming snapshot,
+   parameterized by --vt-ripple-x/y/r custom properties the switcher sets
+   on :root before calling startViewTransition. It MUST stay CSS keyframes:
+   the previous implementation drove the clip-path from JS via
+   Element.animate(..., { pseudoElement: "::view-transition-new(root)" }),
+   which Safari does not support — combined with the animation:none below
+   (which disables the default cross-fade) iOS got no animation at all and
+   theme changes hard-snapped. Browsers without View Transitions never
+   create these pseudo-elements, so all of this is inert there. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -785,4 +789,14 @@ body {
 
 ::view-transition-new(root) {
   z-index: 2;
+  animation: theme-ripple 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes theme-ripple {
+  from {
+    clip-path: circle(0px at var(--vt-ripple-x, 50%) var(--vt-ripple-y, 33%));
+  }
+  to {
+    clip-path: circle(var(--vt-ripple-r, 120vmax) at var(--vt-ripple-x, 50%) var(--vt-ripple-y, 33%));
+  }
 }
