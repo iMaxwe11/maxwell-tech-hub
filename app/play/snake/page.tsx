@@ -397,7 +397,9 @@ export default function PlayPage() {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart.current || gameState !== "playing") return;
+    // Accept input during countdown too — keyboard already does, and dead
+    // first-swipes right after tapping Play read as "controls don't work".
+    if (!touchStart.current || (gameState !== "playing" && gameState !== "countdown")) return;
     const dx = e.changedTouches[0].clientX - touchStart.current.x;
     const dy = e.changedTouches[0].clientY - touchStart.current.y;
     const opp: Record<Dir, Dir> = { UP: "DOWN", DOWN: "UP", LEFT: "RIGHT", RIGHT: "LEFT" };
@@ -411,7 +413,7 @@ export default function PlayPage() {
   };
 
   const dpad = (d: Dir) => {
-    if (gameState !== "playing") return;
+    if (gameState !== "playing" && gameState !== "countdown") return;
     const opp: Record<Dir, Dir> = { UP: "DOWN", DOWN: "UP", LEFT: "RIGHT", RIGHT: "LEFT" };
     if (d !== opp[dir.current]) nextDir.current = d;
   };
@@ -574,19 +576,22 @@ export default function PlayPage() {
           </motion.div>
         </div>
 
-        {/* Mobile D-pad */}
+        {/* Mobile D-pad. touch-manipulation is load-bearing on iOS: rapid
+            direction taps otherwise register as double-tap-to-zoom (the site
+            viewport allows 5x zoom for accessibility) and the page zooms
+            instead of the snake turning. */}
         <div className="sm:hidden grid grid-cols-3 gap-2 w-40">
           <div />
-          <button onTouchStart={() => dpad("UP")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50">▲</button>
+          <button onTouchStart={() => dpad("UP")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50 touch-manipulation select-none">▲</button>
           <div />
-          <button onTouchStart={() => dpad("LEFT")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50">◀</button>
+          <button onTouchStart={() => dpad("LEFT")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50 touch-manipulation select-none">◀</button>
           <button onTouchStart={(e) => { e.preventDefault(); if (gameState === "playing") setGameState("paused"); else if (gameState === "paused") setGameState("playing"); else if (gameState !== "countdown") startGame(); }}
-            className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-[10px] font-mono text-white/50">
+            className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-[10px] font-mono text-white/50 touch-manipulation select-none">
             {gameState === "playing" ? "II" : "▶"}
           </button>
-          <button onTouchStart={() => dpad("RIGHT")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50">▶</button>
+          <button onTouchStart={() => dpad("RIGHT")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50 touch-manipulation select-none">▶</button>
           <div />
-          <button onTouchStart={() => dpad("DOWN")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50">▼</button>
+          <button onTouchStart={() => dpad("DOWN")} className="h-12 rounded-lg bg-white/5 border border-white/10 active:bg-cyan-400/20 flex items-center justify-center text-white/50 touch-manipulation select-none">▼</button>
           <div />
         </div>
 

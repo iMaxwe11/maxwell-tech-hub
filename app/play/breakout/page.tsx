@@ -477,7 +477,13 @@ export default function BreakoutPage() {
             width={W}
             height={H}
             onMouseMove={(e) => movePaddleTo(e.clientX)}
-            onTouchStart={(e) => movePaddleTo(e.touches[0].clientX)}
+            onTouchStart={(e) => {
+              movePaddleTo(e.touches[0].clientX);
+              // Launch straight from the touch: iOS won't reliably synthesize
+              // the click below on a touch-action:none canvas, which left the
+              // ball glued to the paddle — the game looked frozen on iPhone.
+              if (gameState === "playing" && ball.current.stuck) launchBall();
+            }}
             onTouchMove={(e) => movePaddleTo(e.touches[0].clientX)}
             onClick={() => {
               if (gameState === "playing" && ball.current.stuck) launchBall();

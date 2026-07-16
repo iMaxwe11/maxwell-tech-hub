@@ -360,9 +360,10 @@ export default function PongPage() {
             )}
             {gameState === "paused" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+                onClick={() => setGameState("playing")}
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4 cursor-pointer touch-manipulation">
                 <div className="text-white font-mono font-bold text-xl uppercase tracking-widest">Paused</div>
-                <p className="text-[10px] text-white/30 font-mono">Press Space to resume</p>
+                <p className="text-[10px] text-white/30 font-mono">Press Space or tap to resume</p>
               </motion.div>
             )}
             {(gameState === "won" || gameState === "lost") && (
